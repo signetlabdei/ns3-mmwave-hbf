@@ -23,7 +23,9 @@
  *                Sourjya Dutta <sdutta@nyu.edu>
  *                Russell Ford <russell.ford@nyu.edu>
  *                Menglei Zhang <menglei@nyu.edu>
+ *
  *   Modified by: Junseok Kim <jskim14@mwnl.snu.ac.kr>
+ *
  */
 
 
@@ -67,14 +69,16 @@ main (int argc, char *argv[])
 	uint16_t numUe = 2;
 	double startTime = 1;
 	double simTime = 1.1;
+	double packetSize = 1460; // packet size in byte
 	double interPacketInterval = 1000000; // 500 microseconds
 	double minDistance = 10.0;           // eNB-UE distance in meters
 	double maxDistance = 10.0;           // eNB-UE distance in meters
 	bool harqEnabled = true;
 	bool rlcAmEnabled = false;
 	bool fixedTti = false;
-	unsigned symPerSf = 24;
-	double sfPeriod = 100.0;
+	unsigned symPerSf = 14;
+	double sfPeriod = 1000.0; //micro second unit
+	double symPeriod = sfPeriod/symPerSf; //micro second unit
 	unsigned run = 0;
 	bool smallScale = false;
 	double speed = 3;
@@ -92,6 +96,7 @@ main (int argc, char *argv[])
 	cmd.AddValue ("fixedTti", "Fixed TTI scheduler", fixedTti);
 	cmd.AddValue ("run", "run for RNG (for generating different deterministic sequences for different drops)", fixedTti);
 	cmd.Parse (argc, argv);
+	symPeriod = sfPeriod/symPerSf;
 
 	Config::SetDefault ("ns3::MmWaveHelper::RlcAmEnabled", BooleanValue (rlcAmEnabled));
 	Config::SetDefault ("ns3::MmWaveHelper::HarqEnabled", BooleanValue (harqEnabled));
@@ -104,6 +109,7 @@ main (int argc, char *argv[])
 	Config::SetDefault ("ns3::MmWavePhyMacCommon::ChunkPerRB", UintegerValue (72));
 	Config::SetDefault ("ns3::MmWavePhyMacCommon::SymbolsPerSubframe", UintegerValue (symPerSf));
 	Config::SetDefault ("ns3::MmWavePhyMacCommon::SubframePeriod", DoubleValue (sfPeriod));
+	Config::SetDefault ("ns3::MmWavePhyMacCommon::SymbolPeriod", DoubleValue (symPeriod));
 	Config::SetDefault ("ns3::MmWavePhyMacCommon::TbDecodeLatency", UintegerValue (200.0));
 	Config::SetDefault ("ns3::MmWaveBeamforming::LongTermUpdatePeriod", TimeValue (MilliSeconds (100.0)));
 	Config::SetDefault ("ns3::LteEnbRrc::SystemInformationPeriodicity", TimeValue (MilliSeconds (5.0)));
@@ -144,7 +150,7 @@ main (int argc, char *argv[])
 	PointToPointHelper p2ph;
 	p2ph.SetDeviceAttribute ("DataRate", DataRateValue (DataRate ("100Gb/s")));
 	p2ph.SetDeviceAttribute ("Mtu", UintegerValue (1500));
-	p2ph.SetChannelAttribute ("Delay", TimeValue (Seconds (0.010)));
+	p2ph.SetChannelAttribute ("Delay", TimeValue (Seconds (0.00001)));
 	NetDeviceContainer internetDevices = p2ph.Install (pgw, remoteHost);
 	Ipv4AddressHelper ipv4h;
 	ipv4h.SetBase ("1.0.0.0", "255.0.0.0");
@@ -161,7 +167,7 @@ main (int argc, char *argv[])
 	enbNodes.Create (numEnb);
 	ueNodes.Create (numUe);
 
-	// Install Mobility Model
+	//Install Mobility Model
 	Ptr<ListPositionAllocator> enbPositionAlloc = CreateObject<ListPositionAllocator> ();
 	enbPositionAlloc->Add (Vector (0.0, 0.0, 0.0));
 	MobilityHelper enbmobility;
@@ -215,7 +221,7 @@ main (int argc, char *argv[])
 
 		UdpClientHelper dlClient (ueIpIface.GetAddress (u), dlPort);
 		dlClient.SetAttribute ("Interval", TimeValue (MicroSeconds (interPacketInterval)));
-		dlClient.SetAttribute ("PacketSize", UintegerValue (1460));
+		dlClient.SetAttribute ("PacketSize", UintegerValue (packetSize));
 		//dlClient.SetAttribute ("MaxPackets", UintegerValue (100));
 
 		clientApps.Add (dlClient.Install (remoteHost));
@@ -243,7 +249,7 @@ main (int argc, char *argv[])
 	{
 		Ptr<PacketSink> sink = serverApps.Get (u)->GetObject<PacketSink> ();
 		//double nrThroughput = sink->GetTotalRx () * 8.0 / (1000000.0*(simTime - 0.01));
-		NS_LOG_UNCOND ("The number of received packets for UE " << u+1 << ": " << sink->GetTotalRx ()/1460);
+		NS_LOG_UNCOND ("The number of received packets for UE " << u+1 << ": " << sink->GetTotalRx ()/packetSize);
 		//NS_LOG_UNCOND ("UE(" << ueIpIface.GetAddress(0) <<") NR throughput: " << nrThroughput << " Mbps");
 	}
 

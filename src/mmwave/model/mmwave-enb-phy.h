@@ -29,6 +29,9 @@
 *                 Dual Connectivity and Handover functionalities
 *				Marco Giordani <m.giordani91@gmail.com>
 *					LOS-NLOS transitions, SINR measurement error and filtering
+*
+*	Modified by: Junseok Kim <jskim14@mwnl.snu.ac.kr> Hybrid beamforming
+*
 */
 
 
@@ -63,6 +66,7 @@ public:
   MmWaveEnbPhy ();
 
   MmWaveEnbPhy (Ptr<MmWaveSpectrumPhy>, Ptr<MmWaveSpectrumPhy>);
+  MmWaveEnbPhy (std::vector<Ptr<MmWaveSpectrumPhy> >, std::vector<Ptr<MmWaveSpectrumPhy> >);
   virtual ~MmWaveEnbPhy ();
 
   static TypeId GetTypeId (void);

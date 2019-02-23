@@ -25,10 +25,14 @@
 *                         Russell Ford <russell.ford@nyu.edu>
 *                         Menglei Zhang <menglei@nyu.edu>
 *
-* Modified by: Michele Polese <michele.polese@gmail.com>
-*                 Dual Connectivity and Handover functionalities\
-*				Marco Giordani <m.giordani91@gmail.com>
-*					LOS-NLOS transitions, SINR measurement error and filtering
+*   Modified by: Michele Polese <michele.polese@gmail.com>
+*                Dual Connectivity and Handover functionalities\
+*				 Marco Giordani <m.giordani91@gmail.com>
+*				 LOS-NLOS transitions, SINR measurement error and filtering
+*
+*
+*	Modified by: Junseok Kim <jskim14@mwnl.snu.ac.kr> Hybrid beamforming
+*
 */
 
 
@@ -84,6 +88,17 @@ MmWaveEnbPhy::MmWaveEnbPhy ()
 
 MmWaveEnbPhy::MmWaveEnbPhy (Ptr<MmWaveSpectrumPhy> dlPhy, Ptr<MmWaveSpectrumPhy> ulPhy)
   : MmWavePhy (dlPhy, ulPhy),
+    m_prevSlot (0),
+    m_prevSlotDir (SlotAllocInfo::NA),
+    m_currSymStart (0)
+{
+  m_enbCphySapProvider = new MemberLteEnbCphySapProvider<MmWaveEnbPhy> (this);
+  m_roundFromLastUeSinrUpdate = 0;
+  Simulator::ScheduleNow (&MmWaveEnbPhy::StartSubFrame, this);
+}
+  
+MmWaveEnbPhy::MmWaveEnbPhy (std::vector<Ptr<MmWaveSpectrumPhy> > dlPhyList, std::vector<Ptr<MmWaveSpectrumPhy> > ulPhyList)
+  : MmWavePhy (dlPhyList.at(0), ulPhyList.at(0)),
     m_prevSlot (0),
     m_prevSlotDir (SlotAllocInfo::NA),
     m_currSymStart (0)
