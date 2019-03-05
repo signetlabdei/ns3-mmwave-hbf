@@ -30,6 +30,8 @@
 *
 * Modified by: Tommaso Zugno <tommasozugno@gmail.com>
 *								 Integration of Carrier Aggregation
+*
+*	Modified by: Junseok Kim <jskim14@mwnl.snu.ac.kr> Hybrid beamforming
 */
 
 
@@ -71,6 +73,8 @@ public:
 
   MmWavePhy (Ptr<MmWaveSpectrumPhy> dlChannelPhy, Ptr<MmWaveSpectrumPhy> ulChannelPhy);
 
+  MmWavePhy (std::vector<Ptr<MmWaveSpectrumPhy> > dlChannelPhy, std::vector<Ptr<MmWaveSpectrumPhy> > ulChannelPhy);
+  
   virtual ~MmWavePhy ();
 
   static TypeId GetTypeId (void);

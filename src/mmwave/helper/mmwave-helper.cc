@@ -80,6 +80,7 @@ MmWaveHelper::MmWaveHelper (void)
     m_noRxAntenna (16),
     m_noEnbPanels (3),
     m_noUePanels (2),
+    m_noEnbLayers (8),
     m_harqEnabled (false),
     m_rlcAmEnabled (false),
     m_snrTest (false),
@@ -215,7 +216,12 @@ MmWaveHelper::GetTypeId (void)
                    UintegerValue (1),
                    MakeUintegerAccessor (&MmWaveHelper::m_noEnbPanels),
                    MakeUintegerChecker<uint16_t> ())
-    .AddAttribute ("EnbComponentCarrierManager",
+    .AddAttribute ("NumEnbLayers",
+                   "Number of layers for the operation of MU-MIMO in eNB",
+                   UintegerValue (8),
+                   MakeUintegerAccessor (&MmWaveHelper::m_noEnbLayers),
+                   MakeUintegerChecker<uint16_t> ())
+	.AddAttribute ("EnbComponentCarrierManager",
                    "The type of Component Carrier Manager to be used for gNBs. "
                    "The allowed values for this attributes are the type names "
                    "of any class inheriting ns3::LteEnbComponentCarrierManager.",
@@ -1722,7 +1728,7 @@ MmWaveHelper::InstallSingleEnbDevice (Ptr<Node> n)
     {
       Ptr<MmWavePhyMacCommon> phyMacConfig = it->second->GetConfigurationParameters ();
       bandwidthMap[it->first] = phyMacConfig->GetNumRb () * phyMacConfig->GetChunkWidth () * phyMacConfig->GetNumChunkPerRb ();
-      NS_LOG_UNCOND ("bandwidth " << (uint32_t)it->first << " = " << bandwidthMap[it->first]);
+      //NS_LOG_UNCOND ("bandwidth " << (uint32_t)it->first << " = " << bandwidthMap[it->first]);
     }
 
   ccmEnbManager->SetBandwidthMap (bandwidthMap);

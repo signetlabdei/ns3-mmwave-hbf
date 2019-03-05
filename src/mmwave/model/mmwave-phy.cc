@@ -30,6 +30,8 @@
 *
 * Modified by: Tommaso Zugno <tommasozugno@gmail.com>
 *								 Integration of Carrier Aggregation
+*
+*	Modified by: Junseok Kim <jskim14@mwnl.snu.ac.kr> Hybrid beamforming
 */
 
 
@@ -142,6 +144,21 @@ MmWavePhy::MmWavePhy (Ptr<MmWaveSpectrumPhy> dlChannelPhy, Ptr<MmWaveSpectrumPhy
   NS_LOG_FUNCTION (this);
   m_phySapProvider = new MmWaveMemberPhySapProvider (this);
 }
+
+MmWavePhy::MmWavePhy (std::vector<Ptr<MmWaveSpectrumPhy> > dlChannelPhy, std::vector<Ptr<MmWaveSpectrumPhy> > ulChannelPhy)
+  : m_downlinkSpectrumPhy (dlChannelPhy.at(0)),
+    m_uplinkSpectrumPhy (ulChannelPhy.at(0)),
+    m_cellId (0),
+    m_frameNum (0),
+    m_sfNum (0),
+    m_slotNum (0),
+    m_sfAllocInfoUpdated (false),
+    m_componentCarrierId (0)
+{
+  NS_LOG_FUNCTION (this);
+  m_phySapProvider = new MmWaveMemberPhySapProvider (this);
+}
+
 
 MmWavePhy::~MmWavePhy ()
 {
