@@ -67,6 +67,7 @@ main (int argc, char *argv[])
 
 	uint16_t numEnb = 1;
 	uint16_t numUe = 2;
+	uint16_t numEnbLayers = 8;
 	double startTime = 1;
 	double simTime = 1.1;
 	double packetSize = 1460; // packet size in byte
@@ -111,6 +112,7 @@ main (int argc, char *argv[])
 	Config::SetDefault ("ns3::MmWavePhyMacCommon::SubframePeriod", DoubleValue (sfPeriod));
 	Config::SetDefault ("ns3::MmWavePhyMacCommon::SymbolPeriod", DoubleValue (symPeriod));
 	Config::SetDefault ("ns3::MmWavePhyMacCommon::TbDecodeLatency", UintegerValue (200.0));
+	Config::SetDefault ("ns3::MmWavePhyMacCommon::NumEnbLayers", UintegerValue (numEnbLayers));
 	Config::SetDefault ("ns3::MmWaveBeamforming::LongTermUpdatePeriod", TimeValue (MilliSeconds (100.0)));
 	Config::SetDefault ("ns3::LteEnbRrc::SystemInformationPeriodicity", TimeValue (MilliSeconds (5.0)));
 	//Config::SetDefault ("ns3::MmWavePropagationLossModel::ChannelStates", StringValue ("n"));

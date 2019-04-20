@@ -101,6 +101,7 @@ class MmWaveSpectrumPhy : public SpectrumPhy
 {
 public:
   MmWaveSpectrumPhy ();
+  MmWaveSpectrumPhy (uint8_t layerInd);
   virtual ~MmWaveSpectrumPhy ();
 
   enum State
@@ -205,6 +206,8 @@ private:
   State m_state;
 
   uint8_t m_componentCarrierId; ///< the component carrier ID
+
+  uint8_t m_layerInd;
 
   MmWavePhyRxCtrlEndOkCallback    m_phyRxCtrlEndOkCallback;
   MmWavePhyRxDataEndOkCallback            m_phyRxDataEndOkCallback;

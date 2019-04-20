@@ -31,7 +31,7 @@
 *				 LOS-NLOS transitions, SINR measurement error and filtering
 *
 *
-*	Modified by: Junseok Kim <jskim14@mwnl.snu.ac.kr> Hybrid beamforming
+*	  Modified by: Junseok Kim <jskim14@mwnl.snu.ac.kr> Hybrid beamforming
 *
 */
 
@@ -98,7 +98,7 @@ MmWaveEnbPhy::MmWaveEnbPhy (Ptr<MmWaveSpectrumPhy> dlPhy, Ptr<MmWaveSpectrumPhy>
 }
   
 MmWaveEnbPhy::MmWaveEnbPhy (std::vector<Ptr<MmWaveSpectrumPhy> > dlPhyList, std::vector<Ptr<MmWaveSpectrumPhy> > ulPhyList)
-  : MmWavePhy (dlPhyList.at(0), ulPhyList.at(0)),
+  : MmWavePhy (dlPhyList, ulPhyList),
     m_prevSlot (0),
     m_prevSlotDir (SlotAllocInfo::NA),
     m_currSymStart (0)
@@ -184,7 +184,13 @@ MmWaveEnbPhy::DoInitialize (void)
 {
   NS_LOG_FUNCTION (this);
   Ptr<SpectrumValue> noisePsd = MmWaveSpectrumValueHelper::CreateNoisePowerSpectralDensity (m_phyMacConfig, m_noiseFigure);
-  m_downlinkSpectrumPhy->SetNoisePowerSpectralDensity (noisePsd);
+  //uint8_t numEnbLayers = m_phyMacConfig->GetNumEnbLayers();
+  std::vector <Ptr<MmWaveSpectrumPhy> >::iterator it;
+  for (it = m_downlinkSpectrumPhyList.begin(); it != m_downlinkSpectrumPhyList.end(); it++)
+    {
+      (*it)->SetNoisePowerSpectralDensity (noisePsd);
+      //m_downlinkSpectrumPhy->SetNoisePowerSpectralDensity (noisePsd);
+    }
   //m_numRbg = m_phyMacConfig->GetNumRb() / m_phyMacConfig->GetNumRbPerRbg();
   //m_ctrlPeriod = NanoSeconds (1000 * m_phyMacConfig->GetCtrlSymbols() * m_phyMacConfig->GetSymbolPeriod());
   //m_dataPeriod = NanoSeconds (1000 * (m_phyMacConfig->GetSymbPerSlot() - m_phyMacConfig->GetCtrlSymbols()) * m_phyMacConfig->GetSymbolPeriod());
@@ -229,8 +235,8 @@ MmWaveEnbPhy::DoInitialize (void)
     {
       NS_ASSERT_MSG ((double)m_transient / m_updateSinrPeriod >= 16, "Window too small to compute the variance according to the ApplyFilter method");
     }
-  Simulator::Schedule (MicroSeconds (0), &MmWaveEnbPhy::UpdateUeSinrEstimate, this);
-  Simulator::Schedule (MicroSeconds (0), &MmWaveEnbPhy::CallPathloss, this);
+  //Simulator::Schedule (MicroSeconds (0), &MmWaveEnbPhy::UpdateUeSinrEstimate, this);
+  //Simulator::Schedule (MicroSeconds (0), &MmWaveEnbPhy::CallPathloss, this);
   MmWavePhy::DoInitialize ();
 }
 void
@@ -596,7 +602,12 @@ MmWaveEnbPhy::SetSubChannels (std::vector<int> mask )
   m_listOfSubchannels = mask;
   Ptr<SpectrumValue> txPsd = CreateTxPowerSpectralDensity ();
   NS_ASSERT (txPsd);
-  m_downlinkSpectrumPhy->SetTxPowerSpectralDensity (txPsd);
+  //uint8_t numEnbLayer = m_phyMacConfig->GetNumEnbLayers ();
+  std::vector <Ptr<MmWaveSpectrumPhy> >::iterator it;
+  for (it = m_downlinkSpectrumPhyList.begin(); it != m_downlinkSpectrumPhyList.end(); it++){
+    (*it)->SetTxPowerSpectralDensity(txPsd);
+    //m_downlinkSpectrumPhy->SetTxPowerSpectralDensity (txPsd);
+  }
 }
 
 Ptr<MmWaveSpectrumPhy>
@@ -609,6 +620,18 @@ Ptr<MmWaveSpectrumPhy>
 MmWaveEnbPhy::GetUlSpectrumPhy () const
 {
   return m_uplinkSpectrumPhy;
+}
+
+std::vector <Ptr<MmWaveSpectrumPhy> > 
+MmWaveEnbPhy::GetDlSpectrumPhyList () const
+{
+  return m_downlinkSpectrumPhyList;
+}
+
+std::vector <Ptr<MmWaveSpectrumPhy> >
+MmWaveEnbPhy::GetUlSpectrumPhyList () const
+{
+  return m_uplinkSpectrumPhyList;
 }
 
 void
@@ -664,7 +687,8 @@ MmWaveEnbPhy::CallPathloss ()
       // compute rx psd
 
       // adjuts beamforming of antenna model wrt user
-      Ptr<AntennaArrayModel> rxAntennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhy ()->GetRxAntenna ());
+      // Antenna model is same for all layers
+      Ptr<AntennaArrayModel> rxAntennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhyList ().at(0)->GetRxAntenna ());
       rxAntennaArray->ChangeBeamformingVectorPanel (ue->second);                                                                                // TODO check if this is the correct antenna
       Ptr<AntennaArrayModel> txAntennaArray = DynamicCast<AntennaArrayModel> (uePhy->GetDlSpectrumPhy ()->GetRxAntenna ());          // Dl, since the Ul is not actually used (TDD device)
       txAntennaArray->ChangeBeamformingVectorPanel (m_netDevice);                                                                               // TODO check if this is the correct antenna
@@ -816,7 +840,8 @@ MmWaveEnbPhy::UpdateUeSinrEstimate ()
       // compute rx psd
 
       // adjuts beamforming of antenna model wrt user
-      Ptr<AntennaArrayModel> rxAntennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhy ()->GetRxAntenna ());
+      // Antenna model is same for all layers
+      Ptr<AntennaArrayModel> rxAntennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhyList ().at(0)->GetRxAntenna ());
       rxAntennaArray->ChangeBeamformingVectorPanel (ue->second);                                                                                // TODO check if this is the correct antenna
       Ptr<AntennaArrayModel> txAntennaArray = DynamicCast<AntennaArrayModel> (uePhy->GetDlSpectrumPhy ()->GetRxAntenna ());          // Dl, since the Ul is not actually used (TDD device)
       txAntennaArray->ChangeBeamformingVectorPanel (m_netDevice);                                                                               // TODO check if this is the correct antenna
@@ -1162,6 +1187,7 @@ MmWaveEnbPhy::StartSubFrame (void)
   m_currSfAllocInfo = m_sfAllocInfo[m_sfNum];
   //m_currSfNumSlots = m_currSfAllocInfo.m_dlSlotAllocInfo.size () + m_currSfAllocInfo.m_ulSlotAllocInfo.size ();
   m_currSfNumSlots = m_currSfAllocInfo.m_slotAllocInfo.size ();
+  m_currNumAllocLayers = m_currSfAllocInfo.m_numAllocLayers;
 
   NS_ASSERT ((m_currSfAllocInfo.m_sfnSf.m_frameNum == m_frameNum)
              && (m_currSfAllocInfo.m_sfnSf.m_sfNum == m_sfNum));
@@ -1335,9 +1361,12 @@ MmWaveEnbPhy::StartSlot (void)
     {
       slotPeriod = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () * currSlot.m_dci.m_numSym);
       //NS_LOG_DEBUG ("Slot " << (uint8_t)m_slotNum << " scheduled for Uplink");
-      m_downlinkSpectrumPhy->AddExpectedTb (currSlot.m_dci.m_rnti, currSlot.m_dci.m_ndi, currSlot.m_dci.m_tbSize,
+      /*m_downlinkSpectrumPhy->AddExpectedTb (currSlot.m_dci.m_rnti, currSlot.m_dci.m_ndi, currSlot.m_dci.m_tbSize,
                                             currSlot.m_dci.m_mcs, m_channelChunks, currSlot.m_dci.m_harqProcess, currSlot.m_dci.m_rv, false,
-                                            currSlot.m_dci.m_symStart, currSlot.m_dci.m_numSym);
+                                            currSlot.m_dci.m_symStart, currSlot.m_dci.m_numSym);*/
+      m_downlinkSpectrumPhyList.at(currSlot.m_dci.m_layerInd)->AddExpectedTb (currSlot.m_dci.m_rnti, currSlot.m_dci.m_ndi, currSlot.m_dci.m_tbSize,
+                                                                              currSlot.m_dci.m_mcs, m_channelChunks, currSlot.m_dci.m_harqProcess, currSlot.m_dci.m_rv, false,
+                                                                              currSlot.m_dci.m_symStart, currSlot.m_dci.m_numSym);
 
       for (uint8_t i = 0; i < m_deviceMap.size (); i++)
         {
@@ -1352,7 +1381,8 @@ MmWaveEnbPhy::StartSlot (void)
           if (currSlot.m_rnti == ueRnti && m_netDevice == associatedEnb)
             {
               //NS_LOG_DEBUG ("Change Beamforming Vector");
-              Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhy ()->GetRxAntenna ());
+              //Antenna model is samle for all layers
+              Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhyList ().at(0)->GetRxAntenna ());
               antennaArray->ChangeBeamformingVectorPanel (m_deviceMap.at (i));
               break;
             }
@@ -1444,7 +1474,8 @@ MmWaveEnbPhy::SendDataChannels (Ptr<PacketBurst> pb, Time slotPrd, SlotAllocInfo
 {
   if (slotInfo.m_isOmni)
     {
-      Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhy ()->GetRxAntenna ());
+      //Antenna model is same for all layers
+      Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhyList ().at(0)->GetRxAntenna ());
       antennaArray->ChangeToOmniTx ();
     }
   else
@@ -1468,12 +1499,12 @@ MmWaveEnbPhy::SendDataChannels (Ptr<PacketBurst> pb, Time slotPrd, SlotAllocInfo
               associatedEnb = ueMcDev->GetMmWaveTargetEnb ();
             }
 
-          NS_LOG_DEBUG ("Scheduled rnti: " << slotInfo.m_dci.m_rnti << " ue rnti: " << ueRnti
-                                           << " target eNB " << associatedEnb << " this eNB " << m_netDevice);
+          NS_LOG_DEBUG ("Scheduled rnti: " << slotInfo.m_dci.m_rnti << " ue rnti: " << ueRnti << " target eNB " << associatedEnb << " this eNB " << m_netDevice);
           if (slotInfo.m_dci.m_rnti == ueRnti && m_netDevice == associatedEnb)
             {
               NS_LOG_DEBUG ("Change Beamforming Vector");
-              Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhy ()->GetRxAntenna ());
+              //Antenna model is same for all layers
+              Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhyList ().at(0)->GetRxAntenna ());
               antennaArray->ChangeBeamformingVectorPanel (m_deviceMap.at (i));
               break;
             }
@@ -1493,7 +1524,9 @@ MmWaveEnbPhy::SendDataChannels (Ptr<PacketBurst> pb, Time slotPrd, SlotAllocInfo
   */
 
   std::list<Ptr<MmWaveControlMessage> > ctrlMsgs;
-  m_downlinkSpectrumPhy->StartTxDataFrames (pb, ctrlMsgs, slotPrd, slotInfo.m_slotIdx);
+  NS_LOG_INFO("Data layer index:" << (int)slotInfo.m_layerInd);
+  //m_downlinkSpectrumPhy->StartTxDataFrames (pb, ctrlMsgs, slotPrd, slotInfo.m_slotIdx);
+  m_downlinkSpectrumPhyList.at(slotInfo.m_layerInd)->StartTxDataFrames (pb, ctrlMsgs, slotPrd, slotInfo.m_slotIdx);
 }
 
 void
@@ -1501,7 +1534,8 @@ MmWaveEnbPhy::SendCtrlChannels (std::list<Ptr<MmWaveControlMessage> > ctrlMsgs, 
 {
   /* Send Ctrl messages*/
   NS_LOG_FUNCTION (this << "Send Ctrl");
-  m_downlinkSpectrumPhy->StartTxDlControlFrames (ctrlMsgs, slotPrd);
+  //m_downlinkSpectrumPhy->StartTxDlControlFrames (ctrlMsgs, slotPrd);
+  m_downlinkSpectrumPhyList.at(0)->StartTxDlControlFrames (ctrlMsgs, slotPrd); //Do not consider layer
 }
 
 bool

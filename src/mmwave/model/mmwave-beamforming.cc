@@ -414,7 +414,7 @@ MmWaveBeamforming::SetChannelMatrix (Ptr<NetDevice> ueDevice, Ptr<NetDevice> enb
 {
   key_t key = std::make_pair (ueDevice,enbDevice);
   int randomInstance = m_uniformRV->GetValue (0, g_numInstance - 1);
-  NS_LOG_UNCOND ("************* UPDATING CHANNEL MATRIX (instance " << randomInstance << ") *************");
+  //NS_LOG_UNCOND ("************* UPDATING CHANNEL MATRIX (instance " << randomInstance << ") *************");
 
   Ptr<BeamformingParams> bfParams = Create<BeamformingParams> ();
   bfParams->m_enbW = g_enbAntennaInstance.at (randomInstance);
@@ -717,10 +717,10 @@ MmWaveBeamforming::GetUeEnbAntennaPair (Ptr<NetDevice> ueDevice, Ptr<NetDevice> 
       uePhy = mcUeDev->GetMmWavePhy ();
     }
 
-  Ptr<AntennaArrayModel> ueAntennaArray = DynamicCast<AntennaArrayModel> (
-      uePhy->GetDlSpectrumPhy ()->GetRxAntenna ());
-  Ptr<AntennaArrayModel> enbAntennaArray = DynamicCast<AntennaArrayModel> (
-      enbPhy->GetDlSpectrumPhy ()->GetRxAntenna ());
+  Ptr<AntennaArrayModel> ueAntennaArray = DynamicCast<AntennaArrayModel> (uePhy->GetDlSpectrumPhy ()->GetRxAntenna ());
+  //Ptr<AntennaArrayModel> enbAntennaArray = DynamicCast<AntennaArrayModel> (enbPhy->GetDlSpectrumPhy ()->GetRxAntenna ());
+  //Antenna model is same for all layers
+  Ptr<AntennaArrayModel> enbAntennaArray = DynamicCast<AntennaArrayModel> (enbPhy->GetDlSpectrumPhyList ().at(0)->GetRxAntenna ());
 
   return antennaPair (ueAntennaArray, enbAntennaArray);
 }

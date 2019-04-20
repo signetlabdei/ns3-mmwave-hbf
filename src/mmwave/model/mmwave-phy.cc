@@ -146,8 +146,10 @@ MmWavePhy::MmWavePhy (Ptr<MmWaveSpectrumPhy> dlChannelPhy, Ptr<MmWaveSpectrumPhy
 }
 
 MmWavePhy::MmWavePhy (std::vector<Ptr<MmWaveSpectrumPhy> > dlChannelPhy, std::vector<Ptr<MmWaveSpectrumPhy> > ulChannelPhy)
-  : m_downlinkSpectrumPhy (dlChannelPhy.at(0)),
-    m_uplinkSpectrumPhy (ulChannelPhy.at(0)),
+  : //m_downlinkSpectrumPhy (dlChannelPhy.at(0)),
+    //m_uplinkSpectrumPhy (ulChannelPhy.at(0)),
+    m_downlinkSpectrumPhyList (dlChannelPhy),
+    m_uplinkSpectrumPhyList (ulChannelPhy),
     m_cellId (0),
     m_frameNum (0),
     m_sfNum (0),
@@ -210,8 +212,20 @@ MmWavePhy::DoSetCellId (uint16_t cellId)
 
   NS_LOG_FUNCTION (this);
   m_cellId = cellId;
-  m_downlinkSpectrumPhy->SetCellId (cellId);
-  m_uplinkSpectrumPhy->SetCellId (cellId);
+  if (m_downlinkSpectrumPhy != 0)
+    {
+      m_downlinkSpectrumPhy->SetCellId (cellId);
+      m_uplinkSpectrumPhy->SetCellId (cellId);
+    }
+  else
+    {
+      uint8_t numEnbLayers = m_phyMacConfig->GetNumEnbLayers ();
+      for (uint8_t layerInd = 0; layerInd < numEnbLayers; layerInd++)
+        {
+          m_downlinkSpectrumPhyList.at (layerInd)->SetCellId (cellId);
+          m_uplinkSpectrumPhyList.at (layerInd)->SetCellId (cellId);
+        }
+    }
 }
 
 
@@ -242,17 +256,40 @@ MmWavePhy::SetMacPdu (Ptr<Packet> p)
   MmWaveMacPduTag tag;
   if (p->PeekPacketTag (tag))
     {
+      //uint8_t numLayers = m_phyMacConfig->GetNumEnbLayers();
       NS_ASSERT ((tag.GetSfn ().m_sfNum >= 0) && (tag.GetSfn ().m_sfNum < m_phyMacConfig->GetSymbolsPerSubframe ()));
-      std::map<uint32_t, Ptr<PacketBurst> >::iterator it = m_packetBurstMap.find (tag.GetSfn ().Encode ());
-      if (it == m_packetBurstMap.end ())
+      uint8_t sfNum = tag.GetSfn ().m_sfNum;
+      uint8_t slotNum = tag.GetSfn ().m_slotNum;
+      uint8_t numAllocLayers = tag.GetNumAllocLayers();
+      uint8_t layerInd = tag.GetLayerInd();
+      NS_LOG_UNCOND ("Sf num: " << (int)sfNum << ", slot num: " << (int)slotNum);
+      NS_LOG_UNCOND ("No. of allocated layers: " << (int)numAllocLayers << ", Layer number: " << (int)layerInd);
+      if (numAllocLayers == 1)
         {
-          it = m_packetBurstMap.insert (std::pair<uint32_t, Ptr<PacketBurst> > (tag.GetSfn ().Encode (), CreateObject<PacketBurst> ())).first;
+          std::map<uint32_t, Ptr<PacketBurst>>::iterator it = m_packetBurstMap.find (tag.GetSfn ().Encode ());
+          if (it == m_packetBurstMap.end ())
+            {
+              it = m_packetBurstMap.insert (std::pair<uint32_t, Ptr<PacketBurst> > (tag.GetSfn ().Encode (), CreateObject<PacketBurst> ())).first;
+            }
+          else
+            {
+              NS_FATAL_ERROR ("Packet burst map entry already exists");
+            }
+          it->second->AddPacket (p);
         }
       else
         {
-          NS_FATAL_ERROR ("Packet burst map entry already exists");
+          std::map<uint64_t, Ptr<PacketBurst>>::iterator it = m_packetBurstLayerMap.find (tag.Encode());
+          if (it == m_packetBurstLayerMap.end ())
+            {
+              it = m_packetBurstLayerMap.insert (std::pair<uint64_t, Ptr<PacketBurst> > (tag.Encode(), CreateObject<PacketBurst> ())).first;
+            }
+          else
+            {
+              NS_FATAL_ERROR ("Packet burst map entry already exists");
+            }
+          it->second->AddPacket (p);
         }
-      it->second->AddPacket (p);
     }
   else
     {
@@ -387,8 +424,20 @@ void
 MmWavePhy::SetComponentCarrierId (uint8_t index)
 {
   m_componentCarrierId = index;
-  m_downlinkSpectrumPhy->SetComponentCarrierId (index);
-  m_uplinkSpectrumPhy->SetComponentCarrierId (index);
+  if (m_downlinkSpectrumPhy != 0) //For UE
+    {
+      m_downlinkSpectrumPhy->SetComponentCarrierId (index);
+      m_uplinkSpectrumPhy->SetComponentCarrierId (index);
+    }
+  else //For gNB
+    {
+      uint8_t numEnbLayers = m_phyMacConfig->GetNumEnbLayers ();
+      for (uint8_t layerInd = 0; layerInd < numEnbLayers; layerInd++)
+        {
+          m_downlinkSpectrumPhyList.at (layerInd)->SetComponentCarrierId (index);
+          m_uplinkSpectrumPhyList.at (layerInd)->SetComponentCarrierId (index);
+        }
+    }
 }
 
 uint8_t

@@ -129,6 +129,8 @@ public:
 
   uint16_t GetRnti ();
 
+  uint8_t GetAllocLayerInd ();
+
   void SetPhySapUser (MmWaveUePhySapUser* ptr);
 
   void SetHarqPhyModule (Ptr<MmWaveHarqPhy> harq);
@@ -213,6 +215,8 @@ private:
   uint8_t m_consecutiveSinrBelowThreshold;
   long double m_outageThreshold;
   uint8_t m_n310;
+
+  uint8_t m_allocLayerInd;
 
 };
 

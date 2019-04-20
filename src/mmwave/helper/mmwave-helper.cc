@@ -80,7 +80,6 @@ MmWaveHelper::MmWaveHelper (void)
     m_noRxAntenna (16),
     m_noEnbPanels (3),
     m_noUePanels (2),
-    m_noEnbLayers (8),
     m_harqEnabled (false),
     m_rlcAmEnabled (false),
     m_snrTest (false),
@@ -216,12 +215,7 @@ MmWaveHelper::GetTypeId (void)
                    UintegerValue (1),
                    MakeUintegerAccessor (&MmWaveHelper::m_noEnbPanels),
                    MakeUintegerChecker<uint16_t> ())
-    .AddAttribute ("NumEnbLayers",
-                   "Number of layers for the operation of MU-MIMO in eNB",
-                   UintegerValue (8),
-                   MakeUintegerAccessor (&MmWaveHelper::m_noEnbLayers),
-                   MakeUintegerChecker<uint16_t> ())
-	.AddAttribute ("EnbComponentCarrierManager",
+	  .AddAttribute ("EnbComponentCarrierManager",
                    "The type of Component Carrier Manager to be used for gNBs. "
                    "The allowed values for this attributes are the type names "
                    "of any class inheriting ns3::LteEnbComponentCarrierManager.",
@@ -1595,38 +1589,68 @@ MmWaveHelper::InstallSingleEnbDevice (Ptr<Node> n)
     }
   NS_ABORT_MSG_IF (m_useCa && ccMap.size () < 2, "You have to either specify carriers or disable carrier aggregation");
   NS_ASSERT (ccMap.size () == m_noOfCcs);
-
+  
   for (std::map<uint8_t,Ptr<MmWaveComponentCarrierEnb> >::iterator it = ccMap.begin (); it != ccMap.end (); ++it)
     {
       NS_LOG_DEBUG (this << "component carrier map size " << (uint16_t) ccMap.size ());
-      Ptr<MmWaveSpectrumPhy> ulPhy = CreateObject<MmWaveSpectrumPhy> ();
-      Ptr<MmWaveSpectrumPhy> dlPhy = CreateObject<MmWaveSpectrumPhy> ();
-
-      Ptr<MmWaveEnbPhy> phy = CreateObject<MmWaveEnbPhy> (dlPhy, ulPhy);
-      //NS_LOG_UNCOND("CC " << cellId << " MmWaveSpectrumPhy " << dlPhy);
-
+      uint8_t numEnbLayers = it->second->GetConfigurationParameters ()->GetNumEnbLayers();
+      NS_LOG_INFO ("No. of gNB layers = " << numEnbLayers);
+      std::vector<Ptr<MmWaveSpectrumPhy> > dlPhyList;
+      std::vector<Ptr<MmWaveSpectrumPhy> > ulPhyList;
+      //dlPhyList.resize(numEnbLayers);
+      //ulPhyList.resize(numEnbLayers);
       Ptr<MmWaveHarqPhy> harq = Create<MmWaveHarqPhy> (it->second->GetConfigurationParameters ()->GetNumHarqProcess ());
-      dlPhy->SetHarqPhyModule (harq);
-      //	ulPhy->SetHarqPhyModule (harq);
-      phy->SetHarqPhyModule (harq);
-
-      Ptr<mmWaveChunkProcessor> pData = Create<mmWaveChunkProcessor> ();
-      if (!m_snrTest)
-        {
-          pData->AddCallback (MakeCallback (&MmWaveEnbPhy::GenerateDataCqiReport, phy));
-          pData->AddCallback (MakeCallback (&MmWaveSpectrumPhy::UpdateSinrPerceived, dlPhy));
-        }
-      dlPhy->AddDataSinrChunkProcessor (pData);
-
-      phy->SetConfigurationParameters (it->second->GetConfigurationParameters ());
-
-      ulPhy->SetChannel (m_channel.at (it->first));
-      dlPhy->SetChannel (m_channel.at (it->first));
-
       Ptr<MobilityModel> mm = n->GetObject<MobilityModel> ();
       NS_ASSERT_MSG (mm, "MobilityModel needs to be set on node before calling MmWaveHelper::InstallEnbDevice ()");
-      ulPhy->SetMobility (mm);
-      dlPhy->SetMobility (mm);
+      
+      for (uint8_t ind=0; ind < numEnbLayers; ind++)
+        {
+          Ptr<MmWaveSpectrumPhy> ulPhy = CreateObject<MmWaveSpectrumPhy> (ind);
+          Ptr<MmWaveSpectrumPhy> dlPhy = CreateObject<MmWaveSpectrumPhy> (ind);
+          ulPhy->SetHarqPhyModule (harq);
+          dlPhy->SetHarqPhyModule (harq);
+          ulPhy->SetChannel (m_channel.at (it->first));
+          dlPhy->SetChannel (m_channel.at (it->first));
+          ulPhy->SetMobility (mm);
+          dlPhy->SetMobility (mm);
+          
+          ulPhyList.push_back(ulPhy);
+          dlPhyList.push_back(dlPhy);
+          //NS_LOG_UNCOND ("DL spectrumphy size: " << dlPhyList.size());
+        }
+      Ptr<MmWaveEnbPhy> phy = CreateObject<MmWaveEnbPhy> (dlPhyList, ulPhyList);
+      
+      //Ptr<MmWaveSpectrumPhy> ulPhy = CreateObject<MmWaveSpectrumPhy> ();
+      //Ptr<MmWaveSpectrumPhy> dlPhy = CreateObject<MmWaveSpectrumPhy> ();
+
+      //Ptr<MmWaveEnbPhy> phy = CreateObject<MmWaveEnbPhy> (dlPhy, ulPhy);
+      //NS_LOG_UNCOND("CC " << cellId << " MmWaveSpectrumPhy " << dlPhy);
+
+      //Ptr<MmWaveHarqPhy> harq = Create<MmWaveHarqPhy> (it->second->GetConfigurationParameters ()->GetNumHarqProcess ());
+      //dlPhy->SetHarqPhyModule (harq);
+      //ulPhy->SetHarqPhyModule (harq);
+      phy->SetHarqPhyModule (harq);
+      phy->SetConfigurationParameters (it->second->GetConfigurationParameters ());
+
+      std::vector<Ptr<MmWaveSpectrumPhy>>::iterator itSpec;
+      for (itSpec = dlPhyList.begin (); itSpec != dlPhyList.end (); itSpec++)
+        {
+          Ptr<mmWaveChunkProcessor> pData = Create<mmWaveChunkProcessor> ();
+          if (!m_snrTest)
+            {
+              pData->AddCallback (MakeCallback (&MmWaveEnbPhy::GenerateDataCqiReport, phy));
+              pData->AddCallback (MakeCallback (&MmWaveSpectrumPhy::UpdateSinrPerceived, (*itSpec)));
+            }
+          (*itSpec)->AddDataSinrChunkProcessor (pData);
+        }
+
+      //ulPhy->SetChannel (m_channel.at (it->first));
+      //dlPhy->SetChannel (m_channel.at (it->first));
+
+      //Ptr<MobilityModel> mm = n->GetObject<MobilityModel> ();
+      //NS_ASSERT_MSG (mm, "MobilityModel needs to be set on node before calling MmWaveHelper::InstallEnbDevice ()");
+      //ulPhy->SetMobility (mm);
+      //dlPhy->SetMobility (mm);
 
       // hack to allow periodic computation of SINR at the eNB, without pilots
       if (m_channelModelType == "ns3::MmWaveBeamforming")
@@ -1669,8 +1693,17 @@ MmWaveHelper::InstallSingleEnbDevice (Ptr<Node> n)
       NS_LOG_INFO("eNB device->GetAntennaNum() " << device->GetAntennaNum());
       DynamicCast<AntennaArrayModel> (antenna)->SetTotNoArrayElements (device->GetAntennaNum());      
       NS_ASSERT_MSG (antenna, "error in creating the AntennaModel object");
-      dlPhy->SetAntenna (antenna);
-      ulPhy->SetAntenna (antenna);
+      //dlPhy->SetAntenna (antenna);
+      for (itSpec = dlPhyList.begin (); itSpec != dlPhyList.end (); itSpec++)
+        {
+          (*itSpec)->SetAntenna (antenna);
+        }
+      //ulPhy->SetAntenna (antenna);
+      for (itSpec = ulPhyList.begin (); itSpec != ulPhyList.end (); itSpec++)
+        {
+          (*itSpec)->SetAntenna (antenna);
+        }
+
 
       Ptr<MmWaveEnbMac> mac = CreateObject<MmWaveEnbMac> ();
       mac->SetConfigurationParameters (it->second->GetConfigurationParameters ());
@@ -1850,11 +1883,23 @@ it->second->GetFfrAlgorithm ()->SetLteFfrRrcSapUser (rrc->GetLteFfrRrcSapUser (i
     {
       Ptr<MmWaveEnbPhy> ccPhy = it->second->GetPhy ();
       ccPhy->SetDevice (device);
-      ccPhy->GetUlSpectrumPhy ()->SetDevice (device);
-      ccPhy->GetDlSpectrumPhy ()->SetDevice (device);
-      ccPhy->GetDlSpectrumPhy ()->SetPhyRxDataEndOkCallback (MakeCallback (&MmWaveEnbPhy::PhyDataPacketReceived, ccPhy));
-      ccPhy->GetDlSpectrumPhy ()->SetPhyRxCtrlEndOkCallback (MakeCallback (&MmWaveEnbPhy::PhyCtrlMessagesReceived, ccPhy));
-      ccPhy->GetDlSpectrumPhy ()->SetPhyUlHarqFeedbackCallback (MakeCallback (&MmWaveEnbPhy::ReceiveUlHarqFeedback, ccPhy));
+      
+      uint8_t numEnbLayers = it->second->GetConfigurationParameters ()->GetNumEnbLayers ();
+      for (uint8_t layerInd=0; layerInd < numEnbLayers; layerInd++)
+        {
+          //std::vector<Ptr<MmWaveSpectrumPhy> > tempUl = ccPhy->GetUlSpectrumPhyList ();
+          //std::vector<Ptr<MmWaveSpectrumPhy> > tempDl = ccPhy->GetDlSpectrumPhyList ();
+          (ccPhy->GetUlSpectrumPhyList ()).at(layerInd)->SetDevice(device);
+          (ccPhy->GetDlSpectrumPhyList ()).at(layerInd)->SetDevice(device);
+          (ccPhy->GetDlSpectrumPhyList ()).at(layerInd)->SetPhyRxDataEndOkCallback (MakeCallback (&MmWaveEnbPhy::PhyDataPacketReceived, ccPhy));
+          (ccPhy->GetDlSpectrumPhyList ()).at(layerInd)->SetPhyRxCtrlEndOkCallback (MakeCallback (&MmWaveEnbPhy::PhyCtrlMessagesReceived, ccPhy));
+          (ccPhy->GetDlSpectrumPhyList ()).at(layerInd)->SetPhyUlHarqFeedbackCallback (MakeCallback (&MmWaveEnbPhy::ReceiveUlHarqFeedback, ccPhy));
+        }
+      //ccPhy->GetUlSpectrumPhy ()->SetDevice (device);
+      //ccPhy->GetDlSpectrumPhy ()->SetDevice (device);
+      //ccPhy->GetDlSpectrumPhy ()->SetPhyRxDataEndOkCallback (MakeCallback (&MmWaveEnbPhy::PhyDataPacketReceived, ccPhy));
+      //ccPhy->GetDlSpectrumPhy ()->SetPhyRxCtrlEndOkCallback (MakeCallback (&MmWaveEnbPhy::PhyCtrlMessagesReceived, ccPhy));
+      //ccPhy->GetDlSpectrumPhy ()->SetPhyUlHarqFeedbackCallback (MakeCallback (&MmWaveEnbPhy::ReceiveUlHarqFeedback, ccPhy));
       NS_LOG_LOGIC ("set the propagation model frequencies");
       //double freq = LteSpectrumValueHelper::GetCarrierFrequency (it->second->m_dlEarfcn);
       double freq = it->second->GetCenterFrequency ();
@@ -1892,7 +1937,13 @@ it->second->GetFfrAlgorithm ()->SetLteFfrRrcSapUser (rrc->GetLteFfrRrcSapUser (i
   for (std::map<uint8_t,Ptr<MmWaveComponentCarrierEnb> >::iterator it = ccMap.begin (); it != ccMap.end (); ++it)
     {
       //m_channel->AddRx (dlPhy); substitute
-      m_channel.at (it->first)->AddRx (it->second->GetPhy ()->GetDlSpectrumPhy ()); //TODO check if Dl and Ul are the same
+      //m_channel.at (it->first)->AddRx (it->second->GetPhy ()->GetDlSpectrumPhy ()); //TODO check if Dl and Ul are the same
+
+      uint8_t numEnbLayers = it->second->GetConfigurationParameters ()->GetNumEnbLayers ();
+      for (uint8_t layerInd = 0; layerInd < numEnbLayers; layerInd++)
+        {
+          m_channel.at (it->first)->AddRx (it->second->GetPhy ()->GetDlSpectrumPhyList ().at(layerInd)); //TODO check if Dl and Ul are the same
+        }
     }
 
 

@@ -103,6 +103,9 @@ public:
   Ptr<MmWaveSpectrumPhy> GetDlSpectrumPhy () const;
   Ptr<MmWaveSpectrumPhy> GetUlSpectrumPhy () const;
 
+  std::vector <Ptr<MmWaveSpectrumPhy> > GetDlSpectrumPhyList () const;
+  std::vector <Ptr<MmWaveSpectrumPhy> > GetUlSpectrumPhyList () const;
+
   /**virtual void SendIdealControlMessage(Ptr<IdealControlMessage> msg);
   virtual void ReceiveIdealControlMessage(Ptr<IdealControlMessage> msg)**/
 
@@ -204,6 +207,7 @@ private:
   Time m_lastSfStart;
 
   uint8_t m_currSymStart;
+  uint8_t m_currNumAllocLayers;
 
   TracedCallback< uint64_t, SpectrumValue&, SpectrumValue& > m_ulSinrTrace;
 };

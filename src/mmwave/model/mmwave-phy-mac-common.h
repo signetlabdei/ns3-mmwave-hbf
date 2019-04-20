@@ -171,7 +171,8 @@ struct DciInfoElementTdma
       m_tbSize (0),
       m_ndi (0),
       m_rv (0),
-      m_harqProcess (0)
+      m_harqProcess (0),
+      m_layerInd (0)
   {
   }
 
@@ -185,7 +186,23 @@ struct DciInfoElementTdma
       m_tbSize (tbs),
       m_ndi (ndi),
       m_rv (rv),
-      m_harqProcess (harqProc)
+      m_harqProcess (harqProc),
+      m_layerInd (0)
+  {
+  }
+
+  DciInfoElementTdma (uint16_t    rnti, uint8_t format, uint8_t symStart, uint8_t numSym, uint8_t mcs,
+                      uint32_t tbs, uint8_t ndi, uint8_t rv, uint8_t harqProc, uint8_t layerInd)
+    : m_rnti (rnti),
+      m_format (format),
+      m_symStart (symStart),
+      m_numSym (numSym),
+      m_mcs (mcs),
+      m_tbSize (tbs),
+      m_ndi (ndi),
+      m_rv (rv),
+      m_harqProcess (harqProc),
+      m_layerInd (layerInd)
   {
   }
 
@@ -197,7 +214,8 @@ struct DciInfoElementTdma
   uint32_t        m_tbSize;
   uint8_t         m_ndi;
   uint8_t         m_rv;                                         // not used for UL DCI
-  uint8_t   m_harqProcess;
+  uint8_t         m_harqProcess;
+  uint8_t         m_layerInd;
 };
 
 struct TbAllocInfo
@@ -266,7 +284,7 @@ struct SlotAllocInfo
   {
     ANALOG = 0,
     DIGITAL = 1,
-    OMNI = 2
+    OMNI = 2,
   };
 
   SlotAllocInfo () : m_tddMode (NA),
@@ -321,6 +339,7 @@ struct SlotAllocInfo
   uint16_t m_rnti;
   struct DciInfoElementTdma m_dci;
   std::vector<RlcPduInfo> m_rlcPduInfo;
+  uint8_t m_layerInd;
   //std::list<MmWaveControlMessage> m_controlMessages;  // ctrl messages for this user
 };
 
@@ -329,17 +348,25 @@ struct SfAllocInfo
 {
   SfAllocInfo () : m_sfnSf (SfnSf ()),
                    m_numSymAlloc (0),
-                   m_ulSymStart (0)
+                   m_ulSymStart (0),
+                   m_numAllocLayers (1)
   {
     //m_tddPattern.resize (8);
   }
 
   SfAllocInfo (SfnSf sfn) : m_sfnSf (sfn),
                             m_numSymAlloc (0),
-                            m_ulSymStart (0)
+                            m_ulSymStart (0),
+                            m_numAllocLayers (1)
   {
   }
 
+  SfAllocInfo (SfnSf sfn, uint8_t numAllocLayers) : m_sfnSf (sfn),
+                                                    m_numSymAlloc (0),
+                                                    m_ulSymStart (0),
+                                                    m_numAllocLayers (numAllocLayers)
+  {
+  }
 //	SfAllocInfo& operator= (const SfAllocInfo &src)
 //	{
 //		m_sfnSf = src.m_sfnSf;
@@ -353,6 +380,7 @@ struct SfAllocInfo
   SfnSf m_sfnSf;
   uint32_t m_numSymAlloc;        // number of allocated slots
   uint32_t m_ulSymStart;                 // start of UL region
+  uint8_t m_numAllocLayers;
   //std::vector <SlotAllocInfo::TddMode> m_tddPattern;
   std::deque <SlotAllocInfo> m_dlSlotAllocInfo;
   std::deque <SlotAllocInfo> m_ulSlotAllocInfo;
@@ -888,6 +916,18 @@ public:
     return m_componentCarrierId;
   }
 
+  void
+  SetNumEnbLayers (uint8_t numEnbLayers)
+  {
+    m_numEnbLayers = numEnbLayers;
+  }
+
+  uint8_t
+  GetNumEnbLayers (void)
+  {
+    return m_numEnbLayers;
+  }
+
 private:
   uint32_t m_symbolsPerSlot;
   double   m_symbolPeriod;       // in micro seconds
@@ -924,6 +964,7 @@ private:
   std::string m_staticTddPattern;
 
   uint8_t m_componentCarrierId;
+  uint8_t m_numEnbLayers;
 };
 
 }

@@ -154,7 +154,9 @@ protected:
   Ptr<MmWaveSpectrumPhy> m_spectrumPhy;
   Ptr<MmWaveSpectrumPhy> m_downlinkSpectrumPhy;
   Ptr<MmWaveSpectrumPhy> m_uplinkSpectrumPhy;
-
+  std::vector <Ptr<MmWaveSpectrumPhy> > m_downlinkSpectrumPhyList;  
+  std::vector <Ptr<MmWaveSpectrumPhy> > m_uplinkSpectrumPhyList;
+  
   double m_txPower;
   double m_noiseFigure;
 
@@ -163,6 +165,7 @@ protected:
   Ptr<MmWavePhyMacCommon> m_phyMacConfig;
 
   std::map<uint32_t, Ptr<PacketBurst> > m_packetBurstMap;
+  std::map<uint64_t, Ptr<PacketBurst> > m_packetBurstLayerMap;
   std::vector< std::list<Ptr<MmWaveControlMessage> > > m_controlMessageQueue;
 
   TddSlotTypeList m_currTddMap;

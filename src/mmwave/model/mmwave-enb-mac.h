@@ -210,6 +210,7 @@ private:
   uint32_t m_frameNum;
   uint32_t m_sfNum;
   uint32_t m_slotNum;
+  uint16_t m_numLayers;
 
   uint8_t m_tbUid;
   std::map<uint32_t, struct MacPduInfo> m_macPduMap;

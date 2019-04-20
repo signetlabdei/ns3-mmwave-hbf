@@ -97,13 +97,27 @@ static const double EffectiveCodingRate[29] = {
 MmWaveSpectrumPhy::MmWaveSpectrumPhy ()
   : m_cellId (0),
     m_state (IDLE),
-    m_componentCarrierId (0)
+    m_componentCarrierId (0),
+    m_layerInd (0)
 {
   m_interferenceData = CreateObject<mmWaveInterference> ();
   m_random = CreateObject<UniformRandomVariable> ();
   m_random->SetAttribute ("Min", DoubleValue (0.0));
   m_random->SetAttribute ("Max", DoubleValue (1.0));
 }
+
+MmWaveSpectrumPhy::MmWaveSpectrumPhy (uint8_t layerInd)
+  : m_cellId (0),
+    m_state (IDLE),
+    m_componentCarrierId (0),
+    m_layerInd (layerInd)
+{
+  m_interferenceData = CreateObject<mmWaveInterference> ();
+  m_random = CreateObject<UniformRandomVariable> ();
+  m_random->SetAttribute ("Min", DoubleValue (0.0));
+  m_random->SetAttribute ("Max", DoubleValue (1.0));
+}
+
 MmWaveSpectrumPhy::~MmWaveSpectrumPhy ()
 {
 
@@ -323,25 +337,63 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
 
   if (mmwaveDataRxParams != 0)
     {
+      NS_LOG_INFO ("Data rx parameters " << mmwaveDataRxParams);
       bool isAllocated = true;
+      bool isMyLayer = true;
       Ptr<mmwave::MmWaveUeNetDevice> ueRx = 0;
       ueRx = DynamicCast<mmwave::MmWaveUeNetDevice> (GetDevice ());
       Ptr<McUeNetDevice> rxMcUe = 0;
       rxMcUe = DynamicCast<McUeNetDevice> (GetDevice ());
 
+      std::list<Ptr<MmWaveControlMessage>> msgList = mmwaveDataRxParams->ctrlMsgList;
+      std::list<Ptr<MmWaveControlMessage>>::iterator it;
+      uint8_t layerInd = 0;
+      for (it = msgList.begin (); it != msgList.end (); it++)
+        {
+          Ptr<MmWaveControlMessage> msg = (*it);
+          if (msg->GetMessageType () == MmWaveControlMessage::DCI_TDMA)
+            {
+              Ptr<MmWaveTdmaDciMessage> dciMsg = DynamicCast<MmWaveTdmaDciMessage> (msg);
+              DciInfoElementTdma dciInfoElem = dciMsg->GetDciInfoElement ();
+              layerInd = dciInfoElem.m_layerInd;
+              NS_LOG_INFO ("Layer index=" << (int)layerInd);
+              NS_LOG_INFO ("UE's layer index:" << (int)ueRx->GetPhy (m_componentCarrierId)->GetAllocLayerInd() << ", data's layer index:" << layerInd);
+            }
+          /*else
+            {
+              NS_FATAL_ERROR ("Not allowed control message format");
+            }*/
+        }
+
+      if (ueRx != 0)
+      {
+        NS_LOG_INFO ("UE's layer index:" << (int)ueRx->GetPhy (m_componentCarrierId)->GetAllocLayerInd());
+      }
+
       if ((ueRx != 0) && (ueRx->GetPhy (m_componentCarrierId)->IsReceptionEnabled () == false))
         {               // if the first cast is 0 (the device is MC) then this if will not be executed
-          isAllocated = false;
+          NS_LOG_INFO ("This UE does not receive data currently.");
+			    isAllocated = false;
         }
       else if ((rxMcUe != 0) && (rxMcUe->GetMmWavePhy (m_componentCarrierId)->IsReceptionEnabled () == false))
         {               // this is executed if the device is MC and is transmitting
           isAllocated = false;
         }
+      
+      if ((ueRx != 0) && (ueRx->GetPhy (m_componentCarrierId)->GetAllocLayerInd() != layerInd))
+        {               
+          NS_LOG_INFO ("Thid data is not for this UE");
+			    isMyLayer = false;
+        }
+      else if ((rxMcUe != 0) && (rxMcUe->GetMmWavePhy (m_componentCarrierId)->GetAllocLayerInd() != layerInd))
+        {               
+          isMyLayer = false;
+        }
 
       if (isAllocated)
         {
           m_interferenceData->AddSignal (mmwaveDataRxParams->psd, mmwaveDataRxParams->duration);
-          if (mmwaveDataRxParams->cellId == m_cellId)
+          if (mmwaveDataRxParams->cellId == m_cellId && isMyLayer)
             {
               //m_interferenceData->AddSignal (mmwaveDataRxParams->psd, mmwaveDataRxParams->duration);
               StartRxData (mmwaveDataRxParams);
@@ -577,9 +629,9 @@ MmWaveSpectrumPhy::EndRxData ()
           itTb->second.tbler = tbStats.tbler;
           itTb->second.mi = tbStats.miTotal;
           itTb->second.corrupt = m_random->GetValue () > tbStats.tbler ? false : true;
-          if (itTb->second.corrupt)
+          //if (itTb->second.corrupt)
             {
-              NS_LOG_INFO (this << " RNTI " << itTb->first << " size " << itTb->second.size << " mcs " << (uint32_t)itTb->second.mcs << " bitmap " << itTb->second.rbBitmap.size () << " rv " << rv << " TBLER " << tbStats.tbler << " corrupted " << itTb->second.corrupt);
+              NS_LOG_INFO (this << " RNTI " << itTb->first << " size " << itTb->second.size << " mcs " << (uint32_t)itTb->second.mcs << " bitmap " << itTb->second.rbBitmap.size () << " rv " << (int)rv << " TBLER " << tbStats.tbler << " corrupted " << itTb->second.corrupt);
             }
         }
       itTb++;
@@ -911,7 +963,7 @@ MmWaveSpectrumPhy::StartTxDlControlFrames (std::list<Ptr<MmWaveControlMessage> >
         txParams->txAntenna = m_antenna;
         m_channel->StartTx (txParams);
         m_endTxEvent = Simulator::Schedule (duration, &MmWaveSpectrumPhy::EndTx, this);
-        //NS_LOG_UNCOND("Tx to cellId " << txParams->cellId << " m_cellID " << m_cellId);
+        NS_LOG_LOGIC ("Tx to cellId " << txParams->cellId << " m_cellID " << m_cellId);
       }
     }
   return false;

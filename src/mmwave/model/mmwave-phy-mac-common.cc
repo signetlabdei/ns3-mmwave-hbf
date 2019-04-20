@@ -165,7 +165,11 @@ MmWavePhyMacCommon::GetTypeId (void)
                    UintegerValue (0),
                    MakeUintegerAccessor (&MmWavePhyMacCommon::m_componentCarrierId),
                    MakeUintegerChecker<uint8_t> ())
-  ;
+    .AddAttribute ("NumEnbLayers",
+                   "Number of layers for the MU-MIMO operation in eNB",
+                   UintegerValue (1),
+                   MakeUintegerAccessor (&MmWavePhyMacCommon::m_numEnbLayers),
+                   MakeUintegerChecker<uint8_t> ());
 
   return tid;
 }
@@ -198,7 +202,8 @@ MmWavePhyMacCommon::MmWavePhyMacCommon ()
     m_wbCqiPeriodUs (500.0),
     m_tbDecodeLatencyUs (100.0),
     m_maxTbSizeBytes (0x7FFF),
-    m_componentCarrierId (0)
+    m_componentCarrierId (0),
+    m_numEnbLayers (1)
 {
   NS_LOG_INFO ("Initialized MmWavePhyMacCommon");
 }

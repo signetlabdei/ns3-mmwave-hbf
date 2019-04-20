@@ -75,6 +75,19 @@ struct MacPduInfo
     m_pdu->AddPacketTag (tag);
   }
 
+  MacPduInfo (SfnSf sfn, uint32_t size, uint8_t numRlcPdu, DciInfoElementTdma dci, uint8_t numAllocLayers, uint8_t layerNum)
+    : m_sfnSf (sfn),
+      m_size (size),
+      m_numRlcPdu (numRlcPdu)
+  {
+    m_pdu = Create<Packet> ();
+    m_macHeader = MmWaveMacPduHeader ();
+    //NS_LOG_UNCOND ("jskim added: " << (int)numAllocLayers << " " << (int)layerNum);
+    //NS_LOG_UNCOND ("jskim added: " << (int)dci.m_symStart << " " << (int)dci.m_numSym);
+    MmWaveMacPduTag tag (sfn, dci.m_symStart, dci.m_numSym, numAllocLayers, layerNum);
+    m_pdu->AddPacketTag (tag);
+  }
+
   SfnSf m_sfnSf;
   uint32_t m_size;
   uint8_t m_numRlcPdu;

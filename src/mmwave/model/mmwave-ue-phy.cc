@@ -326,7 +326,7 @@ MmWaveUePhy::RegisterToEnb (uint16_t cellId, Ptr<MmWavePhyMacCommon> config)
     {
       DynamicCast<McUeNetDevice> (m_netDevice)->SetMmWaveTargetEnb (enbNetDevice);
     }
-  NS_LOG_UNCOND ("UE register to enb " << m_cellId);
+  //NS_LOG_UNCOND ("UE register to enb " << m_cellId);
   // call antennaarrya to change the bf vector
   Ptr<AntennaArrayModel> txAntennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhy ()->GetRxAntenna ());
   if (txAntennaArray != 0)
@@ -429,6 +429,7 @@ MmWaveUePhy::ReceiveControlMessageList (std::list<Ptr<MmWaveControlMessage> > ms
           Ptr<MmWaveTdmaDciMessage> dciMsg = DynamicCast<MmWaveTdmaDciMessage> (msg);
           DciInfoElementTdma dciInfoElem = dciMsg->GetDciInfoElement ();
           SfnSf dciSfn = dciMsg->GetSfnSf ();
+          //m_allocLayerInd = dciInfoElem.m_layerInd;
 
           if (dciSfn.m_frameNum != m_frameNum || dciSfn.m_sfNum != m_sfNum)
             {
@@ -681,6 +682,7 @@ MmWaveUePhy::StartSlot ()
   else if (currSlot.m_dci.m_format == DciInfoElementTdma::DL_dci)        // scheduled DL data slot
     {
       m_receptionEnabled = true;
+      m_allocLayerInd = currSlot.m_dci.m_layerInd;
       slotPeriod = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () * currSlot.m_dci.m_numSym);
       m_downlinkSpectrumPhy->AddExpectedTb (currSlot.m_dci.m_rnti, currSlot.m_dci.m_ndi, currSlot.m_dci.m_tbSize, currSlot.m_dci.m_mcs,
                                             m_channelChunks, currSlot.m_dci.m_harqProcess, currSlot.m_dci.m_rv, true,
@@ -969,6 +971,11 @@ MmWaveUePhy::GetRnti ()
   return m_rnti;
 }
 
+uint8_t
+MmWaveUePhy::GetAllocLayerInd ()
+{
+  return m_allocLayerInd;
+}
 
 void
 MmWaveUePhy::DoReset ()

@@ -457,6 +457,7 @@ MmWaveEnbMac::SetEnbCmacSapUser (LteEnbCmacSapUser* s)
 void
 MmWaveEnbMac::DoSubframeIndication (SfnSf sfnSf)
 {
+  NS_LOG_LOGIC (this);
   m_frameNum = sfnSf.m_frameNum;
   m_sfNum = sfnSf.m_sfNum;
   m_slotNum = sfnSf.m_slotNum;
@@ -885,12 +886,68 @@ MmWaveEnbMac::DoTransmitPdu (LteMacSapProvider::TransmitPduParameters params)
 void
 MmWaveEnbMac::DoSchedConfigIndication (MmWaveMacSchedSapUser::SchedConfigIndParameters ind)
 {
+
+  NS_LOG_INFO("Scheduling Information");
+  NS_LOG_INFO("The no. of slots is " << ind.m_sfAllocInfo.m_slotAllocInfo.size());
+  //bool test = false;
+  for (unsigned islot = 0; islot < ind.m_sfAllocInfo.m_slotAllocInfo.size (); islot++)
+  {
+    //std::cout << std::endl;
+    SlotAllocInfo &slotAllocInfo = ind.m_sfAllocInfo.m_slotAllocInfo[islot];
+    NS_LOG_INFO("Slot " << islot << " information");
+    NS_LOG_INFO("TDD mode: " << slotAllocInfo.m_tddMode);
+    NS_LOG_INFO("Slot type mode: " << slotAllocInfo.m_slotType);
+    //NS_LOG_INFO("Ctrl Tx mode: " << slotAllocInfo.m_ctrlTxMode);
+    //NS_LOG_INFO("Omni: " << slotAllocInfo.m_isOmni);
+    //NS_LOG_INFO("The no. of ctrl symbols: " << (int)slotAllocInfo.m_numCtrlSym);
+    //NS_LOG_INFO("Slot index: " << (int)slotAllocInfo.m_slotIdx);
+    NS_LOG_INFO("RNTI: " << slotAllocInfo.m_rnti);
+    //std::cout << std::endl;
+    NS_LOG_INFO("DCI information");
+    NS_LOG_INFO("DCI format: " << (int)slotAllocInfo.m_dci.m_format);
+    NS_LOG_INFO("Symbol start: " << (int)slotAllocInfo.m_dci.m_symStart);
+    NS_LOG_INFO("The no. of symbols: " << (int)slotAllocInfo.m_dci.m_numSym);
+    NS_LOG_INFO("MCS: " << (int)slotAllocInfo.m_dci.m_mcs);
+    NS_LOG_INFO("TB size: " << (int)slotAllocInfo.m_dci.m_tbSize);
+    NS_LOG_INFO("New data indicator: " << (int)slotAllocInfo.m_dci.m_ndi);
+    NS_LOG_INFO("Redundancy version: " << (int)slotAllocInfo.m_dci.m_numSym);
+    NS_LOG_INFO("HARQ process ID: " << (int)slotAllocInfo.m_dci.m_harqProcess);
+    NS_LOG_INFO ("RLC PDU info size: " << slotAllocInfo.m_rlcPduInfo.size());
+    for (unsigned irlc = 0; irlc < slotAllocInfo.m_rlcPduInfo.size(); irlc++)
+    {
+      NS_LOG_INFO(irlc << " RLC PDU info");
+      NS_LOG_INFO("RLC logical channel ID: " << (int)slotAllocInfo.m_rlcPduInfo[irlc].m_lcid);
+      NS_LOG_INFO("RLC PDU size: " << slotAllocInfo.m_rlcPduInfo[irlc].m_size);
+      if (slotAllocInfo.m_rlcPduInfo[irlc].m_size==1509){
+        //test = true;
+        ind.m_sfAllocInfo.m_slotAllocInfo[islot].m_dci.m_symStart = 1;
+        if(ind.m_sfAllocInfo.m_slotAllocInfo[islot].m_dci.m_rnti==1){
+          //NS_LOG_INFO ("RNTI: " << (int)ind.m_sfAllocInfo.m_slotAllocInfo[islot].m_dci.m_rnti);
+          //ind.m_sfAllocInfo.m_numAllocLayers = 2;
+          ind.m_sfAllocInfo.m_slotAllocInfo[islot].m_layerInd = 0;
+          ind.m_sfAllocInfo.m_slotAllocInfo[islot].m_dci.m_layerInd = 0;
+        }
+        else{
+          //NS_LOG_INFO ("RNTI: " << (int)ind.m_sfAllocInfo.m_slotAllocInfo[islot].m_dci.m_rnti);
+          //ind.m_sfAllocInfo.m_numAllocLayers = 2;
+          ind.m_sfAllocInfo.m_slotAllocInfo[islot].m_layerInd = 1;
+          ind.m_sfAllocInfo.m_slotAllocInfo[islot].m_dci.m_layerInd =1;
+        }
+        ind.m_sfAllocInfo.m_numAllocLayers = 2;
+        //uint8_t numLayers = m_phyMacConfig->GetNumEnbLayers();
+        //NS_LOG_UNCOND("No. of layers: " << (int)numLayers);
+      }
+    }
+  }
+  //NS_LOG_INFO ("No. of allocated layers in this subframe: " << (int)ind.m_sfAllocInfo.m_numAllocLayers);
+
   m_phySapProvider->SetDlSfAllocInfo (ind.m_sfAllocInfo);
   //m_phySapProvider->SetUlSfAllocInfo (ind.m_ulSfAllocInfo);
   LteMacSapUser::TxOpportunityParameters txOpParams;
 
   for (unsigned islot = 0; islot < ind.m_sfAllocInfo.m_slotAllocInfo.size (); islot++)
     {
+      NS_LOG_INFO("There are " << ind.m_sfAllocInfo.m_slotAllocInfo.size() << " slots, and this is " << islot << " slot");
       SlotAllocInfo &slotAllocInfo = ind.m_sfAllocInfo.m_slotAllocInfo[islot];
       if (slotAllocInfo.m_slotType != SlotAllocInfo::CTRL && slotAllocInfo.m_tddMode == SlotAllocInfo::DL_slotAllocInfo)
         {
@@ -917,7 +974,23 @@ MmWaveEnbMac::DoSchedConfigIndication (MmWaveMacSchedSapUser::SchedConfigIndPara
                   NS_ASSERT (rlcPduInfo.size () > 0);
                   SfnSf pduSfn = ind.m_sfnSf;
                   pduSfn.m_slotNum = slotAllocInfo.m_dci.m_symStart;
-                  MacPduInfo macPduInfo (pduSfn, slotAllocInfo.m_dci.m_tbSize, rlcPduInfo.size (), dciElem);
+                  //190409-jskim14-Previous code
+                  //MacPduInfo macPduInfo (pduSfn, slotAllocInfo.m_dci.m_tbSize, rlcPduInfo.size (), dciElem);
+                  /*uint8_t numAllocLayers=1;
+                  uint8_t layerInd=0;
+                  if(test==true)
+                  {
+                    numAllocLayers = 2;
+                    if(slotAllocInfo.m_rnti==1){
+                      layerInd = 0;
+                    }
+                    else{
+                      layerInd = 1;
+                    }
+                  }*/
+                  NS_LOG_INFO ("No. of allocated layers: " << (int)ind.m_sfAllocInfo.m_numAllocLayers << ", Layer number: " << (int)slotAllocInfo.m_layerInd << ", dci=" << (int)slotAllocInfo.m_dci.m_layerInd);
+                  MacPduInfo macPduInfo (pduSfn, slotAllocInfo.m_dci.m_tbSize, rlcPduInfo.size (), dciElem, ind.m_sfAllocInfo.m_numAllocLayers, slotAllocInfo.m_dci.m_layerInd);
+           
                   // insert into MAC PDU map
                   uint32_t tbMapKey = ((rnti & 0xFFFF) << 8) | (tbUid & 0xFF);
                   std::pair <std::map<uint32_t, struct MacPduInfo>::iterator, bool> mapRet =

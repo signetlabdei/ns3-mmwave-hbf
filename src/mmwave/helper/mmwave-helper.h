@@ -351,7 +351,6 @@ private:
 
   uint16_t m_noEnbPanels;
   uint16_t m_noUePanels;
-  uint16_t m_noEnbLayers;
   Ptr<MmWavePhyRxTrace> m_phyStats;
 
   ObjectFactory m_enbAntennaModelFactory;
