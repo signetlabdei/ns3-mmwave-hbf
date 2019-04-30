@@ -293,7 +293,8 @@ struct SlotAllocInfo
                      m_numCtrlSym (0),
                      m_slotIdx (0),
                      m_ctrlTxMode (DIGITAL),
-                     m_rnti (0)
+                     m_rnti (0),
+                     m_layerInd (0)
   {
   }
 
@@ -304,22 +305,35 @@ struct SlotAllocInfo
       m_numCtrlSym (0),
       m_slotIdx (slotIdx),
       m_ctrlTxMode (ctrlTxMode),
-      m_rnti (rnti)
+      m_rnti (rnti),
+      m_layerInd (0)
   {
   }
 
-//	SlotAllocInfo& operator= (const SlotAllocInfo &src)
-//	{
-//		m_tddMode = src.m_tddMode;
-//		m_isOmni = src.m_isOmni;
-//		m_slotType = src.m_slotType;
-//		m_numCtrlSym = src.m_numCtrlSym;
-//		m_slotIdx = src.m_slotIdx;
-//		m_ctrlTxMode = src.m_ctrlTxMode;
-//		m_rnti = src.m_rnti;
-//		m_dci = src.m_dci;
-//		m_rlcPduInfo = src.m_rlcPduInfo;
-//	}
+  SlotAllocInfo (uint8_t slotIdx, TddMode tddMode, TddSlotType slotType, CtrlTxMode ctrlTxMode, uint16_t rnti, uint8_t layerInd)
+      : m_tddMode (tddMode),
+        m_isOmni (0),
+        m_slotType (slotType),
+        m_numCtrlSym (0),
+        m_slotIdx (slotIdx),
+        m_ctrlTxMode (ctrlTxMode),
+        m_rnti (rnti),
+        m_layerInd (layerInd)
+  {
+  }
+
+  //	SlotAllocInfo& operator= (const SlotAllocInfo &src)
+  //	{
+  //		m_tddMode = src.m_tddMode;
+  //		m_isOmni = src.m_isOmni;
+  //		m_slotType = src.m_slotType;
+  //		m_numCtrlSym = src.m_numCtrlSym;
+  //		m_slotIdx = src.m_slotIdx;
+  //		m_ctrlTxMode = src.m_ctrlTxMode;
+  //		m_rnti = src.m_rnti;
+  //		m_dci = src.m_dci;
+  //		m_rlcPduInfo = src.m_rlcPduInfo;
+  //	}
 
   //std::vector<TbAllocInfo> m_tbInfo;
   //std::vector<unsigned> m_rntiCtrlSymMap;		// RNTI to which ctrl data is TXed for each ctrl symbol index (analog bf only)

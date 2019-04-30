@@ -92,7 +92,9 @@ public:
 
   void StartSubFrame (void);
   void StartSlot (void);
+  void StartSlotBundle (void);
 
+  void EndSlotBundle (void);
   void EndSlot (void);
   void EndSubFrame (void);
 
@@ -163,6 +165,22 @@ private:
 
   void QueueUlTbAlloc (TbAllocInfo tbAllocInfo);
   std::list<TbAllocInfo> DequeueUlTbAlloc ();
+
+  struct SlotBundleInfo
+  {
+    SlotBundleInfo ()
+    : m_numLayers (0),
+      m_symStart (0),
+      m_minNumSym (0)
+    {
+    }
+    uint8_t m_numLayers; 
+    uint8_t m_symStart;
+    uint8_t m_minNumSym;
+  };
+
+  typedef std::deque<SlotBundleInfo> SlotBundleList;
+  SlotBundleList m_slotBundleList;
 
   uint8_t m_currSfNumSlots;
 

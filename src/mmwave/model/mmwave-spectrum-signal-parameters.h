@@ -90,6 +90,8 @@ struct MmwaveSpectrumSignalParametersDataFrame : public SpectrumSignalParameters
   uint16_t cellId;
 
   uint8_t slotInd;
+
+  uint8_t layerInd;
 };
 
 

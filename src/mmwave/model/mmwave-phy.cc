@@ -315,6 +315,26 @@ MmWavePhy::GetPacketBurst (SfnSf sfn)
   return pburst;
 }
 
+Ptr<PacketBurst>
+MmWavePhy::GetPacketBurst (SfnSf sfn, uint8_t layerInd)
+{
+  Ptr<PacketBurst> pburst;
+  MmWaveMacPduTag pduTag (sfn, 0, 0, 0, layerInd); // 0 values equal null
+  NS_LOG_INFO ("Frame:" << (unsigned)sfn.m_frameNum << ", subframe:" << (unsigned)sfn.m_sfNum << ", symStart:" << (unsigned)sfn.m_slotNum << ", layerInd: " << (int)layerInd);
+  std::map<uint64_t, Ptr<PacketBurst> >::iterator it = m_packetBurstLayerMap.find (pduTag.Encode ());
+  if (it == m_packetBurstLayerMap.end ())
+    {
+      NS_LOG_ERROR ("GetPacketBurst(): Packet burst not found for subframe " << (unsigned)sfn.m_sfNum << " slot/sym start "  << (unsigned)sfn.m_slotNum << " layer index " << (int)layerInd);
+      return pburst;
+    }
+  else
+    {
+      pburst = it->second;
+      m_packetBurstLayerMap.erase (it);
+    }
+  return pburst;
+}
+
 void
 MmWavePhy::SetControlMessage (Ptr<MmWaveControlMessage> m)
 {

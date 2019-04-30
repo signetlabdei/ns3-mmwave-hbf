@@ -221,7 +221,6 @@ MultiModelSpectrumChannel::FindAndEventuallyAddTxSpectrumModel (Ptr<const Spectr
   return txInfoIterator;
 }
 
-    
 
 void
 MultiModelSpectrumChannel::StartTx (Ptr<SpectrumSignalParameters> txParams)
@@ -349,9 +348,9 @@ MultiModelSpectrumChannel::StartTx (Ptr<SpectrumSignalParameters> txParams)
               else
                 {
                   // the receiver is not attached to a NetDevice, so we cannot assume that it is attached to a node
-                  Simulator::Schedule (delay, &MultiModelSpectrumChannel::StartRx, this,
-                                       rxParams, *rxPhyIterator);
-                }
+                  Simulator::Schedule (delay, &MultiModelSpectrumChannel::StartRx, this, 
+                                        rxParams, *rxPhyIterator);
+                }  
             }
         }
 

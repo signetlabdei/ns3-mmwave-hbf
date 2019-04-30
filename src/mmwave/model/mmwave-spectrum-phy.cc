@@ -344,30 +344,34 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
       ueRx = DynamicCast<mmwave::MmWaveUeNetDevice> (GetDevice ());
       Ptr<McUeNetDevice> rxMcUe = 0;
       rxMcUe = DynamicCast<McUeNetDevice> (GetDevice ());
+      
+      //std::list<Ptr<MmWaveControlMessage>> msgList = mmwaveDataRxParams->ctrlMsgList;
+      //std::list<Ptr<MmWaveControlMessage>>::iterator it;
+      uint16_t cellId = mmwaveDataRxParams->cellId;
+      uint8_t layerInd = mmwaveDataRxParams->layerInd;
+      Time duration = mmwaveDataRxParams->duration;
+      NS_LOG_INFO("Data layer index: " << (int)layerInd << ", cell ID: " << (int)cellId << ", duration: " << duration);
 
-      std::list<Ptr<MmWaveControlMessage>> msgList = mmwaveDataRxParams->ctrlMsgList;
-      std::list<Ptr<MmWaveControlMessage>>::iterator it;
-      uint8_t layerInd = 0;
-      for (it = msgList.begin (); it != msgList.end (); it++)
+      /*for (it = msgList.begin (); it != msgList.end (); it++)
         {
           Ptr<MmWaveControlMessage> msg = (*it);
           if (msg->GetMessageType () == MmWaveControlMessage::DCI_TDMA)
             {
               Ptr<MmWaveTdmaDciMessage> dciMsg = DynamicCast<MmWaveTdmaDciMessage> (msg);
               DciInfoElementTdma dciInfoElem = dciMsg->GetDciInfoElement ();
-              layerInd = dciInfoElem.m_layerInd;
-              NS_LOG_INFO ("Layer index=" << (int)layerInd);
-              NS_LOG_INFO ("UE's layer index:" << (int)ueRx->GetPhy (m_componentCarrierId)->GetAllocLayerInd() << ", data's layer index:" << layerInd);
+              //layerInd = dciInfoElem.m_layerInd;
+              //NS_LOG_INFO ("Layer index=" << (int)layerInd);
+              //NS_LOG_INFO ("UE's allocated layer index:" << (int)ueRx->GetPhy (m_componentCarrierId)->GetAllocLayerInd() << ", data's layer index:" << layerInd);
             }
-          /*else
+          else
             {
               NS_FATAL_ERROR ("Not allowed control message format");
-            }*/
-        }
+          }
+        }*/
 
       if (ueRx != 0)
       {
-        NS_LOG_INFO ("UE's layer index:" << (int)ueRx->GetPhy (m_componentCarrierId)->GetAllocLayerInd());
+        NS_LOG_INFO ("UE's allocated layer index:" << (int)ueRx->GetPhy (m_componentCarrierId)->GetAllocLayerInd());
       }
 
       if ((ueRx != 0) && (ueRx->GetPhy (m_componentCarrierId)->IsReceptionEnabled () == false))
@@ -379,10 +383,10 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
         {               // this is executed if the device is MC and is transmitting
           isAllocated = false;
         }
-      
-      if ((ueRx != 0) && (ueRx->GetPhy (m_componentCarrierId)->GetAllocLayerInd() != layerInd))
+     
+	    if ((ueRx != 0) && (ueRx->GetPhy (m_componentCarrierId)->GetAllocLayerInd() != layerInd))
         {               
-          NS_LOG_INFO ("Thid data is not for this UE");
+          NS_LOG_INFO ("This data is not for this UE");
 			    isMyLayer = false;
         }
       else if ((rxMcUe != 0) && (rxMcUe->GetMmWavePhy (m_componentCarrierId)->GetAllocLayerInd() != layerInd))
@@ -872,6 +876,7 @@ MmWaveSpectrumPhy::EndRxCtrl ()
 bool
 MmWaveSpectrumPhy::StartTxDataFrames (Ptr<PacketBurst> pb, std::list<Ptr<MmWaveControlMessage> > ctrlMsgList, Time duration, uint8_t slotInd)
 {
+  NS_LOG_FUNCTION (this);
   switch (m_state)
     {
     case RX_DATA:
@@ -885,6 +890,11 @@ MmWaveSpectrumPhy::StartTxDataFrames (Ptr<PacketBurst> pb, std::list<Ptr<MmWaveC
       {
         NS_ASSERT (m_txPsd);
 
+        std::list<Ptr<Packet>> pkts = pb->GetPackets ();
+        MmWaveMacPduTag macTag;
+        pkts.front ()->PeekPacketTag (macTag);
+        NS_LOG_INFO ("Data transmission with layer " << (int)m_layerInd);
+
         m_state = TX;
         Ptr<MmwaveSpectrumSignalParametersDataFrame> txParams = Create<MmwaveSpectrumSignalParametersDataFrame> ();
         txParams->duration = duration;
@@ -894,7 +904,8 @@ MmWaveSpectrumPhy::StartTxDataFrames (Ptr<PacketBurst> pb, std::list<Ptr<MmWaveC
         txParams->cellId = m_cellId;
         txParams->ctrlMsgList = ctrlMsgList;
         txParams->slotInd = slotInd;
-        txParams->txAntenna = m_antenna;
+        txParams->txAntenna = m_antenna;     
+        txParams->layerInd = m_layerInd;
 
         //NS_LOG_DEBUG ("ctrlMsgList.size () == " << txParams->ctrlMsgList.size ());
 

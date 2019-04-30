@@ -119,7 +119,6 @@ public:
   virtual void AddRx (Ptr<SpectrumPhy> phy);
   virtual void StartTx (Ptr<SpectrumSignalParameters> params);
 
-
   // inherited from Channel
   virtual std::size_t GetNDevices (void) const;
   virtual Ptr<NetDevice> GetDevice (std::size_t i) const;
