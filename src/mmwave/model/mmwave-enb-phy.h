@@ -92,9 +92,7 @@ public:
 
   void StartSubFrame (void);
   void StartSlot (void);
-  void StartSlotBundle (void);
 
-  void EndSlotBundle (void);
   void EndSlot (void);
   void EndSubFrame (void);
 
