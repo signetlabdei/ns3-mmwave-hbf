@@ -1464,7 +1464,9 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
 		    }
 		}
 	  }
+      }
 
+      for (uint8_t layerIdx=0;layerIdx<lastSymAvailLayer.size();layerIdx++){
 	  //UL allocation part
 	  if (totUlSymReqLayer[layerIdx] > 0){
 	      itUeInfo = itUeInfoStart; // pick up the RR from the last user served
