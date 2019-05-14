@@ -984,14 +984,16 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
 	      itUeToLayerMap=ueToLayerMapUl.find(rnti);
 	      if (itUeToLayerMap==ueToLayerMapUl.end()){//assign a layer (criterion may be changed)
 		  uint32_t val=0;
+		  layerIdx=0;
 		  for (uint8_t lay=0;lay<lastSymAvailLayer.size();lay++){
-		      layerIdx=0;
 		      //lower pointer, there are symbs available, and it does not exceed the highest possible DL/UL barrier
 		      if ( val < lastSymAvailLayer[lay] && symAvailLayer[lay] >= dciInfoReTx.m_numSym && (lastSymAvailLayer[lay] - dciInfoReTx.m_numSym) > maxNextSymAvailLayer){
 			  layerIdx=lay;
 			  val = lastSymAvailLayer[lay];
 		      }
 		  }
+		  //TODO this disables HBF in UL. comment out when startRx bug is fixed
+		  layerIdx=0;
 	      }else{//found
 		  layerIdx=itUeToLayerMap->second;
 	      }
@@ -1315,13 +1317,15 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
 	      if (itUeToLayerMap==ueToLayerMapUl.end()){
 		  layerIdx=0;//default behavior
 		  //can write some better decision technique here
-		  double bestSymPerUE=0.0;
+		  double bestSymPerUE = 0.0;
 		  for (uint8_t lay=0;lay<lastSymAvailLayer.size();lay++){
 		      if ( bestSymPerUE < ((double )lastSymAvailLayer[lay] - (double ) DLULbarrier) / (double ) (1+numUlUeLayer[lay]) ){
 			  layerIdx=lay;
 			  bestSymPerUE = ((double )lastSymAvailLayer[lay] - (double ) DLULbarrier) / (double ) (1+numUlUeLayer[lay]) ;
 		      }
 		  }
+		  //TODO this disables HBF in UL. comment out when startRx bug is fixed
+		  layerIdx=0;
 		  numUlUeLayer[layerIdx]++;
 		  ueToLayerMapUl.insert(std::pair<uint32_t, uint8_t> (itUeInfo->first, layerIdx));// key is the rnti
 	      }else{
@@ -1386,6 +1390,7 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
 		{
 		  nSymPerFlow0 = ceil ((double)nSymPerFlow0 / (double)m_symPerSlot) * m_symPerSlot;              // round up to nearest sym per TTI
 		}
+
 	      bool allocated = true;           // someone got allocated
 	      int numRemDlUe = numDlUeLayer[layerIdx];
 	      while (remSym > 0 && allocated)
@@ -1446,6 +1451,10 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
 		      NS_ASSERT (remSym >= 0);
 
 		      itUeInfo++;//move to next UE (and possibly schedule)
+		      if (itUeInfo == ueInfo.end ())
+			{                 // loop around to first RNTI in map
+			  itUeInfo = ueInfo.begin ();
+			}
 		      while(itUeInfo->second.m_dlHbfLayer!=layerIdx || itUeInfo->second.m_maxDlSymbols == 0){
 			  itUeInfo++;
 			  if (itUeInfo == ueInfo.end ())
@@ -1493,7 +1502,6 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
 		{
 		  remSym = (lastSymAvailLayer[layerIdx]-DLULbarrier);
 		}
-
 	      int nSymPerFlow0 = remSym / numUlUeLayer[layerIdx]; // initial average symbols per non-retx flow
 	      if (nSymPerFlow0 == 0)            // minimum of 1
 		{
@@ -1560,14 +1568,18 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
 				{
 				  addSym = nRemSymPerFlow;
 				}
-			      allocated = true;
 			    }
+			  allocated = true;
 			}
 		      itUeInfo->second.m_ulSymbols += addSym;
 		      remSym -= addSym;
 		      NS_ASSERT (remSym >= 0);
 
 		      itUeInfo++;//move to next UE (and possibly schedule)
+		      if (itUeInfo == ueInfo.end ())
+			{                 // loop around to first RNTI in map
+			  itUeInfo = ueInfo.begin ();
+			}
 		      while(itUeInfo->second.m_ulHbfLayer!=layerIdx || itUeInfo->second.m_maxUlSymbols == 0){
 			  itUeInfo++;
 			  if (itUeInfo == ueInfo.end ())
@@ -1758,7 +1770,7 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
 	      dci.m_harqProcess = UpdateUlHarqProcessId (itUeInfo->first);
 	      NS_LOG_DEBUG ("UE" << itUeInfo->first << " UL harqId " << (unsigned)dci.m_harqProcess << " HARQ process assigned");
 	      NS_ASSERT (dci.m_harqProcess < m_phyMacConfig->GetNumHarqProcess ());
-	      SlotAllocInfo slotInfo (tempUlSlotIdx++, SlotAllocInfo::UL_slotAllocInfo, SlotAllocInfo::CTRL_DATA, SlotAllocInfo::DIGITAL, itUeInfo->first);
+	      SlotAllocInfo slotInfo (tempUlSlotIdx++, SlotAllocInfo::UL_slotAllocInfo, SlotAllocInfo::CTRL_DATA, SlotAllocInfo::DIGITAL, itUeInfo->first, ueSchedInfo.m_ulHbfLayer);
 	      slotInfo.m_dci = dci;
 	      NS_LOG_DEBUG ("UE" << dci.m_rnti << " gets UL slots " << (unsigned)dci.m_symStart << "-" << (unsigned)(dci.m_symStart + dci.m_numSym - 1) <<
 			    " tbs " << dci.m_tbSize << " mcs " << (unsigned)dci.m_mcs << " harqId " << (unsigned)dci.m_harqProcess << " rv " << (unsigned)dci.m_rv << " in frame " << ulSfn.m_frameNum << " subframe " << (unsigned)ulSfn.m_sfNum);
