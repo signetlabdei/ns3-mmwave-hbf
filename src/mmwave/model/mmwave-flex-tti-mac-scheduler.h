@@ -98,6 +98,8 @@ private:
         m_ulSymbolsRetx (0),
         m_dlTbSize (0),
         m_ulTbSize (0),
+        m_dlHbfLayer (0),
+        m_ulHbfLayer (0),
         m_dlAllocDone (false),
         m_ulAllocDone (false)
     {
@@ -115,6 +117,8 @@ private:
     uint8_t         m_ulSymbolsRetx;
     uint32_t        m_dlTbSize;
     uint32_t        m_ulTbSize;
+    uint8_t        m_dlHbfLayer;
+    uint8_t        m_ulHbfLayer;
     std::vector <struct RlcPduInfo> m_rlcPduInfo;
     bool                    m_dlAllocDone;
     bool                    m_ulAllocDone;

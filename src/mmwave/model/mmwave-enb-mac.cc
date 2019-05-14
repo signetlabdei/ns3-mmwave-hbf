@@ -918,25 +918,25 @@ MmWaveEnbMac::DoSchedConfigIndication (MmWaveMacSchedSapUser::SchedConfigIndPara
       NS_LOG_INFO(irlc << " RLC PDU info");
       NS_LOG_INFO("RLC logical channel ID: " << (int)slotAllocInfo.m_rlcPduInfo[irlc].m_lcid);
       NS_LOG_INFO("RLC PDU size: " << slotAllocInfo.m_rlcPduInfo[irlc].m_size);
-      if (slotAllocInfo.m_rlcPduInfo[irlc].m_size==1509){
-        //test = true;
-        ind.m_sfAllocInfo.m_slotAllocInfo[islot].m_dci.m_symStart = 1;
-        if(ind.m_sfAllocInfo.m_slotAllocInfo[islot].m_dci.m_rnti==1){
-          //NS_LOG_INFO ("RNTI: " << (int)ind.m_sfAllocInfo.m_slotAllocInfo[islot].m_dci.m_rnti);
-          //ind.m_sfAllocInfo.m_numAllocLayers = 2;
-          ind.m_sfAllocInfo.m_slotAllocInfo[islot].m_layerInd = 0;
-          ind.m_sfAllocInfo.m_slotAllocInfo[islot].m_dci.m_layerInd = 0;
-        }
-        else{
-          //NS_LOG_INFO ("RNTI: " << (int)ind.m_sfAllocInfo.m_slotAllocInfo[islot].m_dci.m_rnti);
-          //ind.m_sfAllocInfo.m_numAllocLayers = 2;
-          ind.m_sfAllocInfo.m_slotAllocInfo[islot].m_layerInd = 1;
-          ind.m_sfAllocInfo.m_slotAllocInfo[islot].m_dci.m_layerInd =1;
-        }
-        ind.m_sfAllocInfo.m_numAllocLayers = 2;
-        //uint8_t numLayers = m_phyMacConfig->GetNumEnbLayers();
-        //NS_LOG_UNCOND("No. of layers: " << (int)numLayers);
-      }
+//      if (slotAllocInfo.m_rlcPduInfo[irlc].m_size==1509){
+//        //test = true;
+//        ind.m_sfAllocInfo.m_slotAllocInfo[islot].m_dci.m_symStart = 1;
+//        if(ind.m_sfAllocInfo.m_slotAllocInfo[islot].m_dci.m_rnti==1){
+//          //NS_LOG_INFO ("RNTI: " << (int)ind.m_sfAllocInfo.m_slotAllocInfo[islot].m_dci.m_rnti);
+//          //ind.m_sfAllocInfo.m_numAllocLayers = 2;
+//          ind.m_sfAllocInfo.m_slotAllocInfo[islot].m_layerInd = 0;
+//          ind.m_sfAllocInfo.m_slotAllocInfo[islot].m_dci.m_layerInd = 0;
+//        }
+//        else{
+//          //NS_LOG_INFO ("RNTI: " << (int)ind.m_sfAllocInfo.m_slotAllocInfo[islot].m_dci.m_rnti);
+//          //ind.m_sfAllocInfo.m_numAllocLayers = 2;
+//          ind.m_sfAllocInfo.m_slotAllocInfo[islot].m_layerInd = 1;
+//          ind.m_sfAllocInfo.m_slotAllocInfo[islot].m_dci.m_layerInd =1;
+//        }
+//        ind.m_sfAllocInfo.m_numAllocLayers = 2;
+//        //uint8_t numLayers = m_phyMacConfig->GetNumEnbLayers();
+//        //NS_LOG_UNCOND("No. of layers: " << (int)numLayers);
+//      }
     }
   }
   //NS_LOG_INFO ("No. of allocated layers in this subframe: " << (int)ind.m_sfAllocInfo.m_numAllocLayers);
