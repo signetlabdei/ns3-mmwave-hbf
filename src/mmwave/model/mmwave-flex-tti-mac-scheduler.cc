@@ -861,19 +861,24 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
 
               // search the layer allocation map or assign layer
               itUeToLayerMap = ueToLayerMapDl.find (rnti);
-              if ( itUeToLayerMap == ueToLayerMapDl.end () ) { //assign a layer (criterion may be changed)
+              if ( itUeToLayerMap == ueToLayerMapDl.end () )
+        	{ //assign a layer (criterion may be changed)
                   layerIdx = 0; //default behavior
                   uint32_t val = m_phyMacConfig->GetSymbolsPerSubframe ();
-                  for ( uint8_t lay = 0 ; lay < lastSymAvailLayer.size (); lay++ ) {
+                  for ( uint8_t lay = 0 ; lay < lastSymAvailLayer.size (); lay++ )
+                    {
                       //TODO study other layer assignment rules
                       //TODO put layer-assign in a function with selection-function as argument
                       //lower pointer, there are symbs available, and it does not exceed the highest possible DL/UL barrier
-                      if ( val > nextSymAvailLayer[lay] && symAvailLayer[lay] >= dciInfoReTx.m_numSym && (nextSymAvailLayer[lay] + dciInfoReTx.m_numSym) < minLastSymAvailLayer) {
+                      if ( val > nextSymAvailLayer[lay] && symAvailLayer[lay] >= dciInfoReTx.m_numSym && (nextSymAvailLayer[lay] + dciInfoReTx.m_numSym) < minLastSymAvailLayer)
+                	{
                           layerIdx = lay;
                           val = nextSymAvailLayer[lay];
                         }
                     }
-                }else{ //found
+                }
+              else
+        	{ //found
                   layerIdx = itUeToLayerMap->second;
                 }
 
@@ -926,8 +931,10 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
                 }
             }
         }
-      for (uint8_t lay = 0; lay < nextSymAvailLayer.size (); lay++) {
-          if (maxNextSymAvailLayer < nextSymAvailLayer[lay]) { //find where the latest DL HARQ symbol is
+      for (uint8_t lay = 0; lay < nextSymAvailLayer.size (); lay++)
+	{
+          if (maxNextSymAvailLayer < nextSymAvailLayer[lay])
+            { //find where the latest DL HARQ symbol is
               maxNextSymAvailLayer = nextSymAvailLayer[lay];
             }
         }
@@ -981,21 +988,26 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
 
               // search the layer allocation map or assign layer
               itUeToLayerMap = ueToLayerMapUl.find (rnti);
-              if ( itUeToLayerMap == ueToLayerMapUl.end () ) { //assign a layer (criterion may be changed)
+              if ( itUeToLayerMap == ueToLayerMapUl.end () )
+        	{ //assign a layer (criterion may be changed)
                   uint32_t val = 0;
                   layerIdx = 0;
-                  for (uint8_t lay=0; lay<lastSymAvailLayer.size (); lay++) {
+                  for (uint8_t lay=0; lay<lastSymAvailLayer.size (); lay++)
+                    {
                       //TODO study other layer assignment rules
                       //TODO put layer-assign in a function with selection-function as argument
                       //lower pointer, there are symbs available, and it does not exceed the highest possible DL/UL barrier
-                      if ( val < lastSymAvailLayer[lay] && symAvailLayer[lay] >= dciInfoReTx.m_numSym && (lastSymAvailLayer[lay] - dciInfoReTx.m_numSym) > maxNextSymAvailLayer) {
+                      if ( val < lastSymAvailLayer[lay] && symAvailLayer[lay] >= dciInfoReTx.m_numSym && (lastSymAvailLayer[lay] - dciInfoReTx.m_numSym) > maxNextSymAvailLayer)
+                	{
                           layerIdx = lay;
                           val = lastSymAvailLayer[lay];
                         }
                     }
                   //TODO this disables HBF in UL. comment out when startRx bug is fixed
                   layerIdx = 0;
-                }else{ //found
+                }
+              else
+        	{ //found
                   layerIdx = itUeToLayerMap->second;
                 }
 
@@ -1039,8 +1051,10 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
       m_ulHarqInfoList.clear ();
       m_ulHarqInfoList = ulInfoListUntxed;
     }
-  for (uint8_t lay=0; lay<lastSymAvailLayer.size (); lay++) {
-      if (minLastSymAvailLayer>lastSymAvailLayer[lay]) { //find where the earliest UL HARQ symbol is
+  for (uint8_t lay=0; lay<lastSymAvailLayer.size (); lay++)
+    {
+      if (minLastSymAvailLayer>lastSymAvailLayer[lay])
+	{ //find where the earliest UL HARQ symbol is
           minLastSymAvailLayer=lastSymAvailLayer[lay];
         }
     }
@@ -1467,7 +1481,8 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
 			{                 // loop around to first RNTI in map
 			  itUeInfo = ueInfo.begin ();
 			}
-		      while(itUeInfo->second.m_dlHbfLayer!=layerIdx || itUeInfo->second.m_maxDlSymbols == 0) {
+		      while(itUeInfo->second.m_dlHbfLayer!=layerIdx || itUeInfo->second.m_maxDlSymbols == 0)
+			{
 			  itUeInfo++;
 			  if (itUeInfo == ueInfo.end ())
 			    {                 // loop around to first RNTI in map
@@ -1597,7 +1612,8 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
 			{                 // loop around to first RNTI in map
 			  itUeInfo = ueInfo.begin ();
 			}
-		      while(itUeInfo->second.m_ulHbfLayer!=layerIdx || itUeInfo->second.m_maxUlSymbols == 0) {
+		      while(itUeInfo->second.m_ulHbfLayer!=layerIdx || itUeInfo->second.m_maxUlSymbols == 0)
+			{
 			  itUeInfo++;
 			  if (itUeInfo == ueInfo.end ())
 			    {                 // loop around to first RNTI in map
@@ -1628,7 +1644,8 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
 
       //ulSymIdx -= totUlSymActual; // symbols reserved for control at end of subframe before UL ctrl
 
-      for (uint8_t layerIdx = 0; layerIdx < lastSymAvailLayer.size (); layerIdx++) {
+      for (uint8_t layerIdx = 0; layerIdx < lastSymAvailLayer.size (); layerIdx++)
+	{
           NS_ASSERT (nextSymAvailLayer[layerIdx] > 0);
           NS_ASSERT (lastSymAvailLayer[layerIdx] <= m_phyMacConfig->GetSymbolsPerSubframe ()-m_phyMacConfig->GetUlCtrlSymbols ());
         }
@@ -1841,30 +1858,37 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
   //pass the temporary SlotAllocInfo 2d lists to a single deque as expected by the PHY
   uint32_t finalSlotIdx = 1; //ctrl already inserted
   std::vector< std::deque <SlotAllocInfo>::iterator > itSlotDl, itSlotUl; //we insert all UL slots after all DL slots
-  for (uint8_t lay = 0; lay < m_phyMacConfig->GetNumEnbLayers (); lay++) {
+  for (uint8_t lay = 0; lay < m_phyMacConfig->GetNumEnbLayers (); lay++)
+    {
       itSlotDl.push_back (tempDlslotAllocInfo[lay].begin ());
       itSlotUl.push_back (tempUlslotAllocInfo[lay].begin ());
-      if (lay > 0 && ( tempDlslotAllocInfo[lay].size () > 0 || tempUlslotAllocInfo[lay].size () > 0 )) {
+      if (lay > 0 && ( tempDlslotAllocInfo[lay].size () > 0 || tempUlslotAllocInfo[lay].size () > 0 ))
+	{
           ret.m_sfAllocInfo.m_numAllocLayers++;
         }
     }
 
 
   bool done = false;
-  while (!done) {
+  while (!done)
+    {
       layerIdx = 0;
       uint32_t val = m_phyMacConfig->GetSymbolsPerSubframe ();
       done = true; // if we do not find anything, skip
-      for (uint8_t lay = 0; lay < ret.m_sfAllocInfo.m_numAllocLayers; lay++) {
-          if (itSlotDl[lay] != tempDlslotAllocInfo[lay].end ()) {
-              if ( itSlotDl[lay]->m_dci.m_symStart < val ) {
+      for (uint8_t lay = 0; lay < ret.m_sfAllocInfo.m_numAllocLayers; lay++)
+	{
+          if (itSlotDl[lay] != tempDlslotAllocInfo[lay].end ())
+            {
+              if ( itSlotDl[lay]->m_dci.m_symStart < val )
+        	{
                   layerIdx = lay;
                   val = itSlotDl[lay]->m_dci.m_symStart;
                   done = false;
                 }
             }
         }
-      if (done) {
+      if (done)
+	{
           break;
         }
       itSlotDl[layerIdx]->m_slotIdx = finalSlotIdx++;
@@ -1872,10 +1896,13 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
       NS_LOG_UNCOND ("Fr "<< (int)ret.m_sfnSf.m_frameNum<<" Sf "<<(int)ret.m_sfnSf.m_sfNum <<" DL slot no. "<< finalSlotIdx -1 << " to UE "<< itSlotDl[layerIdx]->m_dci.m_rnti <<" sym range "<<(int) itSlotDl[layerIdx]->m_dci.m_symStart << " to "<<(int) itSlotDl[layerIdx]->m_dci.m_numSym+itSlotDl[layerIdx]->m_dci.m_symStart-1 << " of " << m_phyMacConfig->GetSymbolsPerSubframe () <<" layerIdx " << (int) itSlotDl[layerIdx]->m_dci.m_layerInd <<" of "<< (int) ret.m_sfAllocInfo.m_numAllocLayers);
       itSlotDl[layerIdx]++;
 
-      if (itSlotDl[layerIdx] == tempDlslotAllocInfo[layerIdx].end ()) {
+      if (itSlotDl[layerIdx] == tempDlslotAllocInfo[layerIdx].end ())
+	{
           done = true;
-          for (uint8_t lay = 0; lay < m_phyMacConfig->GetNumEnbLayers (); lay++) {
-              if ( itSlotDl[lay] != tempDlslotAllocInfo[lay].end () ) {
+          for (uint8_t lay = 0; lay < m_phyMacConfig->GetNumEnbLayers (); lay++)
+            {
+              if ( itSlotDl[lay] != tempDlslotAllocInfo[lay].end () )
+        	{
                   done = false;
                   break;
                 }
@@ -1884,20 +1911,25 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
     }
 
   done = false;
-  while (!done) {
+  while (!done)
+    {
       layerIdx = 0;
       uint32_t val = m_phyMacConfig->GetSymbolsPerSubframe ();
       done = true; // if we do not find anything, skip
-      for (uint8_t lay = 0; lay < m_phyMacConfig->GetNumEnbLayers (); lay++) {
-          if (itSlotUl[lay] != tempUlslotAllocInfo[lay].end ()) {
-              if ( itSlotUl[lay]->m_dci.m_symStart < val ) {
+      for (uint8_t lay = 0; lay < m_phyMacConfig->GetNumEnbLayers (); lay++)
+	{
+          if (itSlotUl[lay] != tempUlslotAllocInfo[lay].end ())
+            {
+              if ( itSlotUl[lay]->m_dci.m_symStart < val )
+        	{
                   layerIdx = lay;
                   val = itSlotUl[lay]->m_dci.m_symStart;
                   done = false;
                 }
             }
         }
-      if (done) {
+      if (done)
+	{
           break;
         }
       itSlotUl[layerIdx]->m_slotIdx = finalSlotIdx++;
@@ -1906,10 +1938,13 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
       itSlotUl[layerIdx]++;
 
 
-      if (itSlotUl[layerIdx] == tempUlslotAllocInfo[layerIdx].end ()) {
+      if (itSlotUl[layerIdx] == tempUlslotAllocInfo[layerIdx].end ())
+	{
           done = true;
-          for (uint8_t lay = 0; lay < m_phyMacConfig->GetNumEnbLayers (); lay++) {
-              if ( itSlotUl[lay] != tempUlslotAllocInfo[lay].end () ) {
+          for (uint8_t lay = 0; lay < m_phyMacConfig->GetNumEnbLayers (); lay++)
+            {
+              if ( itSlotUl[lay] != tempUlslotAllocInfo[lay].end () )
+        	{
                   done = false;
                   break;
                 }
