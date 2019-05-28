@@ -1050,13 +1050,13 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
 
       m_ulHarqInfoList.clear ();
       m_ulHarqInfoList = ulInfoListUntxed;
-    }
-  for (uint8_t lay=0; lay<lastSymAvailLayer.size (); lay++)
-    {
-      if (minLastSymAvailLayer>lastSymAvailLayer[lay])
-	{ //find where the earliest UL HARQ symbol is
-          minLastSymAvailLayer=lastSymAvailLayer[lay];
-        }
+      for (uint8_t lay=0; lay<lastSymAvailLayer.size (); lay++)
+	{
+	  if (minLastSymAvailLayer>lastSymAvailLayer[lay])
+	    { //find where the earliest UL HARQ symbol is
+	      minLastSymAvailLayer=lastSymAvailLayer[lay];
+	    }
+	}
     }
 
   // ********************* END OF HARQ SECTION, START OF NEW DATA SCHEDULING ********************* //
