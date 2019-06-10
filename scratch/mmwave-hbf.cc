@@ -69,7 +69,7 @@ main (int argc, char *argv[])
 	uint16_t numUe = 2;
 	uint16_t numEnbLayers = 8;
 	double startTime = 1;
-	double simTime = 0.02;
+	double simTime = 1.02;
 	double packetSize = 1460; // packet size in byte
 	double interPacketInterval = 1000000; // 500 microseconds
 	double minDistance = 10.0;           // eNB-UE distance in meters

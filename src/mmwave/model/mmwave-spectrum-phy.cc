@@ -344,35 +344,22 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
       ueRx = DynamicCast<mmwave::MmWaveUeNetDevice> (GetDevice ());
       Ptr<McUeNetDevice> rxMcUe = 0;
       rxMcUe = DynamicCast<McUeNetDevice> (GetDevice ());
+      Ptr<MmWaveUeNetDevice> ueTx = DynamicCast<MmWaveUeNetDevice> (params->txPhy->GetDevice ());
       
-      //std::list<Ptr<MmWaveControlMessage>> msgList = mmwaveDataRxParams->ctrlMsgList;
-      //std::list<Ptr<MmWaveControlMessage>>::iterator it;
       uint16_t cellId = mmwaveDataRxParams->cellId;
       uint8_t layerInd = mmwaveDataRxParams->layerInd;
       Time duration = mmwaveDataRxParams->duration;
       NS_LOG_INFO("Data layer index: " << (int)layerInd << ", cell ID: " << (int)cellId << ", duration: " << duration);
 
-      /*for (it = msgList.begin (); it != msgList.end (); it++)
-        {
-          Ptr<MmWaveControlMessage> msg = (*it);
-          if (msg->GetMessageType () == MmWaveControlMessage::DCI_TDMA)
-            {
-              Ptr<MmWaveTdmaDciMessage> dciMsg = DynamicCast<MmWaveTdmaDciMessage> (msg);
-              DciInfoElementTdma dciInfoElem = dciMsg->GetDciInfoElement ();
-              //layerInd = dciInfoElem.m_layerInd;
-              //NS_LOG_INFO ("Layer index=" << (int)layerInd);
-              //NS_LOG_INFO ("UE's allocated layer index:" << (int)ueRx->GetPhy (m_componentCarrierId)->GetAllocLayerInd() << ", data's layer index:" << layerInd);
-            }
-          else
-            {
-              NS_FATAL_ERROR ("Not allowed control message format");
-          }
-        }*/
-
       if (ueRx != 0)
-      {
-        NS_LOG_INFO ("UE's allocated layer index:" << (int)ueRx->GetPhy (m_componentCarrierId)->GetAllocLayerInd());
-      }
+        {
+          NS_LOG_INFO ("[DL] UE's allocated layer index:" << (int) ueRx->GetPhy (m_componentCarrierId)->GetAllocLayerInd ());
+        }
+
+      if (enbRx !=0)
+        {
+          NS_LOG_INFO (Simulator::Now() << " [UL] gNB's layer index:" << (int)m_layerInd << ", UE's allocated index:" << (int)layerInd);
+        }  
 
       if ((ueRx != 0) && (ueRx->GetPhy (m_componentCarrierId)->IsReceptionEnabled () == false))
         {               // if the first cast is 0 (the device is MC) then this if will not be executed
@@ -391,6 +378,16 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
         }
       else if ((rxMcUe != 0) && (rxMcUe->GetMmWavePhy (m_componentCarrierId)->GetAllocLayerInd() != layerInd))
         {               
+          isMyLayer = false;
+        }
+
+      if ((enbRx != 0) && (enbRx->GetPhy (m_componentCarrierId)->IsReceptionEnabled () == false))
+        {
+          isAllocated = false;
+        }
+
+      if ((enbRx != 0) && (m_layerInd != layerInd))
+        {
           isMyLayer = false;
         }
 
@@ -893,7 +890,8 @@ MmWaveSpectrumPhy::StartTxDataFrames (Ptr<PacketBurst> pb, std::list<Ptr<MmWaveC
         std::list<Ptr<Packet>> pkts = pb->GetPackets ();
         MmWaveMacPduTag macTag;
         pkts.front ()->PeekPacketTag (macTag);
-        NS_LOG_INFO ("Data transmission with layer " << (int)m_layerInd);
+        NS_LOG_INFO ("Data transmission with layer " << (int)macTag.GetLayerInd ());
+        uint8_t layerInd = macTag.GetLayerInd ();
 
         m_state = TX;
         Ptr<MmwaveSpectrumSignalParametersDataFrame> txParams = Create<MmwaveSpectrumSignalParametersDataFrame> ();
@@ -905,7 +903,7 @@ MmWaveSpectrumPhy::StartTxDataFrames (Ptr<PacketBurst> pb, std::list<Ptr<MmWaveC
         txParams->ctrlMsgList = ctrlMsgList;
         txParams->slotInd = slotInd;
         txParams->txAntenna = m_antenna;     
-        txParams->layerInd = m_layerInd;
+        txParams->layerInd = layerInd;
 
         //NS_LOG_DEBUG ("ctrlMsgList.size () == " << txParams->ctrlMsgList.size ());
 

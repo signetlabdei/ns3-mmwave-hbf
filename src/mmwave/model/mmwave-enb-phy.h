@@ -143,7 +143,7 @@ public:
 
   std::vector<double> MakeFilter (std::vector<double>, std::vector<double>, std::pair <uint64_t, uint64_t > );
 
-
+  bool IsReceptionEnabled ();
 
 private:
   bool AddUePhy (uint16_t rnti);
@@ -224,6 +224,8 @@ private:
 
   uint8_t m_currSymStart;
   uint8_t m_currNumAllocLayers;
+
+  bool m_receptionEnabled;
 
   TracedCallback< uint64_t, SpectrumValue&, SpectrumValue& > m_ulSinrTrace;
 };

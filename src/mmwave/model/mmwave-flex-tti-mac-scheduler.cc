@@ -862,7 +862,7 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
               // search the layer allocation map or assign layer
               itUeToLayerMap = ueToLayerMapDl.find (rnti);
               if ( itUeToLayerMap == ueToLayerMapDl.end () )
-        	{ //assign a layer (criterion may be changed)
+        	      { //assign a layer (criterion may be changed)
                   layerIdx = 0; //default behavior
                   uint32_t val = m_phyMacConfig->GetSymbolsPerSubframe ();
                   for ( uint8_t lay = 0 ; lay < lastSymAvailLayer.size (); lay++ )
@@ -870,15 +870,15 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
                       //TODO study other layer assignment rules
                       //TODO put layer-assign in a function with selection-function as argument
                       //lower pointer, there are symbs available, and it does not exceed the highest possible DL/UL barrier
-                      if ( val > nextSymAvailLayer[lay] && symAvailLayer[lay] >= dciInfoReTx.m_numSym && (nextSymAvailLayer[lay] + dciInfoReTx.m_numSym) < minLastSymAvailLayer)
-                	{
+                      if (val > nextSymAvailLayer[lay] && symAvailLayer[lay] >= dciInfoReTx.m_numSym && (nextSymAvailLayer[lay] + dciInfoReTx.m_numSym) < minLastSymAvailLayer)
+                        {
                           layerIdx = lay;
                           val = nextSymAvailLayer[lay];
                         }
                     }
                 }
               else
-        	{ //found
+        	      { //found
                   layerIdx = itUeToLayerMap->second;
                 }
 
@@ -1006,7 +1006,7 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
                         }
                     }
                   //TODO this disables HBF in UL. comment out when startRx bug is fixed
-                  layerIdx = 0;
+                  //layerIdx = 0;
                 }
               else
                 { //found
@@ -1040,10 +1040,7 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
                   ret.m_sfAllocInfo.m_numSymAlloc += dciInfoReTx.m_numSym;
                   if (itUeInfo == ueInfo.end ())
                     {
-                      itUeInfo = ueInfo
-                                     .insert (std::pair<uint16_t, struct UeSchedInfo> (
-                                         rnti, UeSchedInfo ()))
-                                     .first;
+                      itUeInfo = ueInfo.insert (std::pair<uint16_t, struct UeSchedInfo> (rnti, UeSchedInfo ())).first;
                     }
                   itUeInfo->second.m_ulSymbolsRetx = dciInfoReTx.m_numSym;
                   if (itUeToLayerMap == ueToLayerMapUl.end ())
@@ -1366,7 +1363,7 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
                         }
                     }
                   //TODO this disables HBF in UL. comment out when startRx bug is fixed
-                  layerIdx = 0;
+                  //layerIdx = 0;
                   numUlUeLayer[layerIdx]++;
                   ueToLayerMapUl.insert (
                       std::pair<uint32_t, uint8_t> (itUeInfo->first, layerIdx)); // key is the rnti
@@ -1432,8 +1429,7 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
                   remSym = (dlUlBarrier - nextSymAvailLayer[layerIdx]);
                 }
 
-              int nSymPerFlow0 =
-                  remSym / numDlUeLayer[layerIdx]; // initial average symbols per non-retx flow
+              int nSymPerFlow0 = remSym / numDlUeLayer[layerIdx]; // initial average symbols per non-retx flow
               if (nSymPerFlow0 == 0) // minimum of 1
                 {
                   nSymPerFlow0 = 1;
@@ -1540,8 +1536,7 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
             {
               itUeInfo = itUeInfoStart; // pick up the RR from the last user served
               //search for the first user in the list that has DL data and belongs to this layer
-              while (itUeInfo->second.m_ulHbfLayer != layerIdx ||
-                     itUeInfo->second.m_maxUlSymbols == 0)
+              while (itUeInfo->second.m_ulHbfLayer != layerIdx || itUeInfo->second.m_maxUlSymbols == 0)
                 {
                   itUeInfo++;
                   if (itUeInfo == ueInfo.end ())
@@ -1575,8 +1570,7 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
                 }
               if (m_fixedTti)
                 {
-                  nSymPerFlow0 = ceil ((double) nSymPerFlow0 / (double) m_symPerSlot) *
-                                 m_symPerSlot; // round up to nearest sym per TTI
+                  nSymPerFlow0 = ceil ((double) nSymPerFlow0 / (double) m_symPerSlot) * m_symPerSlot; // round up to nearest sym per TTI
                 }
               bool allocated = true; // someone got allocated
               int numRemUlUe = numUlUeLayer[layerIdx];
@@ -1590,8 +1584,7 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
                     }
                   if (m_fixedTti)
                     {
-                      nRemSymPerFlow = ceil ((double) nRemSymPerFlow / (double) m_symPerSlot) *
-                                       m_symPerSlot; // round up to nearest sym per TTI
+                      nRemSymPerFlow = ceil ((double) nRemSymPerFlow / (double) m_symPerSlot) * m_symPerSlot; // round up to nearest sym per TTI
                     }
                   while (remSym > 0)
                     {
@@ -1601,17 +1594,14 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
                       NS_ASSERT (deficit >= 0);
                       if (m_fixedTti)
                         {
-                          deficit = ceil ((double) deficit / (double) m_symPerSlot) *
-                                    m_symPerSlot; // round up to nearest sym per TTI
+                          deficit = ceil ((double) deficit / (double) m_symPerSlot) * m_symPerSlot; // round up to nearest sym per TTI
                         }
                       if (m_fixedTti)
                         {
-                          nRemSymPerFlow = ceil ((double) nRemSymPerFlow / (double) m_symPerSlot) *
-                                           m_symPerSlot; // round up to nearest sym per TTI
+                          nRemSymPerFlow = ceil ((double) nRemSymPerFlow / (double) m_symPerSlot) * m_symPerSlot; // round up to nearest sym per TTI
                         }
                       if (remSym > 0 && deficit > 0 &&
-                          ((itUeInfo->second.m_ulSymbols + itUeInfo->second.m_ulSymbolsRetx) <=
-                           nSymPerFlow0))
+                          ((itUeInfo->second.m_ulSymbols + itUeInfo->second.m_ulSymbolsRetx) <= nSymPerFlow0))
                         {
                           if (deficit < nRemSymPerFlow)
                             {
@@ -1652,8 +1642,7 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
                         { // loop around to first RNTI in map
                           itUeInfo = ueInfo.begin ();
                         }
-                      while (itUeInfo->second.m_ulHbfLayer != layerIdx ||
-                             itUeInfo->second.m_maxUlSymbols == 0)
+                      while (itUeInfo->second.m_ulHbfLayer != layerIdx || itUeInfo->second.m_maxUlSymbols == 0)
                         {
                           itUeInfo++;
                           if (itUeInfo == ueInfo.end ())
@@ -1689,8 +1678,7 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
       for (uint8_t layerIdx = 0; layerIdx < lastSymAvailLayer.size (); layerIdx++)
         {
           NS_ASSERT (nextSymAvailLayer[layerIdx] > 0);
-          NS_ASSERT (lastSymAvailLayer[layerIdx] <= m_phyMacConfig->GetSymbolsPerSubframe () -
-                                                        m_phyMacConfig->GetUlCtrlSymbols ());
+          NS_ASSERT (lastSymAvailLayer[layerIdx] <= m_phyMacConfig->GetSymbolsPerSubframe () - m_phyMacConfig->GetUlCtrlSymbols ());
         }
       do
         {
@@ -1717,8 +1705,7 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
               dci.m_rv = 0;
               dci.m_harqProcess = UpdateDlHarqProcessId (itUeInfo->first);
               NS_ASSERT (dci.m_harqProcess < m_phyMacConfig->GetNumHarqProcess ());
-              NS_LOG_DEBUG ("UE" << itUeInfo->first << " DL harqId " << (unsigned) dci.m_harqProcess
-                                 << " HARQ process assigned");
+              NS_LOG_DEBUG ("UE" << itUeInfo->first << " DL harqId " << (unsigned) dci.m_harqProcess << " HARQ process assigned");
               SlotAllocInfo slotInfo (tempDlslotIdx++, SlotAllocInfo::DL_slotAllocInfo, SlotAllocInfo::CTRL_DATA, SlotAllocInfo::DIGITAL, itUeInfo->first, ueSchedInfo.m_dlHbfLayer);
               slotInfo.m_dci = dci;
               NS_LOG_DEBUG ("UE" << dci.m_rnti << " gets DL slots " << (unsigned) dci.m_symStart
@@ -1730,21 +1717,17 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
 
               if (m_harqOn == true)
                 { // store DCI for HARQ buffer
-                  std::map<uint16_t, DlHarqProcessesDciInfoList_t>::iterator itDciInfo =
-                      m_dlHarqProcessesDciInfoMap.find (dci.m_rnti);
+                  std::map<uint16_t, DlHarqProcessesDciInfoList_t>::iterator itDciInfo = m_dlHarqProcessesDciInfoMap.find (dci.m_rnti);
                   if (itDciInfo == m_dlHarqProcessesDciInfoMap.end ())
                     {
-                      NS_FATAL_ERROR ("Unable to find RNTI entry in DCI HARQ buffer for RNTI "
-                                      << dci.m_rnti);
+                      NS_FATAL_ERROR ("Unable to find RNTI entry in DCI HARQ buffer for RNTI " << dci.m_rnti);
                     }
                   (*itDciInfo).second.at (dci.m_harqProcess) = dci;
                   // refresh timer
-                  std::map<uint16_t, DlHarqProcessesTimer_t>::iterator itHarqTimer =
-                      m_dlHarqProcessesTimer.find (dci.m_rnti);
+                  std::map<uint16_t, DlHarqProcessesTimer_t>::iterator itHarqTimer = m_dlHarqProcessesTimer.find (dci.m_rnti);
                   if (itHarqTimer == m_dlHarqProcessesTimer.end ())
                     {
-                      NS_FATAL_ERROR ("Unable to find HARQ timer for RNTI "
-                                      << (uint16_t) dci.m_rnti);
+                      NS_FATAL_ERROR ("Unable to find HARQ timer for RNTI " << (uint16_t) dci.m_rnti);
                     }
                   (*itHarqTimer).second.at (dci.m_harqProcess) = 0;
                 }
@@ -1845,8 +1828,7 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
               dci.m_rnti = itUeInfo->first;
               dci.m_format = 1;
               dci.m_layerInd = ueSchedInfo.m_ulHbfLayer;
-              dci.m_symStart =
-                  lastSymAvailLayer[ueSchedInfo.m_ulHbfLayer] - ueSchedInfo.m_ulSymbols;
+              dci.m_symStart = lastSymAvailLayer[ueSchedInfo.m_ulHbfLayer] - ueSchedInfo.m_ulSymbols;
               dci.m_numSym = ueSchedInfo.m_ulSymbols;
               lastSymAvailLayer[ueSchedInfo.m_ulHbfLayer] -= ueSchedInfo.m_ulSymbols;
               NS_ASSERT (lastSymAvailLayer[ueSchedInfo.m_ulHbfLayer] >= dlUlBarrier);
@@ -1860,12 +1842,9 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
                           dci.m_tbSize = m_amc->GetTbSizeFromMcsSymbols (dci.m_mcs, dci.m_numSym) / 8;
                   }*/
               dci.m_harqProcess = UpdateUlHarqProcessId (itUeInfo->first);
-              NS_LOG_DEBUG ("UE" << itUeInfo->first << " UL harqId " << (unsigned) dci.m_harqProcess
-                                 << " HARQ process assigned");
+              NS_LOG_DEBUG ("UE" << itUeInfo->first << " UL harqId " << (unsigned) dci.m_harqProcess << " HARQ process assigned");
               NS_ASSERT (dci.m_harqProcess < m_phyMacConfig->GetNumHarqProcess ());
-              SlotAllocInfo slotInfo (tempUlSlotIdx++, SlotAllocInfo::UL_slotAllocInfo,
-                                      SlotAllocInfo::CTRL_DATA, SlotAllocInfo::DIGITAL,
-                                      itUeInfo->first, ueSchedInfo.m_ulHbfLayer);
+              SlotAllocInfo slotInfo (tempUlSlotIdx++, SlotAllocInfo::UL_slotAllocInfo, SlotAllocInfo::CTRL_DATA, SlotAllocInfo::DIGITAL, itUeInfo->first, ueSchedInfo.m_ulHbfLayer);
               slotInfo.m_dci = dci;
               NS_LOG_DEBUG ("UE" << dci.m_rnti << " gets UL slots " << (unsigned) dci.m_symStart
                                  << "-" << (unsigned) (dci.m_symStart + dci.m_numSym - 1) << " tbs "
@@ -1875,8 +1854,7 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
                                  << (unsigned) ulSfn.m_sfNum);
               UpdateUlRlcBufferInfo (itUeInfo->first, dci.m_tbSize - m_subHdrSize);
               //          ret.m_sfAllocInfo.m_slotAllocInfo.push_back (slotInfo);                // add to front
-              tempUlslotAllocInfo[ueSchedInfo.m_ulHbfLayer].push_front (
-                  slotInfo); //remember we fill from end backward
+              tempUlslotAllocInfo[ueSchedInfo.m_ulHbfLayer].push_front (slotInfo); //remember we fill from end backward
               ret.m_sfAllocInfo.m_numSymAlloc += dci.m_numSym;
               std::vector<uint16_t> ueChunkMap;
               for (unsigned i = 0; i < m_phyMacConfig->GetTotalNumChunk (); i++)
@@ -1929,8 +1907,7 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
 
   //pass the temporary SlotAllocInfo 2d lists to a single deque as expected by the PHY
   uint32_t finalSlotIdx = 1; //ctrl already inserted
-  std::vector<std::deque<SlotAllocInfo>::iterator> itSlotDl,
-      itSlotUl; //we insert all UL slots after all DL slots
+  std::vector<std::deque<SlotAllocInfo>::iterator> itSlotDl, itSlotUl; //we insert all UL slots after all DL slots
   for (uint8_t lay = 0; lay < m_phyMacConfig->GetNumEnbLayers (); lay++)
     {
       itSlotDl.push_back (tempDlslotAllocInfo[lay].begin ());

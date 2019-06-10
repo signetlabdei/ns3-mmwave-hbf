@@ -320,6 +320,8 @@ MmWaveUeMac::DoTransmitPdu (LteMacSapProvider::TransmitPduParameters params)
     {
       MmWaveMacPduTag tag;
       it->second.m_pdu->PeekPacketTag (tag);
+      NS_LOG_UNCOND ("UE MAC: transmit PDU layer index: " << (int)tag.GetLayerInd());
+      
       if (tag.GetSfn ().m_frameNum < m_frameNum)
         {
           return;
@@ -644,7 +646,8 @@ std::map<uint32_t, struct MacPduInfo>::iterator MmWaveUeMac::AddToMacPduMap (Dci
       frameNum = m_frameNum;
       sfNum = m_sfNum + m_phyMacConfig->GetUlSchedDelay ();
     }
-  MacPduInfo macPduInfo (SfnSf (frameNum, sfNum, dci.m_symStart), dci.m_tbSize, activeLcs);
+  //MacPduInfo macPduInfo (SfnSf (frameNum, sfNum, dci.m_symStart), dci.m_tbSize, activeLcs);
+  MacPduInfo macPduInfo (SfnSf (frameNum, sfNum, dci.m_symStart), dci.m_tbSize, activeLcs, dci, 1, dci.m_layerInd);
   std::map<uint32_t, struct MacPduInfo>::iterator it = m_macPduMap.find (dci.m_harqProcess);
   if (it != m_macPduMap.end ())
     {
@@ -665,10 +668,12 @@ MmWaveUeMac::DoReceiveControlMessage  (Ptr<MmWaveControlMessage> msg)
       {
         Ptr<MmWaveTdmaDciMessage> dciMsg = DynamicCast <MmWaveTdmaDciMessage> (msg);
         DciInfoElementTdma dciInfoElem = dciMsg->GetDciInfoElement ();
+        uint8_t layerInd = dciInfoElem.m_layerInd;
 
         if (dciInfoElem.m_format == DciInfoElementTdma::UL_dci)
           {
             NS_LOG_DEBUG ("UE MAC " << (uint32_t)m_componentCarrierId << " received UL_DCI");
+            //NS_LOG_UNCOND (Simulator::Now() << " UE receives UL_DCI, and allocated layer index:" << (int)layerInd);
             if (dciInfoElem.m_ndi == 1)
               {
                 // New transmission -> empty pkt buffer queue (for deleting eventual pkts not acked )
@@ -715,7 +720,9 @@ MmWaveUeMac::DoReceiveControlMessage  (Ptr<MmWaveControlMessage> msg)
                         frameNum = m_frameNum;
                         sfNum = m_sfNum + m_phyMacConfig->GetUlSchedDelay ();
                       }
+                    //MmWaveMacPduTag tag (SfnSf (frameNum, sfNum, dciInfoElem.m_symStart));
                     MmWaveMacPduTag tag (SfnSf (frameNum, sfNum, dciInfoElem.m_symStart));
+                    tag.SetLayerInd(layerInd);
                     Ptr<Packet> emptyPdu = Create <Packet> ();
                     MmWaveMacPduHeader header;
                     MacSubheader subheader (3, 0);                      // lcid = 3, size = 0
@@ -912,6 +919,8 @@ MmWaveUeMac::DoReceiveControlMessage  (Ptr<MmWaveControlMessage> msg)
                         sfNum = m_sfNum + m_phyMacConfig->GetUlSchedDelay ();
                       }
                     tag.SetSfn (SfnSf (frameNum, sfNum, dciInfoElem.m_symStart));
+                    uint8_t layerInd = dciInfoElem.m_layerInd;
+                    tag.SetLayerInd(layerInd);
                     pkt->AddPacketTag (tag);
 
                     m_txMacPacketTraceUe (m_rnti, m_componentCarrierId, pkt->GetSize ());
