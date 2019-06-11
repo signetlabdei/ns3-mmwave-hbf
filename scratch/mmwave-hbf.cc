@@ -1,3 +1,34 @@
+/* -*-  Mode: C++; c-file-style: "gnu"; indent-tabs-mode:nil; -*- */
+/*
+ *   Copyright (c) 2011 Centre Tecnologic de Telecomunicacions de Catalunya (CTTC)
+ *   Copyright (c) 2015, NYU WIRELESS, Tandon School of Engineering, New York University
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License version 2 as
+ *   published by the Free Software Foundation;
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program; if not, write to the Free Software
+ *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ *   Author: Marco Miozzo <marco.miozzo@cttc.es>
+ *           Nicola Baldo  <nbaldo@cttc.es>
+ *
+ *   Modified by: Marco Mezzavilla < mezzavilla@nyu.edu>
+ *                Sourjya Dutta <sdutta@nyu.edu>
+ *                Russell Ford <russell.ford@nyu.edu>
+ *                Menglei Zhang <menglei@nyu.edu>
+ *
+ *   Modified by: Junseok Kim <jskim14@mwnl.snu.ac.kr>
+ *
+ */
+
+
 #include "ns3/mmwave-helper.h"
 #include "ns3/epc-helper.h"
 #include "ns3/core-module.h"
@@ -19,7 +50,8 @@ using namespace mmwave;
  * It also  starts yet another flow between each UE pair.
  */
 NS_LOG_COMPONENT_DEFINE ("EpcFirstExample");
-int main (int argc, char *argv[])
+	int
+main (int argc, char *argv[])
 {
 	//LogComponentEnable ("LteUeRrc", LOG_LEVEL_ALL);
 	//LogComponentEnable ("LteEnbRrc", LOG_LEVEL_ALL);
@@ -36,8 +68,8 @@ int main (int argc, char *argv[])
 	uint16_t numEnb = 1;
 	uint16_t numUe = 2;
 	uint16_t numEnbLayers = 8;
-	double startTime = 2;
-	double simTime = 2.02;
+	double startTime = 1;
+	double simTime = 1.02;
 	double packetSize = 1460; // packet size in byte
 	double interPacketInterval = 1000000; // 500 microseconds
 	double minDistance = 10.0;           // eNB-UE distance in meters
@@ -84,8 +116,8 @@ int main (int argc, char *argv[])
 	Config::SetDefault ("ns3::MmWaveBeamforming::LongTermUpdatePeriod", TimeValue (MilliSeconds (100.0)));
 	Config::SetDefault ("ns3::LteEnbRrc::SystemInformationPeriodicity", TimeValue (MilliSeconds (5.0)));
 	//Config::SetDefault ("ns3::MmWavePropagationLossModel::ChannelStates", StringValue ("n"));
-	//Config::SetDefault ("ns3::LteRlcAm::ReportBufferStatusTimer", TimeValue (MicroSeconds (100.0)));
-	//Config::SetDefault ("ns3::LteRlcUmLowLat::ReportBufferStatusTimer", TimeValue (MicroSeconds (100.0)));
+	Config::SetDefault ("ns3::LteRlcAm::ReportBufferStatusTimer", TimeValue (MicroSeconds (100.0)));
+	Config::SetDefault ("ns3::LteRlcUmLowLat::ReportBufferStatusTimer", TimeValue (MicroSeconds (100.0)));
 	Config::SetDefault ("ns3::LteEnbRrc::SrsPeriodicity", UintegerValue (320));
 	Config::SetDefault ("ns3::LteEnbRrc::FirstSibTime", UintegerValue (2));
 	Config::SetDefault ("ns3::MmWaveBeamforming::SmallScaleFading", BooleanValue (smallScale));
@@ -225,4 +257,6 @@ int main (int argc, char *argv[])
 
 	Simulator::Destroy ();
 	return 0;
+
 }
+
