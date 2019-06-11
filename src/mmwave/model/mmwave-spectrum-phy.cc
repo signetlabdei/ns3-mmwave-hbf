@@ -414,8 +414,7 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
     {
       Ptr<MmWaveSpectrumSignalParametersDlCtrlFrame> DlCtrlRxParams =
         DynamicCast<MmWaveSpectrumSignalParametersDlCtrlFrame> (params);
-      //if (DlCtrlRxParams != 0)
-      if (DlCtrlRxParams != 0 && m_layerInd==0) //receive control msg in only one RF (layer 0)
+      if (DlCtrlRxParams != 0)
         {
           if (DlCtrlRxParams->cellId == m_cellId)
             {
