@@ -1073,6 +1073,7 @@ MmWaveEnbMac::DoSchedConfigIndication (MmWaveMacSchedSapUser::SchedConfigIndPara
                           tag.SetSymStart (dciElem.m_symStart);
                           tag.SetNumSym (dciElem.m_numSym);
                           tag.SetLayerInd (dciElem.m_layerInd);
+                          tag.SetNumAllocLayers (ind.m_sfAllocInfo.m_numAllocLayers);
                           pkt->AddPacketTag (tag);
 
                           m_txMacPacketTraceEnb (rnti, m_componentCarrierId, pkt->GetSize ());

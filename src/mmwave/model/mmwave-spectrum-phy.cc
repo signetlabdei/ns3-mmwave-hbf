@@ -622,12 +622,12 @@ MmWaveSpectrumPhy::EndRxData ()
                 }
               if (harqInfoList.size () > 0)
                 {
-                  rv = harqInfoList.back ().m_rv;
+                  //rv = harqInfoList.back ().m_rv;
+                  rv=itTb->second.rv;
                 }
             }
 
-          MmWaveTbStats_t tbStats = MmWaveMiErrorModel::GetTbDecodificationStats (m_sinrPerceived,
-                                                                                  itTb->second.rbBitmap, itTb->second.size, itTb->second.mcs, harqInfoList);
+          MmWaveTbStats_t tbStats = MmWaveMiErrorModel::GetTbDecodificationStats (m_sinrPerceived, itTb->second.rbBitmap, itTb->second.size, itTb->second.mcs, harqInfoList);
           itTb->second.tbler = tbStats.tbler;
           itTb->second.mi = tbStats.miTotal;
           itTb->second.corrupt = m_random->GetValue () > tbStats.tbler ? false : true;
