@@ -760,9 +760,9 @@ MmWaveSpectrumPhy::EndRxData ()
                       else
                         {
                           harqUlInfo.m_receptionStatus = UlHarqInfo::Ok;
-//							NS_LOG_DEBUG ("UE" << rnti << " send UL-HARQ-ACK" << " harqId " << (unsigned)itTb->second.harqProcessId <<
-//														" size " << itTb->second.size << " mcs " << (unsigned)itTb->second.mcs <<
-//														" mi " << itTb->second.mi << " tbler " << itTb->second.tbler << " SINRavg " << sinrAvg);
+                          //NS_LOG_DEBUG ("UE" << rnti << " send UL-HARQ-ACK" << " harqId " << (unsigned)itTb->second.harqProcessId <<
+                          //" size " << itTb->second.size << " mcs " << (unsigned)itTb->second.mcs <<
+                          //" mi " << itTb->second.mi << " tbler " << itTb->second.tbler << " SINRavg " << sinrAvg);
                           m_harqPhyModule->ResetUlHarqProcessStatus (rnti, itTb->second.harqProcessId);
                         }
                       if (!m_phyUlHarqFeedbackCallback.IsNull ())
@@ -791,9 +791,9 @@ MmWaveSpectrumPhy::EndRxData ()
                           else
                             {
                               harqDlInfo.m_harqStatus = DlHarqInfo::ACK;
-//								NS_LOG_DEBUG ("UE" << rnti << " send DL-HARQ-ACK" << " harqId " << (unsigned)itTb->second.harqProcessId <<
-//															" size " << itTb->second.size << " mcs " << (unsigned)itTb->second.mcs <<
-//															" mi " << itTb->second.mi << " tbler " << itTb->second.tbler << " SINRavg " << sinrAvg);
+                              //								NS_LOG_DEBUG ("UE" << rnti << " send DL-HARQ-ACK" << " harqId " << (unsigned)itTb->second.harqProcessId <<
+                              //															" size " << itTb->second.size << " mcs " << (unsigned)itTb->second.mcs <<
+                              //															" mi " << itTb->second.mi << " tbler " << itTb->second.tbler << " SINRavg " << sinrAvg);
                               m_harqPhyModule->ResetDlHarqProcessStatus (rnti, itTb->second.harqProcessId);
                             }
                           harqDlInfoMap.insert (std::pair <uint16_t, DlHarqInfo> (rnti, harqDlInfo));
@@ -811,9 +811,9 @@ MmWaveSpectrumPhy::EndRxData ()
                           else
                             {
                               (*itHarq).second.m_harqStatus = DlHarqInfo::ACK;
-//								NS_LOG_DEBUG ("UE" << rnti << " send DL-HARQ-ACK" << " harqId " << (unsigned)itTb->second.harqProcessId <<
-//								              " size " << itTb->second.size << " mcs " << (unsigned)itTb->second.mcs <<
-//								              " mi " << itTb->second.mi << " tbler " << itTb->second.tbler << " SINRavg " << sinrAvg);
+                              //								NS_LOG_DEBUG ("UE" << rnti << " send DL-HARQ-ACK" << " harqId " << (unsigned)itTb->second.harqProcessId <<
+                              //								              " size " << itTb->second.size << " mcs " << (unsigned)itTb->second.mcs <<
+                              //								              " mi " << itTb->second.mi << " tbler " << itTb->second.tbler << " SINRavg " << sinrAvg);
                               m_harqPhyModule->ResetDlHarqProcessStatus (rnti, itTb->second.harqProcessId);
                             }
                         }

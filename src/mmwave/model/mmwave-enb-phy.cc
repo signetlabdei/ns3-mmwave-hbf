@@ -1403,6 +1403,7 @@ MmWaveEnbPhy::StartSlot (void)
             {
               // sometimes the UE will be scheduled when no data is queued
               // in this case, send an empty PDU
+              NS_LOG_UNCOND(Simulator::Now () << " [jskim14] UE is scheduled, but no data");
               MmWaveMacPduTag tag (SfnSf (m_frameNum, m_sfNum, currSlot.m_dci.m_symStart));
               Ptr<Packet> emptyPdu = Create<Packet> ();
               MmWaveMacPduHeader header;

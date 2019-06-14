@@ -111,7 +111,7 @@ LteRlcAm::LteRlcAm ()
 void
 LteRlcAm::BufferSizeTrace()
 {
-  NS_LOG_LOGIC("BufferSizeTrace " << Simulator::Now().GetSeconds() << " " << m_rnti << " " << m_lcid << " " << m_txonBufferSize);
+  NS_LOG_LOGIC("BufferSizeTrace " << Simulator::Now().GetSeconds() << " " << m_rnti << " " << (int)m_lcid << " " << (int)m_txonBufferSize);
   // write to file
   /*if(!m_bufferSizeFile.is_open())
   {

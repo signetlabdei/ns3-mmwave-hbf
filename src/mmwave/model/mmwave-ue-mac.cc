@@ -320,7 +320,7 @@ MmWaveUeMac::DoTransmitPdu (LteMacSapProvider::TransmitPduParameters params)
     {
       MmWaveMacPduTag tag;
       it->second.m_pdu->PeekPacketTag (tag);
-      NS_LOG_UNCOND ("UE MAC: transmit PDU layer index: " << (int)tag.GetLayerInd());
+      //NS_LOG_UNCOND ("UE MAC: transmit PDU layer index: " << (int)tag.GetLayerInd());
       
       if (tag.GetSfn ().m_frameNum < m_frameNum)
         {
