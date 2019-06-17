@@ -1311,7 +1311,16 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
             }
           totUlSymReqLayer.push_back (0);
         }
-      uint32_t dlUlBarrier = maxNextSymAvailLayer + ceil ( ((double) minLastSymAvailLayer - (double) maxNextSymAvailLayer) * ( (double) midDlSymReq) / ( (double) midDlSymReq + (double)midUlSymReq) );
+
+      uint32_t dlUlBarrier = minLastSymAvailLayer;
+      if ( midDlSymReq ==0 )
+	{
+	  dlUlBarrier = maxNextSymAvailLayer;
+	}
+      else if ( midUlSymReq >0 )
+	{
+	  dlUlBarrier = maxNextSymAvailLayer + ceil ( ((double) minLastSymAvailLayer - (double) maxNextSymAvailLayer) * ( (double) midDlSymReq) / ( (double) midDlSymReq + (double)midUlSymReq) );
+	}
       std::vector<int> nFlowDlLayer,nFlowUlLayer; // number of UE with fresh info, u
       for (itUeInfo = ueInfo.begin (); itUeInfo != ueInfo.end (); itUeInfo++)
         {
@@ -1334,7 +1343,6 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
                                          (double) (1 + numDlUeLayer[lay]);
                         }
                     }
-                  numDlUeLayer[layerIdx]++;
                   ueToLayerMapDl.insert (
                       std::pair<uint32_t, uint8_t> (itUeInfo->first, layerIdx)); // key is the rnti
                 }
@@ -1342,6 +1350,7 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
                 {
                   layerIdx = itUeToLayerMap->second;
                 }
+              numDlUeLayer[layerIdx]++;//we did not do this for HARQ hence we do it here always if there are NEW Dl symbols, also in the case that the "find" returned a match above
               itUeInfo->second.m_dlHbfLayer = layerIdx;
               totDlSymReqLayer[layerIdx] += itUeInfo->second.m_maxDlSymbols;
             }
@@ -1366,7 +1375,6 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
                     }
                   //TODO this disables HBF in UL. comment out when startRx bug is fixed
                   //layerIdx = 0;
-                  numUlUeLayer[layerIdx]++;
                   ueToLayerMapUl.insert (
                       std::pair<uint32_t, uint8_t> (itUeInfo->first, layerIdx)); // key is the rnti
                 }
@@ -1374,6 +1382,7 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
                 {
                   layerIdx = itUeToLayerMap->second;
                 }
+              numUlUeLayer[layerIdx]++;//we did not do this for HARQ hence we do it here always if there are NEW Dl symbols, also in the case that the "find" returned a match above
               itUeInfo->second.m_ulHbfLayer = layerIdx;
               totUlSymReqLayer[layerIdx] += itUeInfo->second.m_maxUlSymbols;
             }
@@ -1429,8 +1438,9 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
               if (remSym > (int) (dlUlBarrier - nextSymAvailLayer[layerIdx]))
                 {
                   remSym = (dlUlBarrier - nextSymAvailLayer[layerIdx]);
+                  NS_ASSERT (remSym >= 0);
                 }
-
+              NS_ASSERT (numDlUeLayer[layerIdx] > 0);
               int nSymPerFlow0 = remSym / numDlUeLayer[layerIdx]; // initial average symbols per non-retx flow
               if (nSymPerFlow0 == 0) // minimum of 1
                 {
