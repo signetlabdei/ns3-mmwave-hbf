@@ -41,8 +41,6 @@
 #include "ns3/config-store.h"
 #include "ns3/mmwave-point-to-point-epc-helper.h"
 
-#include <math.h>
-
 using namespace ns3;
 using namespace mmwave;
 
@@ -59,7 +57,7 @@ main (int argc, char *argv[])
 	//LogComponentEnable ("LteEnbRrc", LOG_LEVEL_ALL);
 	//LogComponentEnable("MmWavePointToPointEpcHelper",LOG_LEVEL_ALL);
 	//LogComponentEnable("EpcUeNas",LOG_LEVEL_ALL);
-	LogComponentEnable ("MmWaveSpectrumPhy", LOG_LEVEL_LOGIC);
+	//LogComponentEnable ("MmWaveSpectrumPhy", LOG_LEVEL_LOGIC);
 	//LogComponentEnable ("MmWaveUePhy", LOG_LEVEL_DEBUG);
 	//LogComponentEnable ("MmWaveEnbPhy", LOG_LEVEL_DEBUG);
 	//LogComponentEnable ("MmWaveUeMac", LOG_LEVEL_LOGIC);
@@ -70,15 +68,15 @@ main (int argc, char *argv[])
 	uint16_t numEnb = 1;
 	uint16_t numUe = 2;
 	uint16_t numEnbLayers = 8;
-	double startTime = 1;
-	double simTime = 1.2;
+	double startTime = 2;
+	double simTime = 2.05;
 	double packetSize = 1460; // packet size in byte
-	double interPacketInterval = 5000; // 500 microseconds
+	double interPacketInterval = 1000000; // 500 microseconds
 	double minDistance = 10.0;           // eNB-UE distance in meters
 	double maxDistance = 10.0;           // eNB-UE distance in meters
 	bool harqEnabled = true;
 	bool rlcAmEnabled = false;
-	//bool useIdealRrc = true;
+	bool useIdealRrc = true;
 	bool fixedTti = false;
 	unsigned symPerSf = 14;
 	double sfPeriod = 1000.0; //micro second unit
@@ -99,13 +97,13 @@ main (int argc, char *argv[])
 	cmd.AddValue ("sfPeriod", "Subframe period = 4.16 * symPerSf", sfPeriod);
 	cmd.AddValue ("fixedTti", "Fixed TTI scheduler", fixedTti);
 	cmd.AddValue ("run", "run for RNG (for generating different deterministic sequences for different drops)", fixedTti);
-	//cmd.AddValue ("useIdealRrc", "whether to use ideal RRC layer or not", useIdealRrc);
+	cmd.AddValue ("useIdealRrc", "whether to use ideal RRC layer or not", useIdealRrc);
 	cmd.Parse (argc, argv);
 	symPeriod = sfPeriod/symPerSf;
 
 	Config::SetDefault ("ns3::MmWaveHelper::RlcAmEnabled", BooleanValue (rlcAmEnabled));
 	Config::SetDefault ("ns3::MmWaveHelper::HarqEnabled", BooleanValue (harqEnabled));
-//	Config::SetDefault ("ns3::MmWaveHelper::UseIdealRrc", BooleanValue (useIdealRrc));
+	Config::SetDefault ("ns3::MmWaveHelper::UseIdealRrc", BooleanValue (useIdealRrc));
 	Config::SetDefault ("ns3::MmWaveFlexTtiMacScheduler::HarqEnabled", BooleanValue (harqEnabled));
 	Config::SetDefault ("ns3::MmWaveFlexTtiMacScheduler::CqiTimerThreshold", UintegerValue (1000));
 	Config::SetDefault ("ns3::MmWaveFlexTtiMaxWeightMacScheduler::HarqEnabled", BooleanValue (harqEnabled));
@@ -121,8 +119,8 @@ main (int argc, char *argv[])
 	Config::SetDefault ("ns3::MmWaveBeamforming::LongTermUpdatePeriod", TimeValue (MilliSeconds (100.0)));
 	Config::SetDefault ("ns3::LteEnbRrc::SystemInformationPeriodicity", TimeValue (MilliSeconds (5.0)));
 	//Config::SetDefault ("ns3::MmWavePropagationLossModel::ChannelStates", StringValue ("n"));
-	Config::SetDefault ("ns3::LteRlcAm::ReportBufferStatusTimer", TimeValue (MicroSeconds (100.0)));
-	Config::SetDefault ("ns3::LteRlcUmLowLat::ReportBufferStatusTimer", TimeValue (MicroSeconds (100.0)));
+	//Config::SetDefault ("ns3::LteRlcAm::ReportBufferStatusTimer", TimeValue (MicroSeconds (100.0)));
+	//Config::SetDefault ("ns3::LteRlcUmLowLat::ReportBufferStatusTimer", TimeValue (MicroSeconds (100.0)));
 	Config::SetDefault ("ns3::LteEnbRrc::SrsPeriodicity", UintegerValue (320));
 	Config::SetDefault ("ns3::LteEnbRrc::FirstSibTime", UintegerValue (2));
 	Config::SetDefault ("ns3::MmWaveBeamforming::SmallScaleFading", BooleanValue (smallScale));
@@ -163,7 +161,7 @@ main (int argc, char *argv[])
 	ipv4h.SetBase ("1.0.0.0", "255.0.0.0");
 	Ipv4InterfaceContainer internetIpIfaces = ipv4h.Assign (internetDevices);
 	//interface 0 is localhost, 1 is the p2p device
-	Ipv4Address remoteHostAddr = internetIpIfaces.GetAddress (1);
+	//Ipv4Address remoteHostAddr = internetIpIfaces.GetAddress (1);
 
 	Ipv4StaticRoutingHelper ipv4RoutingHelper;
 	Ptr<Ipv4StaticRouting> remoteHostStaticRouting = ipv4RoutingHelper.GetStaticRouting (remoteHost->GetObject<Ipv4> ());
@@ -188,8 +186,7 @@ main (int argc, char *argv[])
 	for (unsigned i = 0; i < numUe; i++)
 	{
 		double dist = distRv->GetValue (minDistance, maxDistance);
-		double angle = (double ) i / (double )numUe * 3.14159265;// in radians
-		uePositionAlloc->Add (Vector (dist * cos (angle), dist * sin (angle), 0.0));
+		uePositionAlloc->Add (Vector (dist, 0.0, 0.0));
 	}
 	uemobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
 	uemobility.SetPositionAllocator (uePositionAlloc);
@@ -216,17 +213,15 @@ main (int argc, char *argv[])
 
 	// Install and start applications on UEs and remote host
 	uint16_t dlPort = 1234;
-	uint16_t ulPort = 2000;
 	ApplicationContainer clientApps;
 	ApplicationContainer serverApps;
 	for (uint32_t u = 0; u < ueNodes.GetN (); ++u)
 	{
-	    ulPort++;
 		PacketSinkHelper dlPacketSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), dlPort));
-		PacketSinkHelper ulPacketSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), ulPort));
+		//PacketSinkHelper ulPacketSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), ulPort));
 		//PacketSinkHelper packetSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), otherPort));
 		serverApps.Add (dlPacketSinkHelper.Install (ueNodes.Get (u)));
-		serverApps.Add (ulPacketSinkHelper.Install (remoteHost));
+		//serverApps.Add (ulPacketSinkHelper.Install (remoteHost));
 		//serverApps.Add (packetSinkHelper.Install (ueNodes.Get (u)));
 
 		UdpClientHelper dlClient (ueIpIface.GetAddress (u), dlPort);
@@ -234,13 +229,8 @@ main (int argc, char *argv[])
 		dlClient.SetAttribute ("PacketSize", UintegerValue (packetSize));
 		//dlClient.SetAttribute ("MaxPackets", UintegerValue (100));
 
-
-		UdpClientHelper ulClient (remoteHostAddr, ulPort);
-		ulClient.SetAttribute ("Interval", TimeValue (MicroSeconds (interPacketInterval)));
-		ulClient.SetAttribute ("PacketSize", UintegerValue (packetSize));
-
 		clientApps.Add (dlClient.Install (remoteHost));
-//		clientApps.Add (ulClient.Install (ueNodes.Get(u)));
+		//clientApps.Add (ulClient.Install (ueNodes.Get(u)));
 		//      if (u+1 < ueNodes.GetN ())
 		//        {
 		//          clientApps.Add (client.Install (ueNodes.Get(u+1)));
