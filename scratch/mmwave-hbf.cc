@@ -68,14 +68,15 @@ main (int argc, char *argv[])
 	uint16_t numEnb = 1;
 	uint16_t numUe = 2;
 	uint16_t numEnbLayers = 8;
-	double startTime = 1;
-	double simTime = 0.02;
+	double startTime = 2;
+	double simTime = 2.05;
 	double packetSize = 1460; // packet size in byte
 	double interPacketInterval = 1000000; // 500 microseconds
 	double minDistance = 10.0;           // eNB-UE distance in meters
 	double maxDistance = 10.0;           // eNB-UE distance in meters
 	bool harqEnabled = true;
 	bool rlcAmEnabled = false;
+	bool useIdealRrc = true;
 	bool fixedTti = false;
 	unsigned symPerSf = 14;
 	double sfPeriod = 1000.0; //micro second unit
@@ -96,11 +97,13 @@ main (int argc, char *argv[])
 	cmd.AddValue ("sfPeriod", "Subframe period = 4.16 * symPerSf", sfPeriod);
 	cmd.AddValue ("fixedTti", "Fixed TTI scheduler", fixedTti);
 	cmd.AddValue ("run", "run for RNG (for generating different deterministic sequences for different drops)", fixedTti);
+	cmd.AddValue ("useIdealRrc", "whether to use ideal RRC layer or not", useIdealRrc);
 	cmd.Parse (argc, argv);
 	symPeriod = sfPeriod/symPerSf;
 
 	Config::SetDefault ("ns3::MmWaveHelper::RlcAmEnabled", BooleanValue (rlcAmEnabled));
 	Config::SetDefault ("ns3::MmWaveHelper::HarqEnabled", BooleanValue (harqEnabled));
+	Config::SetDefault ("ns3::MmWaveHelper::UseIdealRrc", BooleanValue (useIdealRrc));
 	Config::SetDefault ("ns3::MmWaveFlexTtiMacScheduler::HarqEnabled", BooleanValue (harqEnabled));
 	Config::SetDefault ("ns3::MmWaveFlexTtiMacScheduler::CqiTimerThreshold", UintegerValue (1000));
 	Config::SetDefault ("ns3::MmWaveFlexTtiMaxWeightMacScheduler::HarqEnabled", BooleanValue (harqEnabled));
@@ -116,8 +119,8 @@ main (int argc, char *argv[])
 	Config::SetDefault ("ns3::MmWaveBeamforming::LongTermUpdatePeriod", TimeValue (MilliSeconds (100.0)));
 	Config::SetDefault ("ns3::LteEnbRrc::SystemInformationPeriodicity", TimeValue (MilliSeconds (5.0)));
 	//Config::SetDefault ("ns3::MmWavePropagationLossModel::ChannelStates", StringValue ("n"));
-	Config::SetDefault ("ns3::LteRlcAm::ReportBufferStatusTimer", TimeValue (MicroSeconds (100.0)));
-	Config::SetDefault ("ns3::LteRlcUmLowLat::ReportBufferStatusTimer", TimeValue (MicroSeconds (100.0)));
+	//Config::SetDefault ("ns3::LteRlcAm::ReportBufferStatusTimer", TimeValue (MicroSeconds (100.0)));
+	//Config::SetDefault ("ns3::LteRlcUmLowLat::ReportBufferStatusTimer", TimeValue (MicroSeconds (100.0)));
 	Config::SetDefault ("ns3::LteEnbRrc::SrsPeriodicity", UintegerValue (320));
 	Config::SetDefault ("ns3::LteEnbRrc::FirstSibTime", UintegerValue (2));
 	Config::SetDefault ("ns3::MmWaveBeamforming::SmallScaleFading", BooleanValue (smallScale));

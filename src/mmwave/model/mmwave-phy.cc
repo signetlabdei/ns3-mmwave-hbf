@@ -262,8 +262,8 @@ MmWavePhy::SetMacPdu (Ptr<Packet> p)
       uint8_t slotNum = tag.GetSfn ().m_slotNum;
       uint8_t numAllocLayers = tag.GetNumAllocLayers();
       uint8_t layerInd = tag.GetLayerInd();
-      NS_LOG_UNCOND ("Sf num: " << (int)sfNum << ", slot num: " << (int)slotNum);
-      NS_LOG_UNCOND ("No. of allocated layers: " << (int)numAllocLayers << ", Layer number: " << (int)layerInd);
+      NS_LOG_INFO (" Sf num: " << (int)sfNum << ", slot num: " << (int)slotNum);
+      NS_LOG_INFO (" No. of allocated layers: " << (int)numAllocLayers << ", Layer number: " << (int)layerInd);
       if (numAllocLayers == 1)
         {
           std::map<uint32_t, Ptr<PacketBurst>>::iterator it = m_packetBurstMap.find (tag.GetSfn ().Encode ());
@@ -279,7 +279,7 @@ MmWavePhy::SetMacPdu (Ptr<Packet> p)
         }
       else
         {
-    	  NS_LOG_UNCOND ("Code " << tag.Encode());
+    	    //NS_LOG_UNCOND ("Code " << tag.Encode());
           std::map<uint64_t, Ptr<PacketBurst>>::iterator it = m_packetBurstLayerMap.find (tag.Encode());
           if (it == m_packetBurstLayerMap.end ())
             {

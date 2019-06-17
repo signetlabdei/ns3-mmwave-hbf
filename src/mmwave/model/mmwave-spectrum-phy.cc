@@ -344,35 +344,22 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
       ueRx = DynamicCast<mmwave::MmWaveUeNetDevice> (GetDevice ());
       Ptr<McUeNetDevice> rxMcUe = 0;
       rxMcUe = DynamicCast<McUeNetDevice> (GetDevice ());
+      Ptr<MmWaveUeNetDevice> ueTx = DynamicCast<MmWaveUeNetDevice> (params->txPhy->GetDevice ());
       
-      //std::list<Ptr<MmWaveControlMessage>> msgList = mmwaveDataRxParams->ctrlMsgList;
-      //std::list<Ptr<MmWaveControlMessage>>::iterator it;
       uint16_t cellId = mmwaveDataRxParams->cellId;
       uint8_t layerInd = mmwaveDataRxParams->layerInd;
       Time duration = mmwaveDataRxParams->duration;
       NS_LOG_INFO("Data layer index: " << (int)layerInd << ", cell ID: " << (int)cellId << ", duration: " << duration);
 
-      /*for (it = msgList.begin (); it != msgList.end (); it++)
-        {
-          Ptr<MmWaveControlMessage> msg = (*it);
-          if (msg->GetMessageType () == MmWaveControlMessage::DCI_TDMA)
-            {
-              Ptr<MmWaveTdmaDciMessage> dciMsg = DynamicCast<MmWaveTdmaDciMessage> (msg);
-              DciInfoElementTdma dciInfoElem = dciMsg->GetDciInfoElement ();
-              //layerInd = dciInfoElem.m_layerInd;
-              //NS_LOG_INFO ("Layer index=" << (int)layerInd);
-              //NS_LOG_INFO ("UE's allocated layer index:" << (int)ueRx->GetPhy (m_componentCarrierId)->GetAllocLayerInd() << ", data's layer index:" << layerInd);
-            }
-          else
-            {
-              NS_FATAL_ERROR ("Not allowed control message format");
-          }
-        }*/
-
       if (ueRx != 0)
-      {
-        NS_LOG_INFO ("UE's allocated layer index:" << (int)ueRx->GetPhy (m_componentCarrierId)->GetAllocLayerInd());
-      }
+        {
+          NS_LOG_INFO ("[DL] UE's allocated layer index:" << (int) ueRx->GetPhy (m_componentCarrierId)->GetAllocLayerInd ());
+        }
+
+      if (enbRx !=0)
+        {
+          NS_LOG_INFO (Simulator::Now() << " [UL] gNB's layer index:" << (int)m_layerInd << ", UE's allocated index:" << (int)layerInd);
+        }  
 
       if ((ueRx != 0) && (ueRx->GetPhy (m_componentCarrierId)->IsReceptionEnabled () == false))
         {               // if the first cast is 0 (the device is MC) then this if will not be executed
@@ -391,6 +378,16 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
         }
       else if ((rxMcUe != 0) && (rxMcUe->GetMmWavePhy (m_componentCarrierId)->GetAllocLayerInd() != layerInd))
         {               
+          isMyLayer = false;
+        }
+
+      if ((enbRx != 0) && (enbRx->GetPhy (m_componentCarrierId)->IsReceptionEnabled () == false))
+        {
+          isAllocated = false;
+        }
+
+      if ((enbRx != 0) && (m_layerInd != layerInd))
+        {
           isMyLayer = false;
         }
 
@@ -417,7 +414,8 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
     {
       Ptr<MmWaveSpectrumSignalParametersDlCtrlFrame> DlCtrlRxParams =
         DynamicCast<MmWaveSpectrumSignalParametersDlCtrlFrame> (params);
-      if (DlCtrlRxParams != 0)
+      //if (DlCtrlRxParams != 0)
+      if (DlCtrlRxParams != 0 && m_layerInd==0) //receive control msg in only one RF (layer 0)
         {
           if (DlCtrlRxParams->cellId == m_cellId)
             {
@@ -624,12 +622,12 @@ MmWaveSpectrumPhy::EndRxData ()
                 }
               if (harqInfoList.size () > 0)
                 {
-                  rv = harqInfoList.back ().m_rv;
+                  //rv = harqInfoList.back ().m_rv;
+                  rv=itTb->second.rv;
                 }
             }
 
-          MmWaveTbStats_t tbStats = MmWaveMiErrorModel::GetTbDecodificationStats (m_sinrPerceived,
-                                                                                  itTb->second.rbBitmap, itTb->second.size, itTb->second.mcs, harqInfoList);
+          MmWaveTbStats_t tbStats = MmWaveMiErrorModel::GetTbDecodificationStats (m_sinrPerceived, itTb->second.rbBitmap, itTb->second.size, itTb->second.mcs, harqInfoList);
           itTb->second.tbler = tbStats.tbler;
           itTb->second.mi = tbStats.miTotal;
           itTb->second.corrupt = m_random->GetValue () > tbStats.tbler ? false : true;
@@ -762,9 +760,9 @@ MmWaveSpectrumPhy::EndRxData ()
                       else
                         {
                           harqUlInfo.m_receptionStatus = UlHarqInfo::Ok;
-//							NS_LOG_DEBUG ("UE" << rnti << " send UL-HARQ-ACK" << " harqId " << (unsigned)itTb->second.harqProcessId <<
-//														" size " << itTb->second.size << " mcs " << (unsigned)itTb->second.mcs <<
-//														" mi " << itTb->second.mi << " tbler " << itTb->second.tbler << " SINRavg " << sinrAvg);
+                          //NS_LOG_DEBUG ("UE" << rnti << " send UL-HARQ-ACK" << " harqId " << (unsigned)itTb->second.harqProcessId <<
+                          //" size " << itTb->second.size << " mcs " << (unsigned)itTb->second.mcs <<
+                          //" mi " << itTb->second.mi << " tbler " << itTb->second.tbler << " SINRavg " << sinrAvg);
                           m_harqPhyModule->ResetUlHarqProcessStatus (rnti, itTb->second.harqProcessId);
                         }
                       if (!m_phyUlHarqFeedbackCallback.IsNull ())
@@ -793,9 +791,9 @@ MmWaveSpectrumPhy::EndRxData ()
                           else
                             {
                               harqDlInfo.m_harqStatus = DlHarqInfo::ACK;
-//								NS_LOG_DEBUG ("UE" << rnti << " send DL-HARQ-ACK" << " harqId " << (unsigned)itTb->second.harqProcessId <<
-//															" size " << itTb->second.size << " mcs " << (unsigned)itTb->second.mcs <<
-//															" mi " << itTb->second.mi << " tbler " << itTb->second.tbler << " SINRavg " << sinrAvg);
+                              //								NS_LOG_DEBUG ("UE" << rnti << " send DL-HARQ-ACK" << " harqId " << (unsigned)itTb->second.harqProcessId <<
+                              //															" size " << itTb->second.size << " mcs " << (unsigned)itTb->second.mcs <<
+                              //															" mi " << itTb->second.mi << " tbler " << itTb->second.tbler << " SINRavg " << sinrAvg);
                               m_harqPhyModule->ResetDlHarqProcessStatus (rnti, itTb->second.harqProcessId);
                             }
                           harqDlInfoMap.insert (std::pair <uint16_t, DlHarqInfo> (rnti, harqDlInfo));
@@ -813,9 +811,9 @@ MmWaveSpectrumPhy::EndRxData ()
                           else
                             {
                               (*itHarq).second.m_harqStatus = DlHarqInfo::ACK;
-//								NS_LOG_DEBUG ("UE" << rnti << " send DL-HARQ-ACK" << " harqId " << (unsigned)itTb->second.harqProcessId <<
-//								              " size " << itTb->second.size << " mcs " << (unsigned)itTb->second.mcs <<
-//								              " mi " << itTb->second.mi << " tbler " << itTb->second.tbler << " SINRavg " << sinrAvg);
+                              //								NS_LOG_DEBUG ("UE" << rnti << " send DL-HARQ-ACK" << " harqId " << (unsigned)itTb->second.harqProcessId <<
+                              //								              " size " << itTb->second.size << " mcs " << (unsigned)itTb->second.mcs <<
+                              //								              " mi " << itTb->second.mi << " tbler " << itTb->second.tbler << " SINRavg " << sinrAvg);
                               m_harqPhyModule->ResetDlHarqProcessStatus (rnti, itTb->second.harqProcessId);
                             }
                         }
@@ -893,7 +891,8 @@ MmWaveSpectrumPhy::StartTxDataFrames (Ptr<PacketBurst> pb, std::list<Ptr<MmWaveC
         std::list<Ptr<Packet>> pkts = pb->GetPackets ();
         MmWaveMacPduTag macTag;
         pkts.front ()->PeekPacketTag (macTag);
-        NS_LOG_INFO ("Data transmission with layer " << (int)m_layerInd);
+        NS_LOG_INFO ("Data transmission with layer " << (int)macTag.GetLayerInd ());
+        uint8_t layerInd = macTag.GetLayerInd ();
 
         m_state = TX;
         Ptr<MmwaveSpectrumSignalParametersDataFrame> txParams = Create<MmwaveSpectrumSignalParametersDataFrame> ();
@@ -905,7 +904,7 @@ MmWaveSpectrumPhy::StartTxDataFrames (Ptr<PacketBurst> pb, std::list<Ptr<MmWaveC
         txParams->ctrlMsgList = ctrlMsgList;
         txParams->slotInd = slotInd;
         txParams->txAntenna = m_antenna;     
-        txParams->layerInd = m_layerInd;
+        txParams->layerInd = layerInd;
 
         //NS_LOG_DEBUG ("ctrlMsgList.size () == " << txParams->ctrlMsgList.size ());
 
