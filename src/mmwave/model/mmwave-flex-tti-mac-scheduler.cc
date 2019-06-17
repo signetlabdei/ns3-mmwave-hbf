@@ -992,7 +992,7 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
         	{ //assign a layer (criterion may be changed)
                   uint32_t val = 0;
                   layerIdx = 0;
-                  for (uint8_t lay=0; lay<lastSymAvailLayer.size (); lay++)
+                  for (uint8_t lay = 0; lay < lastSymAvailLayer.size (); lay++)
                     {
                       //TODO study other layer assignment rules
                       //TODO put layer-assign in a function with selection-function as argument
@@ -1004,7 +1004,7 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
                         }
                     }
                   //TODO this disables HBF in UL. comment out when startRx bug is fixed
-                  layerIdx = 0;
+//                  layerIdx = 0;
                 }
               else
         	{ //found
@@ -1345,7 +1345,7 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
 			}
 		    }
 		  //TODO this disables HBF in UL. comment out when startRx bug is fixed
-		  layerIdx = 0;
+//		  layerIdx = 0;
 		  numUlUeLayer[layerIdx]++;
 		  ueToLayerMapUl.insert ( std::pair<uint32_t, uint8_t> ( itUeInfo->first, layerIdx ) ); // key is the rnti
 		}
@@ -1353,8 +1353,8 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
 		{
 		  layerIdx = itUeToLayerMap->second;
 		}
-	      itUeInfo->second.m_ulHbfLayer=layerIdx;
-	      totUlSymReqLayer[layerIdx]+=itUeInfo->second.m_maxUlSymbols;
+	      itUeInfo->second.m_ulHbfLayer = layerIdx;
+	      totUlSymReqLayer[layerIdx] += itUeInfo->second.m_maxUlSymbols;
 	    }
 	}
 
@@ -1375,14 +1375,14 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
           itUeInfoStart = ueInfo.begin ();
         }
 
-      for (uint8_t layerIdx=0; layerIdx<lastSymAvailLayer.size (); layerIdx++)
+      for (uint8_t layerIdx = 0; layerIdx < lastSymAvailLayer.size (); layerIdx++)
 	{
 	  //DL allocation part
 	  if (totDlSymReqLayer[layerIdx] > 0)
 	    {
 	      itUeInfo = itUeInfoStart; // pick up the RR from the last user served
 	      //search for the first user in the list that has DL data and belongs to this layer
-	      while(itUeInfo->second.m_dlHbfLayer!=layerIdx || itUeInfo->second.m_maxDlSymbols == 0)
+	      while(itUeInfo->second.m_dlHbfLayer != layerIdx || itUeInfo->second.m_maxDlSymbols == 0)
 		{
 		  itUeInfo++;
 		  if (itUeInfo == ueInfo.end ())
@@ -1394,7 +1394,7 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
 		      break;
 		    }
 		}
-	      if (itUeInfo == itUeInfoStart && itUeInfo->second.m_dlHbfLayer!=layerIdx)
+	      if (itUeInfo == itUeInfoStart && itUeInfo->second.m_dlHbfLayer != layerIdx)
 		{
 		  NS_LOG_UNCOND ("Skipping DL RR allocation in layer "<< layerIdx<<". Required count is "<<totDlSymReqLayer[layerIdx]<<" symbols but no UE Info found in the list");
 		  continue;
@@ -1481,7 +1481,7 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
 			{                 // loop around to first RNTI in map
 			  itUeInfo = ueInfo.begin ();
 			}
-		      while(itUeInfo->second.m_dlHbfLayer!=layerIdx || itUeInfo->second.m_maxDlSymbols == 0)
+		      while(itUeInfo->second.m_dlHbfLayer != layerIdx || itUeInfo->second.m_maxDlSymbols == 0)
 			{
 			  itUeInfo++;
 			  if (itUeInfo == ueInfo.end ())
@@ -1502,7 +1502,7 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
 	    }
 	}
 
-      for (uint8_t layerIdx=0; layerIdx<lastSymAvailLayer.size (); layerIdx++)
+      for (uint8_t layerIdx = 0; layerIdx < lastSymAvailLayer.size (); layerIdx++)
 	{
 	  //UL allocation part
 	  if (totUlSymReqLayer[layerIdx] > 0)
@@ -1521,7 +1521,7 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
 		      break;
 		    }
 		}
-	      if (itUeInfo == itUeInfoStart && itUeInfo->second.m_ulHbfLayer!=layerIdx)
+	      if (itUeInfo == itUeInfoStart && itUeInfo->second.m_ulHbfLayer != layerIdx)
 		{
 		  NS_LOG_UNCOND ("Skipping UL RR allocation in layer "<< layerIdx<<". Required count is "<<totUlSymReqLayer[layerIdx]<<" symbols but no UE Info found in the list");
 		  continue;
@@ -1612,7 +1612,7 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
 			{                 // loop around to first RNTI in map
 			  itUeInfo = ueInfo.begin ();
 			}
-		      while(itUeInfo->second.m_ulHbfLayer!=layerIdx || itUeInfo->second.m_maxUlSymbols == 0)
+		      while(itUeInfo->second.m_ulHbfLayer != layerIdx || itUeInfo->second.m_maxUlSymbols == 0)
 			{
 			  itUeInfo++;
 			  if (itUeInfo == ueInfo.end ())
@@ -1632,7 +1632,7 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
 		}
 	    }
 	  //remember next UE in list to be served
-	  if (layerIdx==0) {
+	  if (layerIdx == 0) {
 	      m_nextRnti = itUeInfo->first; //this must be improved
 	  }
 	}
