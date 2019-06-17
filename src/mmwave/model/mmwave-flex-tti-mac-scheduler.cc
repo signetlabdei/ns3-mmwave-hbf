@@ -1440,7 +1440,7 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
                   remSym = (dlUlBarrier - nextSymAvailLayer[layerIdx]);
                   NS_ASSERT (remSym >= 0);
                 }
-              NS_ASSERT (numDlUeLayer[layerIdx] > 0);
+              NS_ASSERT (numDlUeLayer[layerIdx] > 0 );
               int nSymPerFlow0 = remSym / numDlUeLayer[layerIdx]; // initial average symbols per non-retx flow
               if (nSymPerFlow0 == 0) // minimum of 1
                 {
