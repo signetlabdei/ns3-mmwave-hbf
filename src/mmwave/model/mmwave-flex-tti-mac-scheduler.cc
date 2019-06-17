@@ -1558,6 +1558,7 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
                   continue;
                 } //this skips UL allocation if this layer is used only for DL. This is detected when we end the while search above with the break
 
+
               // divide OFDM symbols evenly between active UEs, which are then evenly divided between DL and UL flows
               uint32_t remSym = totUlSymReqLayer[layerIdx];
               if (remSym > (lastSymAvailLayer[layerIdx] - dlUlBarrier))
