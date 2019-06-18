@@ -328,7 +328,7 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
     DynamicCast<MmWaveEnbNetDevice> (GetDevice ());
   if ((EnbTx != 0 && enbRx != 0) || (EnbTx == 0 && enbRx == 0))
     {
-      NS_LOG_INFO ("BS to BS or UE to UE transmission neglected.");
+      NS_LOG_LOGIC ("BS to BS or UE to UE transmission neglected.");
       return;
     }
 
@@ -339,12 +339,11 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
     {
       LteRadioBearerTag bearerTag;
       (*(mmwaveDataRxParams->packetBurst->Begin()))->PeekPacketTag (bearerTag);
-      NS_LOG_INFO ("Data rx parameters: \n"
-	  << "\tcellID: " << mmwaveDataRxParams->cellId << "\n"
-	  << "\tslotInd: " << (int ) mmwaveDataRxParams->slotInd << "\n"
-	  << "\tlayerInd: " << (int ) mmwaveDataRxParams->layerInd << "\n"
-	  << "\tNpackets: "<< (int )mmwaveDataRxParams->packetBurst->GetNPackets() << "\n"
-	  << "\tRNTIpackets: "<< (int )bearerTag.GetRnti ());
+//      NS_LOG_INFO ("Data rx parameters: \n"
+//	  << "\tcellID: " << mmwaveDataRxParams->cellId << "\n"
+//	  << "\tlayerInd: " << (int ) mmwaveDataRxParams->layerInd << "\n"
+//	  << "\tNpackets: "<< (int )mmwaveDataRxParams->packetBurst->GetNPackets() << "\n"
+//	  << "\tRNTIpackets: "<< (int )bearerTag.GetRnti ());
       bool isAllocated = true;
       bool isMyLayer = true;
       Ptr<mmwave::MmWaveUeNetDevice> ueRx = 0;
@@ -356,7 +355,10 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
       uint16_t cellId = mmwaveDataRxParams->cellId;
       uint8_t layerInd = mmwaveDataRxParams->layerInd;
       Time duration = mmwaveDataRxParams->duration;
-      NS_LOG_INFO("Data layer index: " << (int)layerInd << ", cell ID: " << (int)cellId << ", duration: " << duration);
+      NS_LOG_INFO("Data layer index: " << (int)layerInd << ", cell ID: " << (int)cellId << ", duration: " << duration
+		  	  << " slotInd: " << (int ) mmwaveDataRxParams->slotInd
+			  << " Npackets: " << (int )mmwaveDataRxParams->packetBurst->GetNPackets()
+			  << " RNTIpackets: "<< (int )bearerTag.GetRnti ());
 
       if (ueRx != 0)
         {
@@ -406,6 +408,7 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
 //	    }
           if (mmwaveDataRxParams->cellId == m_cellId && isMyLayer)
             {
+              NS_LOG_INFO ("Data is for this UE, StartRxData");
               //m_interferenceData->AddSignal (mmwaveDataRxParams->psd, mmwaveDataRxParams->duration);
               StartRxData (mmwaveDataRxParams);
             }
@@ -643,7 +646,19 @@ MmWaveSpectrumPhy::EndRxData ()
           itTb->second.corrupt = m_random->GetValue () > tbStats.tbler ? false : true;
           //if (itTb->second.corrupt)
             {
-              NS_LOG_INFO (this << " RNTI " << itTb->first << " size " << itTb->second.size << " mcs " << (uint32_t)itTb->second.mcs << " bitmap " << itTb->second.rbBitmap.size () << " rv " << (int)rv << " TBLER " << tbStats.tbler << " corrupted " << itTb->second.corrupt);
+              NS_LOG_INFO (this << " RNTI " << itTb->first << " " << ( (itTb->second.downlink)?"DL":"UL") << " size " << itTb->second.size << " mcs " << (uint32_t)itTb->second.mcs << " bitmap " << itTb->second.rbBitmap.size () << " rv " << (int)rv << " TBLER " << tbStats.tbler << " corrupted " << itTb->second.corrupt);
+
+              int mcsShould = 0;
+	      while (mcsShould <= 28)
+		{
+		  tbStats = MmWaveMiErrorModel::GetTbDecodificationStats (m_sinrPerceived, itTb->second.rbBitmap, itTb->second.size, mcsShould, harqInfoList);
+		  if (tbStats.tbler > 0.1)
+		    {
+		      break;
+		    }
+		  mcsShould++;
+		}
+              NS_LOG_INFO ("The MCS for 1e-2 error should have been " << mcsShould);
             }
         }
       itTb++;

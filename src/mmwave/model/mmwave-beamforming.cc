@@ -483,7 +483,7 @@ MmWaveBeamforming::GetLongTermFading (Ptr<BeamformingParams> bfParams) const
             bfParams->m_ueW.at (rxAntennaIndex) *
             bfParams->m_channelMatrix.m_ueSpatialMatrix.at (pathIndex).at (rxAntennaIndex);
         }
-      NS_LOG_INFO ("rxsum=" << rxsum.real () << " " << rxsum.imag ());
+      NS_LOG_LOGIC ("rxsum=" << rxsum.real () << " " << rxsum.imag ());
       longTerm->push_back (txsum * rxsum);
     }
   return longTerm;

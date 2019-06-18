@@ -1498,7 +1498,7 @@ MmWaveEnbPhy::StartSlot (void)
                   //NS_LOG_DEBUG ("Change Beamforming Vector");
                   //Antenna model is samle for all layers
                   Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (
-                      GetDlSpectrumPhyList ().at (0)->GetRxAntenna ());
+                      GetDlSpectrumPhyList ().at (currSlot.m_dci.m_layerInd)->GetRxAntenna ());
                   antennaArray->ChangeBeamformingVectorPanel (m_deviceMap.at (i));
                   break;
                 }
@@ -1547,7 +1547,7 @@ MmWaveEnbPhy::StartSlot (void)
                     {
                       //NS_LOG_DEBUG ("Change Beamforming Vector");
                       //Antenna model is samle for all layers
-                      Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhyList ().at (0)->GetRxAntenna ());
+                      Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhyList ().at (currSlot.m_dci.m_layerInd)->GetRxAntenna ());
                       antennaArray->ChangeBeamformingVectorPanel (m_deviceMap.at (i));
                       break;
                     }

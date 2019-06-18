@@ -59,13 +59,13 @@ main (int argc, char *argv[])
 	//LogComponentEnable ("LteEnbRrc", LOG_LEVEL_ALL);
 	//LogComponentEnable("MmWavePointToPointEpcHelper",LOG_LEVEL_ALL);
 	//LogComponentEnable("EpcUeNas",LOG_LEVEL_ALL);
-	LogComponentEnable ("MmWaveSpectrumPhy", LOG_LEVEL_LOGIC);
+	LogComponentEnable ("MmWaveSpectrumPhy", LOG_LEVEL_INFO);
 	//LogComponentEnable ("MmWaveUePhy", LOG_LEVEL_DEBUG);
 	//LogComponentEnable ("MmWaveEnbPhy", LOG_LEVEL_DEBUG);
 	//LogComponentEnable ("MmWaveUeMac", LOG_LEVEL_LOGIC);
 	//LogComponentEnable ("UdpClient", LOG_LEVEL_INFO);
 	//LogComponentEnable ("PacketSink", LOG_LEVEL_INFO);
-	LogComponentEnable ("MmWaveBeamforming", LOG_LEVEL_LOGIC);
+	LogComponentEnable ("MmWaveBeamforming", LOG_LEVEL_INFO);
 	//LogComponentEnable("PropagationLossModel",LOG_LEVEL_ALL);
 
 	uint16_t numEnb = 1;
@@ -75,8 +75,8 @@ main (int argc, char *argv[])
 	double simTime = 1.2;
 	double packetSize = 1460; // packet size in byte
 	double interPacketInterval = 5000; // 500 microseconds
-	double minDistance = 10.0;           // eNB-UE distance in meters
-	double maxDistance = 10.0;           // eNB-UE distance in meters
+	double minDistance = 40.0;           // eNB-UE distance in meters
+	double maxDistance = 40.0;           // eNB-UE distance in meters
 	bool harqEnabled = true;
 	bool rlcAmEnabled = false;
 	//bool useIdealRrc = true;

@@ -1963,7 +1963,8 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
                                   itSlotDl[layerIdx]->m_dci.m_symStart - 1
                            << " of " << m_phyMacConfig->GetSymbolsPerSubframe () << " layerIdx "
                            << (int) itSlotDl[layerIdx]->m_dci.m_layerInd << " of "
-                           << (int) ret.m_sfAllocInfo.m_numAllocLayers);
+                           << (int) ret.m_sfAllocInfo.m_numAllocLayers
+			   << " mcs " << (int ) itSlotDl[layerIdx]->m_dci.m_mcs);
       itSlotDl[layerIdx]++;
 
       if (itSlotDl[layerIdx] == tempDlslotAllocInfo[layerIdx].end ())
@@ -2012,7 +2013,8 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
                                   itSlotUl[layerIdx]->m_dci.m_symStart - 1
                            << " of " << m_phyMacConfig->GetSymbolsPerSubframe () << " layerIdx "
                            << (int) itSlotUl[layerIdx]->m_dci.m_layerInd << " of "
-                           << (int) ret.m_sfAllocInfo.m_numAllocLayers);
+                           << (int) ret.m_sfAllocInfo.m_numAllocLayers
+			   << " mcs " << (int ) itSlotDl[layerIdx]->m_dci.m_mcs);
       itSlotUl[layerIdx]++;
 
       if (itSlotUl[layerIdx] == tempUlslotAllocInfo[layerIdx].end ())
