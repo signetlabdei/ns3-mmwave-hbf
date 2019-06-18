@@ -337,7 +337,14 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
 
   if (mmwaveDataRxParams != 0)
     {
-      NS_LOG_INFO ("Data rx parameters " << mmwaveDataRxParams);
+      LteRadioBearerTag bearerTag;
+      (*(mmwaveDataRxParams->packetBurst->Begin()))->PeekPacketTag (bearerTag);
+      NS_LOG_INFO ("Data rx parameters: \n"
+	  << "\tcellID: " << mmwaveDataRxParams->cellId << "\n"
+	  << "\tslotInd: " << (int ) mmwaveDataRxParams->slotInd << "\n"
+	  << "\tlayerInd: " << (int ) mmwaveDataRxParams->layerInd << "\n"
+	  << "\tNpackets: "<< (int )mmwaveDataRxParams->packetBurst->GetNPackets() << "\n"
+	  << "\tRNTIpackets: "<< (int )bearerTag.GetRnti ());
       bool isAllocated = true;
       bool isMyLayer = true;
       Ptr<mmwave::MmWaveUeNetDevice> ueRx = 0;
@@ -393,7 +400,10 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
 
       if (isAllocated)
         {
-          m_interferenceData->AddSignal (mmwaveDataRxParams->psd, mmwaveDataRxParams->duration);
+//	  if (mmwaveDataRxParams->cellId != m_cellId || isMyLayer)
+//	    {//as an upper bound on actual MU-MIMO beamforming design, interference is fully suppressed
+	      m_interferenceData->AddSignal (mmwaveDataRxParams->psd, mmwaveDataRxParams->duration);
+//	    }
           if (mmwaveDataRxParams->cellId == m_cellId && isMyLayer)
             {
               //m_interferenceData->AddSignal (mmwaveDataRxParams->psd, mmwaveDataRxParams->duration);
@@ -596,7 +606,7 @@ MmWaveSpectrumPhy::EndRxData ()
           sinrMin = *it;
         }
     }
-
+  NS_LOG_INFO (this << "SINR perceived " << sinrMin);
   Ptr<MmWaveEnbNetDevice> enbRx = DynamicCast<MmWaveEnbNetDevice> (GetDevice ());
   Ptr<mmwave::MmWaveUeNetDevice> ueRx = DynamicCast<mmwave::MmWaveUeNetDevice> (GetDevice ());
   Ptr<McUeNetDevice> rxMcUe = DynamicCast<McUeNetDevice> (GetDevice ());
@@ -891,7 +901,7 @@ MmWaveSpectrumPhy::StartTxDataFrames (Ptr<PacketBurst> pb, std::list<Ptr<MmWaveC
         std::list<Ptr<Packet>> pkts = pb->GetPackets ();
         MmWaveMacPduTag macTag;
         pkts.front ()->PeekPacketTag (macTag);
-        NS_LOG_INFO ("Data transmission with layer " << (int)macTag.GetLayerInd ());
+        NS_LOG_INFO ("Data transmission slot "<< (int ) slotInd <<" with layer " << (int ) macTag.GetLayerInd ());
         uint8_t layerInd = macTag.GetLayerInd ();
 
         m_state = TX;

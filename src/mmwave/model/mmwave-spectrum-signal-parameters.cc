@@ -84,6 +84,7 @@ MmwaveSpectrumSignalParametersDataFrame::MmwaveSpectrumSignalParametersDataFrame
     }
   ctrlMsgList = p.ctrlMsgList;
   layerInd = p.layerInd;
+  slotInd = p.slotInd;
 }
 
 Ptr<SpectrumSignalParameters>

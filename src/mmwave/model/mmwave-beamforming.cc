@@ -560,7 +560,6 @@ MmWaveBeamforming::DoCalcRxPowerSpectralDensity (Ptr<const SpectrumValue> txPsd,
 {
   bool downlink;
   Ptr<NetDevice> enbDevice, ueDevice;
-
   Ptr<NetDevice> txDevice = a->GetObject<Node> ()->GetDevice (0);
   Ptr<NetDevice> rxDevice = b->GetObject<Node> ()->GetDevice (0);
   Ptr<SpectrumValue> rxPsd = Copy (txPsd);

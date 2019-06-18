@@ -65,6 +65,7 @@ main (int argc, char *argv[])
 	//LogComponentEnable ("MmWaveUeMac", LOG_LEVEL_LOGIC);
 	//LogComponentEnable ("UdpClient", LOG_LEVEL_INFO);
 	//LogComponentEnable ("PacketSink", LOG_LEVEL_INFO);
+	LogComponentEnable ("MmWaveBeamforming", LOG_LEVEL_LOGIC);
 	//LogComponentEnable("PropagationLossModel",LOG_LEVEL_ALL);
 
 	uint16_t numEnb = 1;
