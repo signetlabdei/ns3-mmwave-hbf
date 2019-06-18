@@ -1682,7 +1682,7 @@ MmWaveEnbPhy::SendDataChannels (Ptr<PacketBurst> pb, Time slotPrd, SlotAllocInfo
             {
               NS_LOG_DEBUG ("Change Beamforming Vector");
               //Antenna model is same for all layers
-              Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhyList ().at(0)->GetRxAntenna ());
+              Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhyList ().at(slotInfo.m_layerInd)->GetRxAntenna ());
               antennaArray->ChangeBeamformingVectorPanel (m_deviceMap.at (i));
               break;
             }
@@ -1713,6 +1713,7 @@ MmWaveEnbPhy::SendCtrlChannels (std::list<Ptr<MmWaveControlMessage> > ctrlMsgs, 
   /* Send Ctrl messages*/
   NS_LOG_FUNCTION (this << "Send Ctrl");
   //m_downlinkSpectrumPhy->StartTxDlControlFrames (ctrlMsgs, slotPrd);
+//  DynamicCast<AntennaArrayModel>(m_downlinkSpectrumPhyList.at(0)->GetRxAntenna ())->ChangeToOmniTx();
   m_downlinkSpectrumPhyList.at(0)->StartTxDlControlFrames (ctrlMsgs, slotPrd); //Do not consider layer
 }
 

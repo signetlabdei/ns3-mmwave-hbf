@@ -406,6 +406,12 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
 //	    {//as an upper bound on actual MU-MIMO beamforming design, interference is fully suppressed
 	      m_interferenceData->AddSignal (mmwaveDataRxParams->psd, mmwaveDataRxParams->duration);
 //	    }
+//	  else
+//	    {
+//	      double fakeBFinterferenceGain = 0.01;// set to 0 for perfect suppression
+//	      *(mmwaveDataRxParams->psd) *= fakeBFinterferenceGain;
+//	      m_interferenceData->AddSignal (mmwaveDataRxParams->psd, mmwaveDataRxParams->duration);
+//	    }
           if (mmwaveDataRxParams->cellId == m_cellId && isMyLayer)
             {
               NS_LOG_INFO ("Data is for this UE, StartRxData");
