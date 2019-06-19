@@ -1687,23 +1687,35 @@ MmWaveHelper::InstallSingleEnbDevice (Ptr<Node> n)
         }
 
       /* Antenna model */
-      Ptr<AntennaModel> antenna = (m_enbAntennaModelFactory.Create ())->GetObject<AntennaModel> ();
-      DynamicCast<AntennaArrayModel> (antenna)->SetPlanesNumber (m_noEnbPanels);
-      DynamicCast<AntennaArrayModel> (antenna)->SetDeviceType (false);
-      NS_LOG_INFO("eNB device->GetAntennaNum() " << device->GetAntennaNum());
-      DynamicCast<AntennaArrayModel> (antenna)->SetTotNoArrayElements (device->GetAntennaNum());      
-      NS_ASSERT_MSG (antenna, "error in creating the AntennaModel object");
-      //dlPhy->SetAntenna (antenna);
-      for (itSpec = dlPhyList.begin (); itSpec != dlPhyList.end (); itSpec++)
-        {
-          (*itSpec)->SetAntenna (antenna);
-        }
-      //ulPhy->SetAntenna (antenna);
-      for (itSpec = ulPhyList.begin (); itSpec != ulPhyList.end (); itSpec++)
-        {
-          (*itSpec)->SetAntenna (antenna);
-        }
+//      Ptr<AntennaModel> antenna = (m_enbAntennaModelFactory.Create ())->GetObject<AntennaModel> ();
+//      DynamicCast<AntennaArrayModel> (antenna)->SetPlanesNumber (m_noEnbPanels);
+//      DynamicCast<AntennaArrayModel> (antenna)->SetDeviceType (false);
+//      NS_LOG_INFO("eNB device->GetAntennaNum() " << device->GetAntennaNum());
+//      DynamicCast<AntennaArrayModel> (antenna)->SetTotNoArrayElements (device->GetAntennaNum());
+//      NS_ASSERT_MSG (antenna, "error in creating the AntennaModel object");
+//      //dlPhy->SetAntenna (antenna);
+//      for (itSpec = dlPhyList.begin (); itSpec != dlPhyList.end (); itSpec++)
+//        {
+//          (*itSpec)->SetAntenna (antenna);
+//        }
+//      //ulPhy->SetAntenna (antenna);
+//      for (itSpec = ulPhyList.begin (); itSpec != ulPhyList.end (); itSpec++)
+//        {
+//          (*itSpec)->SetAntenna (antenna);
+//        }
 
+      for (uint8_t ind=0; ind < numEnbLayers; ind++)
+	{
+	  Ptr<AntennaModel> antenna = (m_enbAntennaModelFactory.Create ())->GetObject<AntennaModel> ();
+	  DynamicCast<AntennaArrayModel> (antenna)->SetPlanesNumber (m_noEnbPanels);
+	  DynamicCast<AntennaArrayModel> (antenna)->SetDeviceType (false);
+	  NS_LOG_INFO("eNB device->GetAntennaNum() " << device->GetAntennaNum());
+	  DynamicCast<AntennaArrayModel> (antenna)->SetTotNoArrayElements (device->GetAntennaNum());
+	  NS_ASSERT_MSG (antenna, "error in creating the AntennaModel object");
+
+	  dlPhyList.at(ind)->SetAntenna (antenna);
+	  ulPhyList.at(ind)->SetAntenna (antenna);
+	}
 
       Ptr<MmWaveEnbMac> mac = CreateObject<MmWaveEnbMac> ();
       mac->SetConfigurationParameters (it->second->GetConfigurationParameters ());

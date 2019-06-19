@@ -1432,7 +1432,7 @@ MmWaveEnbPhy::StartSlot (void)
 
           for (uint8_t layerInd = 0; layerInd < currNumLayers; layerInd++)
             {
-              m_slotNum = m_slotNum + layerInd;
+              m_slotNum = m_slotNum + layerInd;//TODO Revise. If I undesrtand correctly this should this be +1 [Felipe]
               currSlot = m_currSfAllocInfo.m_slotAllocInfo[m_slotNum];
               slotPeriod = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () * currSlot.m_dci.m_numSym);
               NS_ASSERT (currSlot.m_tddMode == SlotAllocInfo::DL_slotAllocInfo);
@@ -1462,6 +1462,19 @@ MmWaveEnbPhy::StartSlot (void)
                   pktBurst = CreateObject<PacketBurst> ();
                   pktBurst->AddPacket (emptyPdu);
                 }
+
+              for (uint8_t i = 0; i < m_deviceMap.size (); i++)
+        	{
+        	  Ptr<mmwave::MmWaveUeNetDevice> ueDev = m_deviceMap.at (i)->GetObject<mmwave::MmWaveUeNetDevice> ();
+        	  if (currSlot.m_dci.m_rnti == ueDev->GetPhy ()->GetRnti ())
+        	    {
+        	      NS_LOG_UNCOND ("Change Beamforming Vector");
+        	      //Antenna model is same for all layers but the bf vector contained in it is not
+        	      Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhyList ().at(currSlot.m_layerInd)->GetRxAntenna ());
+        	      antennaArray->ChangeBeamformingVectorPanel (m_deviceMap.at (i));
+        	      break;
+        	    }
+        	}
               NS_LOG_DEBUG ("ENB " << m_cellId << " TXing DL DATA frame " << m_frameNum << " subframe " << (unsigned) m_sfNum << " symbols "
                             << (unsigned) currSlot.m_dci.m_symStart << "-" << (unsigned) (currSlot.m_dci.m_symStart + currSlot.m_dci.m_numSym - 1)
                             << "\t start " << Simulator::Now () + NanoSeconds (1.0) << " end " << Simulator::Now () + slotPeriod - NanoSeconds (2.0));
@@ -1522,7 +1535,7 @@ MmWaveEnbPhy::StartSlot (void)
 
           for (uint8_t layerInd = 0; layerInd < currNumLayers; layerInd++)
             {
-              m_slotNum = m_slotNum + layerInd;
+              m_slotNum = m_slotNum + layerInd;//TODO Revise. If I undesrtand correctly this should this be +1 [Felipe]
               currSlot = m_currSfAllocInfo.m_slotAllocInfo[m_slotNum];
               slotPeriod = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () * currSlot.m_dci.m_numSym);
               //NS_LOG_DEBUG ("Slot " << (uint8_t)m_slotNum << " scheduled for Uplink");
@@ -1545,8 +1558,8 @@ MmWaveEnbPhy::StartSlot (void)
 
                   if (currSlot.m_rnti == ueRnti && m_netDevice == associatedEnb)
                     {
-                      //NS_LOG_DEBUG ("Change Beamforming Vector");
-                      //Antenna model is samle for all layers
+                      NS_LOG_UNCOND ("Change Beamforming Vector");
+                      //Antenna model is same for all layers but the bf vector contained in it is not
                       Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhyList ().at (currSlot.m_dci.m_layerInd)->GetRxAntenna ());
                       antennaArray->ChangeBeamformingVectorPanel (m_deviceMap.at (i));
                       break;
@@ -1678,14 +1691,14 @@ MmWaveEnbPhy::SendDataChannels (Ptr<PacketBurst> pb, Time slotPrd, SlotAllocInfo
             }
 
           NS_LOG_DEBUG ("Scheduled rnti: " << slotInfo.m_dci.m_rnti << " ue rnti: " << ueRnti << " target eNB " << associatedEnb << " this eNB " << m_netDevice);
-          if (slotInfo.m_dci.m_rnti == ueRnti && m_netDevice == associatedEnb)
-            {
-              NS_LOG_DEBUG ("Change Beamforming Vector");
-              //Antenna model is same for all layers
-              Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhyList ().at(slotInfo.m_layerInd)->GetRxAntenna ());
-              antennaArray->ChangeBeamformingVectorPanel (m_deviceMap.at (i));
-              break;
-            }
+//          if (slotInfo.m_dci.m_rnti == ueRnti && m_netDevice == associatedEnb)
+//            {
+//              NS_LOG_DEBUG ("Change Beamforming Vector");
+//              //Antenna model is same for all layers but the bf vector contained in it is not
+//              Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhyList ().at(slotInfo.m_layerInd)->GetRxAntenna ());
+//              antennaArray->ChangeBeamformingVectorPanel (m_deviceMap.at (i));
+//              break;
+//            }
 
         }
     }

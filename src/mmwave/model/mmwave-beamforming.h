@@ -119,6 +119,11 @@ public:
                                                  Ptr<const MobilityModel> a,
                                                  Ptr<const MobilityModel> b) const;
 
+  Ptr<SpectrumValue> CalcRxPowerSpectralDensity (Ptr<const SpectrumValue> txPsd,
+                                                 Ptr<const MobilityModel> a,
+                                                 Ptr<const MobilityModel> b,
+						 int layerInd) const;
+
   /**
   * \breif Set the beamforming vector of connected enbs and ues
   * \param ueDevice a pointer to ueNetDevice
@@ -167,6 +172,16 @@ private:
                                                    Ptr<const MobilityModel> b) const;
 
   /**
+  * same as above but specify the desired layer in a mmwave device with multiple spectrum-phy objects (HBF)
+  */
+  Ptr<SpectrumValue> DoCalcRxPowerSpectralDensity (Ptr<const SpectrumValue> txPsd,
+                                                   Ptr<const MobilityModel> a,
+                                                   Ptr<const MobilityModel> b,
+							 int layerInd) const;
+
+
+
+  /**
   * \breif Store the channel matrix to channelMatrixMap
   * \param ueDevice a pointer to ueNetDevice
   * \param enbDevice a pointer to enbNetDevice
@@ -199,6 +214,8 @@ private:
    * \brief Get the pair of Ptr<AntennaArrayModel> of UE and eNB, given the NetDevices
    */
   antennaPair GetUeEnbAntennaPair (Ptr<NetDevice> ueDevice, Ptr<NetDevice> enbDevice) const;
+
+  antennaPair GetUeEnbAntennaPair (Ptr<NetDevice> ueDevice, Ptr<NetDevice> enbDevice, int layerInd) const;
 
   /**
   * \a map to store channel matrix

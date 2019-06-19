@@ -346,6 +346,7 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
 //	  << "\tRNTIpackets: "<< (int )bearerTag.GetRnti ());
       bool isAllocated = true;
       bool isMyLayer = true;
+      bool isUL = true;
       Ptr<mmwave::MmWaveUeNetDevice> ueRx = 0;
       ueRx = DynamicCast<mmwave::MmWaveUeNetDevice> (GetDevice ());
       Ptr<McUeNetDevice> rxMcUe = 0;
@@ -363,6 +364,7 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
       if (ueRx != 0)
         {
           NS_LOG_INFO ("[DL] UE's allocated layer index:" << (int) ueRx->GetPhy (m_componentCarrierId)->GetAllocLayerInd ());
+          isUL = false;
         }
 
       if (enbRx !=0)
@@ -402,16 +404,25 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
 
       if (isAllocated)
         {
-//	  if (mmwaveDataRxParams->cellId != m_cellId || isMyLayer)
-//	    {//as an upper bound on actual MU-MIMO beamforming design, interference is fully suppressed
-	      m_interferenceData->AddSignal (mmwaveDataRxParams->psd, mmwaveDataRxParams->duration);
-//	    }
-//	  else
-//	    {
-//	      double fakeBFinterferenceGain = 0.01;// set to 0 for perfect suppression
-//	      *(mmwaveDataRxParams->psd) *= fakeBFinterferenceGain;
-//	      m_interferenceData->AddSignal (mmwaveDataRxParams->psd, mmwaveDataRxParams->duration);
-//	    }
+	  if (isUL)
+	    {
+	      layerInd = m_layerInd;
+	    }
+	  if (mmwaveDataRxParams->cellId == m_cellId && (layerInd>0 ))
+	    {
+	      double correctBFinterferenceGain = 0.01;// set to 0 for perfect suppression
+	      Ptr<MobilityModel> txMobility = mmwaveDataRxParams->txPhy->GetMobility ();
+	      Ptr<MmWaveBeamforming> pathlossmodel = DynamicCast<MmWaveBeamforming>(m_channel->GetSpectrumPropagationLossModel());
+	      Ptr<SpectrumValue> psdWrongLayer = pathlossmodel->CalcRxPowerSpectralDensity(mmwaveDataRxParams->psd,txMobility,this->GetMobility (),0);
+	      Ptr<SpectrumValue> psdMyLayer = pathlossmodel->CalcRxPowerSpectralDensity(mmwaveDataRxParams->psd,txMobility,this->GetMobility (),layerInd);
+
+	      //assuming that BF gain is frequency-flat and use only the first coefficient
+	      correctBFinterferenceGain = ( (*psdMyLayer)[0] / (*psdWrongLayer)[0]);
+	      *(mmwaveDataRxParams->psd) *= correctBFinterferenceGain;
+	      NS_LOG_INFO("Corrected BF gain of layer 0 to layer " << (int) layerInd << " by factor "<< correctBFinterferenceGain);
+	    }
+
+	  m_interferenceData->AddSignal (mmwaveDataRxParams->psd, mmwaveDataRxParams->duration);
           if (mmwaveDataRxParams->cellId == m_cellId && isMyLayer)
             {
               NS_LOG_INFO ("Data is for this UE, StartRxData");

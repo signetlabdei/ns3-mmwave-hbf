@@ -440,24 +440,27 @@ MmWaveBeamforming::SetBeamformingVector (Ptr<NetDevice> ueDevice, Ptr<NetDevice>
   std::map< key_t, Ptr<BeamformingParams> >::iterator it = m_channelMatrixMap.find (key);
   NS_ASSERT_MSG (it != m_channelMatrixMap.end (), "could not find");
   Ptr<BeamformingParams> bfParams = it->second;
+//  Ptr<MmWaveEnbNetDevice> EnbDev = DynamicCast<MmWaveEnbNetDevice> (enbDevice);
+  for (uint8_t layerInd=0; layerInd < DynamicCast<MmWaveEnbNetDevice> (enbDevice)->GetPhy()->GetDlSpectrumPhyList().size(); layerInd++)
+    {
+      antennaPair antennaArrays = GetUeEnbAntennaPair (ueDevice, enbDevice,layerInd);
+      Ptr<AntennaArrayModel> enbAntennaArray = antennaArrays.second;
+      Ptr<AntennaArrayModel> ueAntennaArray = antennaArrays.first;
 
-  antennaPair antennaArrays = GetUeEnbAntennaPair (ueDevice, enbDevice);
-  Ptr<AntennaArrayModel> enbAntennaArray = antennaArrays.second;
-  Ptr<AntennaArrayModel> ueAntennaArray = antennaArrays.first;
+      /*double variable = m_uniformRV->GetValue (0, 1);
+      if(m_update && variable<0.08)
+      {
+	      ueAntennaArray->SetBeamformingVectorWithDelay (bfParams->m_ueW);
+	      enbAntennaArray->SetBeamformingVectorWithDelay (bfParams->m_enbW, ueDevice);
 
-  /*double variable = m_uniformRV->GetValue (0, 1);
-  if(m_update && variable<0.08)
-  {
-          ueAntennaArray->SetBeamformingVectorWithDelay (bfParams->m_ueW);
-          enbAntennaArray->SetBeamformingVectorWithDelay (bfParams->m_enbW, ueDevice);
-
-  }
-  else
-  {*/
-  ueAntennaArray->SetBeamformingVectorPanel (bfParams->m_ueW, enbDevice);
-  ueAntennaArray->ChangeBeamformingVectorPanel (enbDevice);
-  enbAntennaArray->SetBeamformingVectorPanel (bfParams->m_enbW, ueDevice);
-  enbAntennaArray->ChangeBeamformingVectorPanel (ueDevice);
+      }
+      else
+      {*/
+      ueAntennaArray->SetBeamformingVectorPanel (bfParams->m_ueW, enbDevice);
+      ueAntennaArray->ChangeBeamformingVectorPanel (enbDevice);
+      enbAntennaArray->SetBeamformingVectorPanel (bfParams->m_enbW, ueDevice);
+      enbAntennaArray->ChangeBeamformingVectorPanel (ueDevice);
+    }
 
   //}
 }
@@ -550,13 +553,31 @@ MmWaveBeamforming::CalcRxPowerSpectralDensity (Ptr<const SpectrumValue> txPsd,
                                                Ptr<const MobilityModel> a,
                                                Ptr<const MobilityModel> b) const
 {
-  return DoCalcRxPowerSpectralDensity (txPsd, a, b);
+  return DoCalcRxPowerSpectralDensity (txPsd, a, b, 0);
+}
+
+Ptr<SpectrumValue>
+MmWaveBeamforming::CalcRxPowerSpectralDensity (Ptr<const SpectrumValue> txPsd,
+                                               Ptr<const MobilityModel> a,
+                                               Ptr<const MobilityModel> b,
+						int layerInd) const
+{
+  return DoCalcRxPowerSpectralDensity (txPsd, a, b, layerInd);
 }
 
 Ptr<SpectrumValue>
 MmWaveBeamforming::DoCalcRxPowerSpectralDensity (Ptr<const SpectrumValue> txPsd,
                                                  Ptr<const MobilityModel> a,
                                                  Ptr<const MobilityModel> b) const
+{
+  return DoCalcRxPowerSpectralDensity(txPsd,a,b,0);
+}
+
+Ptr<SpectrumValue>
+MmWaveBeamforming::DoCalcRxPowerSpectralDensity (Ptr<const SpectrumValue> txPsd,
+                                                 Ptr<const MobilityModel> a,
+                                                 Ptr<const MobilityModel> b,
+						 int layerInd) const
 {
   bool downlink;
   Ptr<NetDevice> enbDevice, ueDevice;
@@ -592,7 +613,7 @@ MmWaveBeamforming::DoCalcRxPowerSpectralDensity (Ptr<const SpectrumValue> txPsd,
 
   Ptr<BeamformingParams> bfParams = it->second;
 
-  antennaPair antennaArrays = GetUeEnbAntennaPair (ueDevice, enbDevice);
+  antennaPair antennaArrays = GetUeEnbAntennaPair (ueDevice, enbDevice, layerInd);
   Ptr<AntennaArrayModel> enbAntennaArray = antennaArrays.second;
   Ptr<AntennaArrayModel> ueAntennaArray = antennaArrays.first;
 
@@ -700,6 +721,12 @@ MmWaveBeamforming::UpdateMatrices (bool update)
 antennaPair
 MmWaveBeamforming::GetUeEnbAntennaPair (Ptr<NetDevice> ueDevice, Ptr<NetDevice> enbDevice) const
 {
+  return GetUeEnbAntennaPair (ueDevice, enbDevice, 0);
+  }
+
+antennaPair
+MmWaveBeamforming::GetUeEnbAntennaPair (Ptr<NetDevice> ueDevice, Ptr<NetDevice> enbDevice, int layerInd) const
+{
   Ptr<MmWaveEnbNetDevice> EnbDev =
     DynamicCast<MmWaveEnbNetDevice> (enbDevice);
   Ptr<mmwave::MmWaveUeNetDevice> UeDev = ueDevice->GetObject<mmwave::MmWaveUeNetDevice> ();
@@ -719,7 +746,7 @@ MmWaveBeamforming::GetUeEnbAntennaPair (Ptr<NetDevice> ueDevice, Ptr<NetDevice> 
   Ptr<AntennaArrayModel> ueAntennaArray = DynamicCast<AntennaArrayModel> (uePhy->GetDlSpectrumPhy ()->GetRxAntenna ());
   //Ptr<AntennaArrayModel> enbAntennaArray = DynamicCast<AntennaArrayModel> (enbPhy->GetDlSpectrumPhy ()->GetRxAntenna ());
   //Antenna model is same for all layers
-  Ptr<AntennaArrayModel> enbAntennaArray = DynamicCast<AntennaArrayModel> (enbPhy->GetDlSpectrumPhyList ().at(0)->GetRxAntenna ());
+  Ptr<AntennaArrayModel> enbAntennaArray = DynamicCast<AntennaArrayModel> (enbPhy->GetDlSpectrumPhyList ().at(layerInd)->GetRxAntenna ());
 
   return antennaPair (ueAntennaArray, enbAntennaArray);
 }
