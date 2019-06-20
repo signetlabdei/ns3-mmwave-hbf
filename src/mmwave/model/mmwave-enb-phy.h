@@ -145,6 +145,8 @@ public:
 
   bool IsReceptionEnabled ();
 
+  uint8_t GetCurrNumAllocLayers ();
+
 private:
   bool AddUePhy (uint16_t rnti);
   // LteEnbCphySapProvider forwarded methods

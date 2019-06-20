@@ -346,7 +346,6 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
 //	  << "\tRNTIpackets: "<< (int )bearerTag.GetRnti ());
       bool isAllocated = true;
       bool isMyLayer = true;
-      bool isUL = true;
       Ptr<mmwave::MmWaveUeNetDevice> ueRx = 0;
       ueRx = DynamicCast<mmwave::MmWaveUeNetDevice> (GetDevice ());
       Ptr<McUeNetDevice> rxMcUe = 0;
@@ -356,21 +355,15 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
       uint16_t cellId = mmwaveDataRxParams->cellId;
       uint8_t layerInd = mmwaveDataRxParams->layerInd;
       Time duration = mmwaveDataRxParams->duration;
-      NS_LOG_INFO("Data layer index: " << (int)layerInd << ", cell ID: " << (int)cellId << ", duration: " << duration
+      NS_LOG_INFO("RXData signal layer index: " << (int)layerInd << ", cell ID: " << (int)cellId << ", duration: " << duration
 		  	  << " slotInd: " << (int ) mmwaveDataRxParams->slotInd
 			  << " Npackets: " << (int )mmwaveDataRxParams->packetBurst->GetNPackets()
 			  << " RNTIpackets: "<< (int )bearerTag.GetRnti ());
-
+      // Begin of logic for UE as Rx
       if (ueRx != 0)
         {
           NS_LOG_INFO ("[DL] UE's allocated layer index:" << (int) ueRx->GetPhy (m_componentCarrierId)->GetAllocLayerInd ());
-          isUL = false;
         }
-
-      if (enbRx !=0)
-        {
-          NS_LOG_INFO (Simulator::Now() << " [UL] gNB's layer index:" << (int)m_layerInd << ", UE's allocated index:" << (int)layerInd);
-        }  
 
       if ((ueRx != 0) && (ueRx->GetPhy (m_componentCarrierId)->IsReceptionEnabled () == false))
         {               // if the first cast is 0 (the device is MC) then this if will not be executed
@@ -382,16 +375,22 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
           isAllocated = false;
         }
      
-	    if ((ueRx != 0) && (ueRx->GetPhy (m_componentCarrierId)->GetAllocLayerInd() != layerInd))
+      if ((ueRx != 0) && (ueRx->GetPhy (m_componentCarrierId)->GetAllocLayerInd() != layerInd))
         {               
           NS_LOG_INFO ("This data is not for this UE");
-			    isMyLayer = false;
+          isMyLayer = false;
         }
       else if ((rxMcUe != 0) && (rxMcUe->GetMmWavePhy (m_componentCarrierId)->GetAllocLayerInd() != layerInd))
         {               
           isMyLayer = false;
         }
 
+      // Begin of logic for BS as Rx
+
+      if (enbRx !=0)
+        {
+	  NS_LOG_INFO (Simulator::Now() << " [UL] gNB's layer index:" << (int)m_layerInd << ", UE's allocated index:" << (int)layerInd);
+        }
       if ((enbRx != 0) && (enbRx->GetPhy (m_componentCarrierId)->IsReceptionEnabled () == false))
         {
           isAllocated = false;
@@ -402,13 +401,13 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
           isMyLayer = false;
         }
 
+      if (enbRx !=0)
+	{//starting from here, in the BS Rx part, beamforming is evaluated for this mmwave-spectrum-phy index, not signal transmission index
+    	  layerInd = m_layerInd;
+	}
       if (isAllocated)
         {
-	  if (isUL)
-	    {
-	      layerInd = m_layerInd;
-	    }
-	  if (mmwaveDataRxParams->cellId == m_cellId && (layerInd>0 ))
+	  if (mmwaveDataRxParams->cellId == m_cellId )
 	    {
 	      double correctBFinterferenceGain = 0.01;// set to 0 for perfect suppression
 	      Ptr<MobilityModel> txMobility = mmwaveDataRxParams->txPhy->GetMobility ();
@@ -421,11 +420,10 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
 	      *(mmwaveDataRxParams->psd) *= correctBFinterferenceGain;
 	      NS_LOG_INFO("Corrected BF gain of layer 0 to layer " << (int) layerInd << " by factor "<< correctBFinterferenceGain);
 	    }
-
 	  m_interferenceData->AddSignal (mmwaveDataRxParams->psd, mmwaveDataRxParams->duration);
           if (mmwaveDataRxParams->cellId == m_cellId && isMyLayer)
             {
-              NS_LOG_INFO ("Data is for this UE, StartRxData");
+              NS_LOG_INFO ("Data is for this UE/Layer, StartRxData");
               //m_interferenceData->AddSignal (mmwaveDataRxParams->psd, mmwaveDataRxParams->duration);
               StartRxData (mmwaveDataRxParams);
             }
