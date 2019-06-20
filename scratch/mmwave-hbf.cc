@@ -69,7 +69,7 @@ main (int argc, char *argv[])
 	//LogComponentEnable("PropagationLossModel",LOG_LEVEL_ALL);
 
 	uint16_t numEnb = 1;
-	uint16_t numUe = 2;
+	uint16_t numUe = 3;
 	uint16_t numEnbLayers = 8;
 	double startTime = 1;
 	double simTime = 1.2;
