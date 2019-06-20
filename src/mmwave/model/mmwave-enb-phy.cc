@@ -1432,10 +1432,7 @@ MmWaveEnbPhy::StartSlot (void)
 
           for (uint8_t layerInd = 0; layerInd < currNumLayers; layerInd++)
             {
-              if (layerInd>0)
-        	{
-        	  m_slotNum++;
-        	}//TODO Revise. If I undesrtand correctly this should this be +1 [Felipe]
+              m_slotNum = m_slotNum + layerInd;//TODO Revise. If I undesrtand correctly this should this be +1 [Felipe]
               currSlot = m_currSfAllocInfo.m_slotAllocInfo[m_slotNum];
               slotPeriod = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () * currSlot.m_dci.m_numSym);
               NS_ASSERT (currSlot.m_tddMode == SlotAllocInfo::DL_slotAllocInfo);
@@ -1538,10 +1535,7 @@ MmWaveEnbPhy::StartSlot (void)
 
           for (uint8_t layerInd = 0; layerInd < currNumLayers; layerInd++)
             {
-              if (layerInd>0)
-        	{
-        	  m_slotNum++;
-        	}//TODO Revise. If I undesrtand correctly this should this be +1 [Felipe]
+              m_slotNum = m_slotNum + layerInd;//TODO Revise. If I undesrtand correctly this should this be +1 [Felipe]
               currSlot = m_currSfAllocInfo.m_slotAllocInfo[m_slotNum];
               slotPeriod = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () * currSlot.m_dci.m_numSym);
               //NS_LOG_DEBUG ("Slot " << (uint8_t)m_slotNum << " scheduled for Uplink");
@@ -1850,12 +1844,6 @@ bool
 MmWaveEnbPhy::IsReceptionEnabled ()
 {
   return m_receptionEnabled;
-}
-
-
-uint8_t MmWaveEnbPhy::GetCurrNumAllocLayers ()
-{
-  return m_currNumAllocLayers;
 }
 
 ////////////////////////////////////////////////////////////
