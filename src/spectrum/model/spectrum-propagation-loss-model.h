@@ -77,7 +77,7 @@ public:
   Ptr<SpectrumValue> CalcRxPowerSpectralDensity (Ptr<const SpectrumValue> txPsd,
                                                  Ptr<const MobilityModel> a,
                                                  Ptr<const MobilityModel> b) const;
-
+                                                 
 protected:
   virtual void DoDispose ();
 

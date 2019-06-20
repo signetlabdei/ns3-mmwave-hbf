@@ -52,11 +52,14 @@ AntennaArrayModel::AntennaArrayModel ()
   m_noPlane = 0;
   m_isUe = false;
   m_totNoArrayElements = 0;
+  m_currNumLayers = 1;
 }
 
 AntennaArrayModel::~AntennaArrayModel ()
 {
-
+  m_beamformingVectorList.clear();
+  m_currentPanelIdList.clear();
+  m_currentDevList.clear();
 }
 
 TypeId
@@ -134,7 +137,7 @@ AntennaArrayModel::SetPlanesNumber (double planesNumber)
 double
 AntennaArrayModel::GetPlanesId (void)
 {
-  return m_currentPanelId;
+  return m_currentPanelIdList[0];
 }
 
 
@@ -163,9 +166,21 @@ AntennaArrayModel::SetDeviceType (bool isUe)
 double
 AntennaArrayModel::GetOffset ()
 {
-  NS_LOG_DEBUG ("GetOffset " << m_currentPanelId);
-  NS_LOG_DEBUG ("Offset " << m_currentPanelId * 2 * M_PI / m_noPlane);
-  return m_currentPanelId * 2 * M_PI / m_noPlane;
+  NS_LOG_DEBUG ("GetOffset " << m_currentPanelIdList[0]);
+  NS_LOG_DEBUG ("Offset " << m_currentPanelIdList[0] * 2 * M_PI / m_noPlane);
+  return m_currentPanelIdList[0] * 2 * M_PI / m_noPlane;
+}
+
+void
+AntennaArrayModel::SetCurrNumLayers (uint8_t currNumLayers)
+{
+  m_currNumLayers = currNumLayers;
+}
+
+uint8_t
+AntennaArrayModel::GetCurrNumLayers ()
+{
+  return m_currNumLayers;
 }
 
 void
@@ -234,9 +249,9 @@ AntennaArrayModel::SetBeamformingVectorPanelDevices (Ptr<NetDevice> thisDevice, 
           NS_LOG_INFO ("m_lastUpdatePairMap.size " << m_lastUpdatePairMap.size ());
         }
     }
-  m_beamformingVector = antennaWeights;
-  m_currentPanelId = panelId;
-  m_currentDev = otherDevice;
+  m_beamformingVectorList[0] = antennaWeights;
+  m_currentPanelIdList[0] = panelId;
+  m_currentDevList[0] = otherDevice;
   NS_LOG_INFO ("panelId: " << panelId);
   NS_LOG_INFO ("otherDevice: " << otherDevice);
 }
@@ -271,14 +286,37 @@ AntennaArrayModel::SetBeamformingVectorPanel (complexVector_t antennaWeights, Pt
 void
 AntennaArrayModel::ChangeBeamformingVectorPanel (Ptr<NetDevice> device)
 {
+  ChangeBeamformingVectorPanelMultiLayer(device,0);
+}
+
+void
+AntennaArrayModel::ChangeBeamformingVectorPanelMultiLayer (Ptr<NetDevice> device, uint8_t layerInd)
+{
   NS_LOG_FUNCTION (this << device << Simulator::Now ());
   m_omniTx = false;
   std::map< Ptr<NetDevice>, std::pair<complexVector_t,int> >::iterator it = m_beamformingVectorPanelMap.find (device);
   NS_ASSERT_MSG (it != m_beamformingVectorPanelMap.end (), "could not find");
-  NS_LOG_DEBUG ("ChangeBeamformingVectorPanel towards dev " << device << " prev panel " << m_currentPanelId << " updated to " << it->second.second);
-  m_beamformingVector = it->second.first;
-  m_currentPanelId = it->second.second;
-  m_currentDev = device;
+  std::map<uint8_t, int>::iterator itPanel;
+  itPanel = m_currentPanelIdList.find(layerInd);
+  int currentPanelId;
+  if (itPanel != m_currentPanelIdList.end())
+    {
+      currentPanelId = itPanel->second;
+    }
+  else
+    {
+      currentPanelId = m_currentPanelIdList[0];
+    }
+  
+  NS_LOG_DEBUG ("ChangeBeamformingVectorPanel towards dev " << device << " layer " << (int)layerInd << " prev panel " << currentPanelId << " updated to " << it->second.second);
+  
+  /*if (m_beamformingVectorList.find(layerInd) != m_beamformingVectorList.end())
+    {
+      
+    }*/
+  m_beamformingVectorList[layerInd] = it->second.first;
+  m_currentPanelIdList[layerInd] = it->second.second;
+  m_currentDevList[layerInd] = device;
 }
 
 complexVector_t
@@ -289,7 +327,35 @@ AntennaArrayModel::GetBeamformingVectorPanel ()
     {
       NS_FATAL_ERROR ("Omni transmission do not need beamforming vector");
     }
-  return m_beamformingVector;
+  return GetBeamformingVectorPanelMultiLayer(0);
+}
+
+complexVector_t
+AntennaArrayModel::GetBeamformingVectorPanelMultiLayer (uint8_t layerInd)
+{
+  NS_LOG_FUNCTION (this << Simulator::Now ());
+  if (m_omniTx)
+    {
+      NS_FATAL_ERROR ("Omni transmission do not need beamforming vector");
+    }
+
+  std::map<uint8_t, complexVector_t>::iterator it;  
+  it = m_beamformingVectorList.find(layerInd);
+  if (it != m_beamformingVectorList.end())
+    {  
+      return it->second;
+    }
+  else
+    {
+      complexVector_t nullVector;
+      return nullVector;
+    }
+}
+
+void
+AntennaArrayModel::ClearBeamformingVectorList ()
+{
+  m_beamformingVectorList.clear();
 }
 
 void
@@ -316,7 +382,8 @@ AntennaArrayModel::GetBeamformingVectorPanel (Ptr<NetDevice> device)
     }
   else
     {
-      weights = m_beamformingVector;
+      complexVector_t nullVector;
+      weights = nullVector;
     }
   return weights;
 }
@@ -324,7 +391,7 @@ AntennaArrayModel::GetBeamformingVectorPanel (Ptr<NetDevice> device)
 Ptr<NetDevice>
 AntennaArrayModel::GetCurrentDevice ()
 {
-  return m_currentDev;
+  return m_currentDevList[0];
 }
 
 double
@@ -388,7 +455,7 @@ AntennaArrayModel::SetSector (uint8_t sector, uint16_t *antennaNum, double eleva
                                   + cos (vAngle_radian) * loc.z);
       tempVector.push_back (exp (std::complex<double> (0, phase)) * power);
     }
-  m_beamformingVector = tempVector;
+  m_beamformingVectorList[0] = tempVector;
 }
 
 Time

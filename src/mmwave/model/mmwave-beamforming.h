@@ -119,10 +119,10 @@ public:
                                                  Ptr<const MobilityModel> a,
                                                  Ptr<const MobilityModel> b) const;
 
-  Ptr<SpectrumValue> CalcRxPowerSpectralDensity (Ptr<const SpectrumValue> txPsd,
-                                                 Ptr<const MobilityModel> a,
-                                                 Ptr<const MobilityModel> b,
-						 int layerInd) const;
+  Ptr<SpectrumValue> CalcRxPowerSpectralDensityMultiLayers (Ptr<const SpectrumValue> txPsd,
+                                                           Ptr<const MobilityModel> a,
+                                                           Ptr<const MobilityModel> b,
+                                                           uint8_t layInd) const;
 
   /**
   * \breif Set the beamforming vector of connected enbs and ues
@@ -171,15 +171,10 @@ private:
                                                    Ptr<const MobilityModel> a,
                                                    Ptr<const MobilityModel> b) const;
 
-  /**
-  * same as above but specify the desired layer in a mmwave device with multiple spectrum-phy objects (HBF)
-  */
-  Ptr<SpectrumValue> DoCalcRxPowerSpectralDensity (Ptr<const SpectrumValue> txPsd,
-                                                   Ptr<const MobilityModel> a,
-                                                   Ptr<const MobilityModel> b,
-							 int layerInd) const;
-
-
+  Ptr<SpectrumValue> DoCalcRxPowerSpectralDensityMultiLayers (Ptr<const SpectrumValue> txPsd,
+                                                              Ptr<const MobilityModel> a,
+                                                              Ptr<const MobilityModel> b,
+                                                              uint8_t layerInd) const;
 
   /**
   * \breif Store the channel matrix to channelMatrixMap
@@ -214,8 +209,6 @@ private:
    * \brief Get the pair of Ptr<AntennaArrayModel> of UE and eNB, given the NetDevices
    */
   antennaPair GetUeEnbAntennaPair (Ptr<NetDevice> ueDevice, Ptr<NetDevice> enbDevice) const;
-
-  antennaPair GetUeEnbAntennaPair (Ptr<NetDevice> ueDevice, Ptr<NetDevice> enbDevice, int layerInd) const;
 
   /**
   * \a map to store channel matrix

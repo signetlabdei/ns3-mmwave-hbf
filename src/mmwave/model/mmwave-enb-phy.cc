@@ -1471,10 +1471,10 @@ MmWaveEnbPhy::StartSlot (void)
         	  Ptr<mmwave::MmWaveUeNetDevice> ueDev = m_deviceMap.at (i)->GetObject<mmwave::MmWaveUeNetDevice> ();
         	  if (currSlot.m_dci.m_rnti == ueDev->GetPhy ()->GetRnti ())
         	    {
-        	      NS_LOG_UNCOND ("Change Beamforming Vector");
-        	      //Antenna model is same for all layers but the bf vector contained in it is not
-        	      Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhyList ().at(currSlot.m_layerInd)->GetRxAntenna ());
-        	      antennaArray->ChangeBeamformingVectorPanel (m_deviceMap.at (i));
+        	      //NS_LOG_DEBUG ("Change Beamforming Vector");
+        	      //Antenna model is same for all layers 
+        	      Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhyList ().at(0)->GetRxAntenna ());
+     	              antennaArray->ChangeBeamformingVectorPanelMultiLayer (m_deviceMap.at (i), currSlot.m_dci.m_layerInd);
         	      break;
         	    }
         	}
@@ -1513,8 +1513,7 @@ MmWaveEnbPhy::StartSlot (void)
                 {
                   //NS_LOG_DEBUG ("Change Beamforming Vector");
                   //Antenna model is samle for all layers
-                  Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (
-                      GetDlSpectrumPhyList ().at (currSlot.m_dci.m_layerInd)->GetRxAntenna ());
+                  Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhyList ().at (0)->GetRxAntenna ());
                   antennaArray->ChangeBeamformingVectorPanel (m_deviceMap.at (i));
                   break;
                 }
@@ -1535,6 +1534,10 @@ MmWaveEnbPhy::StartSlot (void)
           NS_LOG_INFO ("Minimum no. of symbols: " << (int) currSlotBundleInfo.m_minNumSym);
           uint8_t currNumLayers = currSlotBundleInfo.m_numLayers;
           m_slotBundleList.pop_front ();
+          Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhyList ().at (0)->GetRxAntenna ());
+          antennaArray->SetCurrNumLayers(currNumLayers);
+          antennaArray->ClearBeamformingVectorList();
+          NS_LOG_INFO ("Curr number of layers in Anntena array model:" << (int)antennaArray->GetCurrNumLayers());
 
           for (uint8_t layerInd = 0; layerInd < currNumLayers; layerInd++)
             {
@@ -1560,14 +1563,15 @@ MmWaveEnbPhy::StartSlot (void)
                   uint64_t ueRnti = (ueDev != 0) ? (ueDev->GetPhy ()->GetRnti ()) : (mcUeDev->GetMmWavePhy ()->GetRnti ());
                   Ptr<NetDevice> associatedEnb = (ueDev != 0) ? (ueDev->GetTargetEnb ()) : (mcUeDev->GetMmWaveTargetEnb ());
 
-                  NS_LOG_DEBUG ("Scheduled rnti: " << currSlot.m_rnti << " ue rnti: " << ueRnti << " target eNB " << associatedEnb << " this eNB " << m_netDevice);
+                  NS_LOG_DEBUG ("Scheduled rnti: " << currSlot.m_rnti << " ue rnti: " << ueRnti << " layer Ind: " << (int)currSlot.m_dci.m_layerInd<< " target eNB " << associatedEnb << " this eNB " << m_netDevice);
 
                   if (currSlot.m_rnti == ueRnti && m_netDevice == associatedEnb)
                     {
-                      NS_LOG_UNCOND ("Change Beamforming Vector");
-                      //Antenna model is same for all layers but the bf vector contained in it is not
-                      Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhyList ().at (currSlot.m_dci.m_layerInd)->GetRxAntenna ());
-                      antennaArray->ChangeBeamformingVectorPanel (m_deviceMap.at (i));
+                      //NS_LOG_DEBUG ("Change Beamforming Vector");
+                      //Antenna model is samle for all layers
+                      //Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhyList ().at (0)->GetRxAntenna ());
+                      antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhyList ().at (0)->GetRxAntenna ());
+                      antennaArray->ChangeBeamformingVectorPanelMultiLayer (m_deviceMap.at (i), currSlot.m_dci.m_layerInd);
                       break;
                     }
                 }
@@ -1598,6 +1602,14 @@ MmWaveEnbPhy::EndSlot (void)
 
   //Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhy ()->GetRxAntenna());
   //antennaArray->ChangeToOmniTx ();
+  if (m_currNumAllocLayers > 1)
+  {
+    Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhyList ().at(0)->GetRxAntenna());
+      if (antennaArray != 0)
+      {
+        antennaArray->SetCurrNumLayers (1); //intialization
+      }
+  }
 
   if (m_slotNum == m_currSfNumSlots - 1)
     {
@@ -1732,7 +1744,7 @@ MmWaveEnbPhy::SendCtrlChannels (std::list<Ptr<MmWaveControlMessage> > ctrlMsgs, 
   /* Send Ctrl messages*/
   NS_LOG_FUNCTION (this << "Send Ctrl");
   //m_downlinkSpectrumPhy->StartTxDlControlFrames (ctrlMsgs, slotPrd);
-//  DynamicCast<AntennaArrayModel>(m_downlinkSpectrumPhyList.at(0)->GetRxAntenna ())->ChangeToOmniTx();
+//TODO see if it is necessary to apply  DynamicCast<AntennaArrayModel>(m_downlinkSpectrumPhyList.at(0)->GetRxAntenna ())->ChangeToOmniTx();
   m_downlinkSpectrumPhyList.at(0)->StartTxDlControlFrames (ctrlMsgs, slotPrd); //Do not consider layer
 }
 

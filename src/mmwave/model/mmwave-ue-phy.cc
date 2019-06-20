@@ -733,7 +733,7 @@ MmWaveUePhy::StartSlot ()
       if (pktBurst != 0)
         {
           std::list<Ptr<MmWaveControlMessage> > ctrlMsg = GetControlMessages ();
-          m_sendDataChannelEvent = Simulator::Schedule (NanoSeconds (2.0), &MmWaveUePhy::SendDataChannels, this, pktBurst, ctrlMsg, slotPeriod - NanoSeconds (2.0), m_slotNum);
+          m_sendDataChannelEvent = Simulator::Schedule (NanoSeconds (1.0), &MmWaveUePhy::SendDataChannels, this, pktBurst, ctrlMsg, slotPeriod - NanoSeconds (2.0), m_slotNum);
         }
     }
 

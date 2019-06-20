@@ -412,8 +412,8 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
 	      double correctBFinterferenceGain = 0.01;// set to 0 for perfect suppression
 	      Ptr<MobilityModel> txMobility = mmwaveDataRxParams->txPhy->GetMobility ();
 	      Ptr<MmWaveBeamforming> pathlossmodel = DynamicCast<MmWaveBeamforming>(m_channel->GetSpectrumPropagationLossModel());
-	      Ptr<SpectrumValue> psdWrongLayer = pathlossmodel->CalcRxPowerSpectralDensity(mmwaveDataRxParams->psd,txMobility,this->GetMobility (),0);
-	      Ptr<SpectrumValue> psdMyLayer = pathlossmodel->CalcRxPowerSpectralDensity(mmwaveDataRxParams->psd,txMobility,this->GetMobility (),layerInd);
+	      Ptr<SpectrumValue> psdWrongLayer = pathlossmodel->CalcRxPowerSpectralDensityMultiLayers(mmwaveDataRxParams->psd,txMobility,this->GetMobility (),0);
+	      Ptr<SpectrumValue> psdMyLayer = pathlossmodel->CalcRxPowerSpectralDensityMultiLayers(mmwaveDataRxParams->psd,txMobility,this->GetMobility (),layerInd);
 
 	      //assuming that BF gain is frequency-flat and use only the first coefficient
 	      correctBFinterferenceGain = ( (*psdMyLayer)[0] / (*psdWrongLayer)[0]);
@@ -624,7 +624,7 @@ MmWaveSpectrumPhy::EndRxData ()
           sinrMin = *it;
         }
     }
-  NS_LOG_INFO (this << "SINR perceived " << sinrMin);
+  NS_LOG_INFO (this << " SINR perceived " << sinrMin);
   Ptr<MmWaveEnbNetDevice> enbRx = DynamicCast<MmWaveEnbNetDevice> (GetDevice ());
   Ptr<mmwave::MmWaveUeNetDevice> ueRx = DynamicCast<mmwave::MmWaveUeNetDevice> (GetDevice ());
   Ptr<McUeNetDevice> rxMcUe = DynamicCast<McUeNetDevice> (GetDevice ());
@@ -1071,6 +1071,11 @@ MmWaveSpectrumPhy::SetHarqPhyModule (Ptr<MmWaveHarqPhy> harq)
   m_harqPhyModule = harq;
 }
 
+uint8_t
+MmWaveSpectrumPhy::GetLayerInd ()
+{
+  return m_layerInd;
+}
 
 }
 

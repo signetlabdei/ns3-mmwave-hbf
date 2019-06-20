@@ -910,7 +910,7 @@ MmWaveEnbMac::DoSchedConfigIndication (MmWaveMacSchedSapUser::SchedConfigIndPara
     NS_LOG_INFO("MCS: " << (int)slotAllocInfo.m_dci.m_mcs);
     NS_LOG_INFO("TB size: " << (int)slotAllocInfo.m_dci.m_tbSize);
     NS_LOG_INFO("New data indicator: " << (int)slotAllocInfo.m_dci.m_ndi);
-    NS_LOG_INFO("Redundancy version: " << (int)slotAllocInfo.m_dci.m_numSym);
+    NS_LOG_INFO("Redundancy version: " << (int)slotAllocInfo.m_dci.m_rv);
     NS_LOG_INFO("HARQ process ID: " << (int)slotAllocInfo.m_dci.m_harqProcess);
     NS_LOG_INFO ("RLC PDU info size: " << slotAllocInfo.m_rlcPduInfo.size());
     for (unsigned irlc = 0; irlc < slotAllocInfo.m_rlcPduInfo.size(); irlc++)

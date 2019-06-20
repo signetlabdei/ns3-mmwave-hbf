@@ -52,9 +52,14 @@ public:
 
   void SetBeamformingVectorPanelDevices (Ptr<NetDevice> thisDevice = 0, Ptr<NetDevice> otherDevice = 0);
   void ChangeBeamformingVectorPanel (Ptr<NetDevice> device);
+  void ChangeBeamformingVectorPanelMultiLayer (Ptr<NetDevice> device, uint8_t layerInd);
+  
   complexVector_t GetBeamformingVectorPanel ();
   complexVector_t GetBeamformingVectorPanel (Ptr<NetDevice> device);
+  complexVector_t GetBeamformingVectorPanelMultiLayer (uint8_t layerInd);
 
+  void ClearBeamformingVectorList ();
+  
   void ChangeToOmniTx ();
   bool IsOmniTx ();
   double GetRadiationPattern (double vangle, double hangle = 0);
@@ -67,6 +72,9 @@ public:
   void SetTotNoArrayElements (double arrayElements);
   double GetOffset ();
 
+  void SetCurrNumLayers (uint8_t currNumLayers);
+  uint8_t GetCurrNumLayers ();
+
   Ptr<NetDevice> GetCurrentDevice ();
   Time GetLastUpdate (Ptr<NetDevice> device);
 
@@ -74,8 +82,12 @@ private:
   bool m_omniTx;
   // double m_minAngle;
   // double m_maxAngle;
-  complexVector_t m_beamformingVector;
-  int m_currentPanelId;
+//  complexVector_t m_beamformingVector;
+  std::map<uint8_t, complexVector_t> m_beamformingVectorList;
+
+//  int m_currentPanelId;
+  std::map<uint8_t, int> m_currentPanelIdList;
+
   // std::map<Ptr<NetDevice>, complexVector_t> m_beamformingVectorMap;
   std::map<Ptr<NetDevice>, std::pair<complexVector_t,int> > m_beamformingVectorPanelMap;
 
@@ -88,12 +100,15 @@ private:
   double m_hpbw;
   double m_gMax;
 
-  Ptr<NetDevice> m_currentDev;
+//  Ptr<NetDevice> m_currentDev;
+  std::map<uint8_t, Ptr<NetDevice> > m_currentDevList;
 
   std::map<Ptr<NetDevice>, Time> m_lastUpdateMap;
   std::map<Ptr<NetDevice>, Time> m_lastUpdatePairMap;
 
   bool m_isotropicElement;
+
+  uint8_t m_currNumLayers;
 };
 
 } /* namespace mmwave */

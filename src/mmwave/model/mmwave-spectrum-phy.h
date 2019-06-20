@@ -179,6 +179,7 @@ public:
 
   void SetHarqPhyModule (Ptr<MmWaveHarqPhy> harq);
 
+  uint8_t GetLayerInd ();
 
 private:
   void ChangeState (State newState);
