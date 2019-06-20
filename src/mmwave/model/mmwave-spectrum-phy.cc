@@ -391,6 +391,7 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
           isMyLayer = false;
         }
 
+      isAllocated = true; //this setting is needed for not-aligned slots when we use multiple layers. The shortcoming is that the number of unnecessary function calls increases.
       if (isAllocated)
         {
           m_interferenceData->AddSignal (mmwaveDataRxParams->psd, mmwaveDataRxParams->duration);
@@ -1031,6 +1032,11 @@ MmWaveSpectrumPhy::SetHarqPhyModule (Ptr<MmWaveHarqPhy> harq)
   m_harqPhyModule = harq;
 }
 
+uint8_t
+MmWaveSpectrumPhy::GetLayerInd ()
+{
+  return m_layerInd;
+}
 
 }
 

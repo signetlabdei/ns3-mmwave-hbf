@@ -160,7 +160,7 @@ public:
 
   void UpdateSinrPerceived (const SpectrumValue& sinr);
 
-  /**
+   /**
    * Add the transport block that the spectrum should expect to receive.
    *
    * \param rnti the RNTI of the UE
@@ -179,6 +179,7 @@ public:
 
   void SetHarqPhyModule (Ptr<MmWaveHarqPhy> harq);
 
+  uint8_t GetLayerInd ();
 
 private:
   void ChangeState (State newState);

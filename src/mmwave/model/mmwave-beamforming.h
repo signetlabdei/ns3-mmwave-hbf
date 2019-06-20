@@ -119,6 +119,11 @@ public:
                                                  Ptr<const MobilityModel> a,
                                                  Ptr<const MobilityModel> b) const;
 
+  Ptr<SpectrumValue> CalcRxPowerSpectralDensityMultiLayers (Ptr<const SpectrumValue> txPsd,
+                                                           Ptr<const MobilityModel> a,
+                                                           Ptr<const MobilityModel> b,
+                                                           uint8_t layInd) const;
+
   /**
   * \breif Set the beamforming vector of connected enbs and ues
   * \param ueDevice a pointer to ueNetDevice
@@ -165,6 +170,11 @@ private:
   Ptr<SpectrumValue> DoCalcRxPowerSpectralDensity (Ptr<const SpectrumValue> txPsd,
                                                    Ptr<const MobilityModel> a,
                                                    Ptr<const MobilityModel> b) const;
+
+  Ptr<SpectrumValue> DoCalcRxPowerSpectralDensityMultiLayers (Ptr<const SpectrumValue> txPsd,
+                                                              Ptr<const MobilityModel> a,
+                                                              Ptr<const MobilityModel> b,
+                                                              uint8_t layerInd) const;
 
   /**
   * \breif Store the channel matrix to channelMatrixMap
