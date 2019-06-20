@@ -401,14 +401,10 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
           isMyLayer = false;
         }
 
-<<<<<<< HEAD
       if (enbRx !=0)
 	{//starting from here, in the BS Rx part, beamforming is evaluated for this mmwave-spectrum-phy index, not signal transmission index
     	  layerInd = m_layerInd;
 	}
-=======
-      isAllocated = true; //this setting is needed for not-aligned slots when we use multiple layers. The shortcoming is that the number of unnecessary function calls increases.
->>>>>>> refs/heads/hbf-jskim
       if (isAllocated)
         {
 	  if (mmwaveDataRxParams->cellId == m_cellId )

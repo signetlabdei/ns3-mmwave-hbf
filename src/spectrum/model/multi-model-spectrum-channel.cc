@@ -33,21 +33,12 @@
 #include <ns3/propagation-loss-model.h>
 #include <ns3/propagation-delay-model.h>
 #include <ns3/antenna-model.h>
-<<<<<<< HEAD
 //#include <ns3/antenna-array-model.h>
 //#include <ns3/mmwave-spectrum-signal-parameters.h>
 //#include <ns3/mmwave-spectrum-phy.h>
 //#include <ns3/mmwave-3gpp-channel.h>
 //#include <ns3/mmwave-channel-matrix.h>
 //#include <ns3/mmwave-channel-raytracing.h>
-=======
-#include <ns3/antenna-array-model.h>
-#include <ns3/mmwave-spectrum-signal-parameters.h>
-#include <ns3/mmwave-spectrum-phy.h>
-#include <ns3/mmwave-3gpp-channel.h>
-#include <ns3/mmwave-channel-matrix.h>
-#include <ns3/mmwave-channel-raytracing.h>
->>>>>>> refs/heads/hbf-jskim
 #include <ns3/angles.h>
 #include <iostream>
 #include <utility>
@@ -300,7 +291,6 @@ MultiModelSpectrumChannel::StartTx (Ptr<SpectrumSignalParameters> txParams)
               Time delay = MicroSeconds (0);
 
               Ptr<MobilityModel> receiverMobility = (*rxPhyIterator)->GetMobility ();
-              uint8_t curNumLayersRx = 1; //this value is changed when the number allocated layers for eNB is more than two in UL case.
 
               if (txMobility && receiverMobility)
                 {
@@ -314,12 +304,6 @@ MultiModelSpectrumChannel::StartTx (Ptr<SpectrumSignalParameters> txParams)
                       txAntennaGain = rxParams->txAntenna->GetGainDb (txAngles);
                       NS_LOG_LOGIC ("txAntennaGain = " << txAntennaGain << " dB");
                       pathLossDb -= txAntennaGain;
-                      Ptr<mmwave::AntennaArrayModel> txAntennaArray = DynamicCast<mmwave::AntennaArrayModel>(rxParams->txAntenna); 
-                      if (txAntennaArray != 0)
-                      {
-                        uint8_t curNumLayersTx = txAntennaArray->GetCurrNumLayers();
-                        NS_LOG_LOGIC ("tx no. of layers = " << (int)curNumLayersTx);
-                      }
                     }
                   Ptr<AntennaModel> rxAntenna = (*rxPhyIterator)->GetRxAntenna ();
                   if (rxAntenna != 0)
@@ -328,12 +312,6 @@ MultiModelSpectrumChannel::StartTx (Ptr<SpectrumSignalParameters> txParams)
                       rxAntennaGain = rxAntenna->GetGainDb (rxAngles);
                       NS_LOG_LOGIC ("rxAntennaGain = " << rxAntennaGain << " dB");
                       pathLossDb -= rxAntennaGain;
-                      Ptr<mmwave::AntennaArrayModel> rxAntennaArray = DynamicCast<mmwave::AntennaArrayModel>(rxAntenna); 
-                      if (rxAntennaArray != 0)
-                        {
-                          curNumLayersRx = rxAntennaArray->GetCurrNumLayers();
-                          NS_LOG_LOGIC ("rx no. of layers = " << (int)curNumLayersRx);
-                        }
                     }
                   if (m_propagationLoss)
                     {
@@ -356,43 +334,7 @@ MultiModelSpectrumChannel::StartTx (Ptr<SpectrumSignalParameters> txParams)
 
                   if (m_spectrumPropagationLoss)
                     {
-                      Ptr<mmwave::MmWaveSpectrumPhy> mmwaveSpectrumPhy = DynamicCast<mmwave::MmWaveSpectrumPhy>(*rxPhyIterator);
-                      
-                      uint8_t layerInd = mmwaveSpectrumPhy->GetLayerInd ();
-                      NS_LOG_LOGIC ("Receiver Layer Index: " << (int)layerInd);
-                      if (curNumLayersRx > 1)
-                        {
-                          //Ptr<mmwave::MmwaveSpectrumSignalParametersDataFrame> mmwaveDataRxParams = DynamicCast<mmwave::MmwaveSpectrumSignalParametersDataFrame> (rxParams);
-                          //uint8_t layerInd = mmwaveDataRxParams->layerInd;
-                          Ptr<mmwave::MmWaveBeamforming> beamforming = DynamicCast<mmwave::MmWaveBeamforming>(m_spectrumPropagationLoss);
-                          Ptr<mmwave::MmWaveChannelMatrix> channelMatrix = DynamicCast<mmwave::MmWaveChannelMatrix> (m_spectrumPropagationLoss);
-                          Ptr<mmwave::MmWaveChannelRaytracing> rayTracing = DynamicCast<mmwave::MmWaveChannelRaytracing> (m_spectrumPropagationLoss);
-                          Ptr<mmwave::MmWave3gppChannel> gppChannel = DynamicCast<mmwave::MmWave3gppChannel> (m_spectrumPropagationLoss);
-
-                          if(beamforming !=0)
-                          {
-                            rxParams->psd = beamforming->CalcRxPowerSpectralDensityMultiLayers (rxParams->psd, txMobility, receiverMobility, layerInd);
-                          }
-                          else if (channelMatrix != 0)
-                          {
-                            //To-Do
-                            NS_FATAL_ERROR ("CalcRxPowerSpectralDensity Multi-Layers method should be defined (Future work)");
-                          }
-                          else if (rayTracing != 0)
-                          {
-                            //To-Do
-                            NS_FATAL_ERROR ("CalcRxPowerSpectralDensity Multi-Layers method should be defined (Future work)");
-                          }
-                          else if (gppChannel != 0)
-                          {
-                            //To-Do
-                            NS_FATAL_ERROR ("CalcRxPowerSpectralDensity Multi-Layers method should be defined (Future work)");
-                          }
-                        }
-                      else
-                        {
-                          rxParams->psd = m_spectrumPropagationLoss->CalcRxPowerSpectralDensity (rxParams->psd, txMobility, receiverMobility); 
-                        }
+                      rxParams->psd = m_spectrumPropagationLoss->CalcRxPowerSpectralDensity (rxParams->psd, txMobility, receiverMobility);
                     }
 
                   if (m_propagationDelay)

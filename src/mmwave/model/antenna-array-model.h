@@ -82,17 +82,10 @@ private:
   bool m_omniTx;
   // double m_minAngle;
   // double m_maxAngle;
-<<<<<<< HEAD
 //  complexVector_t m_beamformingVector;
   std::map<uint8_t, complexVector_t> m_beamformingVectorList;
 
 //  int m_currentPanelId;
-=======
-  complexVector_t m_beamformingVector;
-  std::map<uint8_t, complexVector_t> m_beamformingVectorList;
-
-  int m_currentPanelId;
->>>>>>> refs/heads/hbf-jskim
   std::map<uint8_t, int> m_currentPanelIdList;
 
   // std::map<Ptr<NetDevice>, complexVector_t> m_beamformingVectorMap;
@@ -107,11 +100,7 @@ private:
   double m_hpbw;
   double m_gMax;
 
-<<<<<<< HEAD
 //  Ptr<NetDevice> m_currentDev;
-=======
-  Ptr<NetDevice> m_currentDev;
->>>>>>> refs/heads/hbf-jskim
   std::map<uint8_t, Ptr<NetDevice> > m_currentDevList;
 
   std::map<Ptr<NetDevice>, Time> m_lastUpdateMap;
