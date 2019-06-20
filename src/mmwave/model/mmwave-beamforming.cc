@@ -702,6 +702,149 @@ MmWaveBeamforming::DoCalcRxPowerSpectralDensityMultiLayers (Ptr<const SpectrumVa
   return bfPsd;
 }
 
+Ptr<SpectrumValue>
+MmWaveBeamforming::CalcRxPowerSpectralDensityMultiLayers (Ptr<const SpectrumValue> txPsd,
+                                                         Ptr<const MobilityModel> a,
+                                                         Ptr<const MobilityModel> b,
+                                                         uint8_t layerInd) const
+{
+  return DoCalcRxPowerSpectralDensityMultiLayers (txPsd, a, b, layerInd);
+}
+
+Ptr<SpectrumValue>
+MmWaveBeamforming::DoCalcRxPowerSpectralDensityMultiLayers (Ptr<const SpectrumValue> txPsd,
+                                                            Ptr<const MobilityModel> a,
+                                                            Ptr<const MobilityModel> b,
+                                                            uint8_t layerInd) const
+{
+  bool downlink;
+  Ptr<NetDevice> enbDevice, ueDevice;
+
+  Ptr<NetDevice> txDevice = a->GetObject<Node> ()->GetDevice (0);
+  Ptr<NetDevice> rxDevice = b->GetObject<Node> ()->GetDevice (0);
+  Ptr<SpectrumValue> rxPsd = Copy (txPsd);
+  key_t dlkey = std::make_pair (rxDevice,txDevice);
+  key_t ulkey = std::make_pair (txDevice,rxDevice);
+
+  std::map< key_t, Ptr<BeamformingParams> >::iterator it;
+  if (m_channelMatrixMap.find (dlkey) != m_channelMatrixMap.end ())
+    {
+      // this is downlink case
+      NS_FATAL_ERROR ("Downlink case !!! is not applied in this function");
+      downlink = true;
+      enbDevice = txDevice;
+      ueDevice = rxDevice;
+      it = m_channelMatrixMap.find (dlkey);
+    }
+  else if (m_channelMatrixMap.find (ulkey) != m_channelMatrixMap.end ())
+    {
+      // this is uplink case
+      downlink = false;
+      ueDevice = txDevice;
+      enbDevice = rxDevice;
+      it = m_channelMatrixMap.find (ulkey);
+    }
+  else
+    {
+      // enb to enb or ue to ue transmission, set to 0. Do no consider such scenarios.
+      *rxPsd = (*rxPsd) * 0;
+      return rxPsd;
+    }
+
+  Ptr<BeamformingParams> bfParams = it->second;
+
+  antennaPair antennaArrays = GetUeEnbAntennaPair (ueDevice, enbDevice);
+  Ptr<AntennaArrayModel> enbAntennaArray = antennaArrays.second;
+  Ptr<AntennaArrayModel> ueAntennaArray = antennaArrays.first;
+
+  if (enbAntennaArray->IsOmniTx ())
+    {
+      return rxPsd;          //zml do not apply fading to omi
+
+      complexVector_t vec;
+      for (unsigned int i = 0; i < m_pathNum; i++)
+        {
+          vec.push_back (std::complex<double> (1,0));
+        }
+      (*bfParams->m_beam) = vec;
+    }
+  else
+    {
+      complexVector_t ueW = ueAntennaArray->GetBeamformingVectorPanel ();
+      complexVector_t enbW = enbAntennaArray->GetBeamformingVectorPanelMultiLayer (layerInd);
+
+      if (!ueW.empty () && !enbW.empty ())
+        {
+          bfParams->m_ueW = ueW;
+          bfParams->m_enbW = enbW;
+          bfParams->m_beam = GetLongTermFading (bfParams);
+        }
+      else if (ueW.empty ())
+        {
+          NS_LOG_ERROR ("UE beamforming vector is not configured, make sure this UE is registered to ENB");
+          *rxPsd = (*rxPsd) * 0;
+          return rxPsd;
+        }
+      else if (enbW.empty ())
+        {
+          NS_LOG_ERROR ("ENB beamforming vector is not configured, this layer is not used in this transmission");
+          *rxPsd = (*rxPsd) * 0;
+          return rxPsd;
+        }
+    }
+
+  Vector rxSpeed = b->GetVelocity ();
+  Vector txSpeed = a->GetVelocity ();
+  double relativeSpeed = (rxSpeed.x - txSpeed.x)
+    + (rxSpeed.y - txSpeed.y) + (rxSpeed.z - txSpeed.z);
+
+  Ptr<SpectrumValue> bfPsd = GetChannelGainVector (rxPsd, bfParams,  relativeSpeed);
+  SpectrumValue bfGain = (*bfPsd) / (*rxPsd);
+  int nbands = bfGain.GetSpectrumModel ()->GetNumBands ();
+//	NS_LOG_UNCOND (*bfPsd);
+//	NS_LOG_UNCOND (Sum((*bfPsd)/(*rxPsd)));
+//	std::cout << "beam: ";
+//	for (unsigned i = 0; i < bfParams->m_beam.size(); i++)
+//	{
+//		std::cout << bfParams->m_beam.at(i) << " ";
+//	}
+//	std::cout << std::endl;
+//	std::cout << "enbW: ";
+//	//	NS_LOG_UNCOND ((*bfPsd)/(*rxPsd));
+//	for (unsigned i = 0; i < bfParams->m_enbW.size(); i++)
+//	{
+//		std::cout << bfParams->m_enbW.at(i) << " ";
+//	}
+//	std::cout << std::endl;
+//	std::cout << "ueW: ";
+//	for (unsigned i = 0; i < bfParams->m_ueW.size(); i++)
+//		{
+//			std::cout << bfParams->m_ueW.at(i) << " ";
+//		}
+//		std::cout << std::endl;
+  Ptr<MmWaveUePhy> uePhy;
+  Ptr<mmwave::MmWaveUeNetDevice> ueMmw = ueDevice->GetObject<mmwave::MmWaveUeNetDevice> ();
+  Ptr<McUeNetDevice> ueMc = ueDevice->GetObject<McUeNetDevice> ();
+  if (ueMmw != 0)
+    {
+      uePhy = ueMmw->GetPhy ();
+    }
+  else if (ueMc != 0)
+    {
+      uePhy = ueMc->GetMmWavePhy ();
+    }
+
+  if (downlink)
+    {
+      NS_LOG_INFO ("****** DL BF gain (RNTI " << uePhy->GetRnti () << ") == " << Sum (bfGain) / nbands << " RX PSD " << Sum (*rxPsd) / nbands);         // print avg bf gain
+    }
+  else
+    {
+      NS_LOG_INFO ("****** UL BF gain (RNTI " << uePhy->GetRnti () << ") == " << Sum (bfGain) / nbands << " RX PSD " << Sum (*rxPsd) / nbands);
+    }
+  return bfPsd;
+}
+
 double
 MmWaveBeamforming::GetSystemBandwidth () const
 {
