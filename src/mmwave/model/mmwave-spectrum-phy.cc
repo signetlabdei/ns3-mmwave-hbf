@@ -433,7 +433,7 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
 	      *(mmwaveDataRxParams->psd) *= correctBFinterferenceGain;
 	      NS_LOG_INFO("Corrected BF gain of default layer to layer " << (int) layerInd << " by factor "<< correctBFinterferenceGain);
 	    }
-	  NS_LOG_INFO("RNTI "<< (int )bearerTag.GetRnti () <<" sees a signal with power "<<*(mmwaveDataRxParams->psd)[0]);
+	  NS_LOG_INFO("RNTI "<< (int )bearerTag.GetRnti () <<" sees a signal with power "<<(*(mmwaveDataRxParams->psd))[0]);
 	  m_interferenceData->AddSignal (mmwaveDataRxParams->psd, mmwaveDataRxParams->duration);
           if (mmwaveDataRxParams->cellId == m_cellId && isMyLayer)
             {
