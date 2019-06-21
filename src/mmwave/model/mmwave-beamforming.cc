@@ -490,10 +490,10 @@ MmWaveBeamforming::GetLongTermFading (Ptr<BeamformingParams> bfParams) const
 }
 
 Ptr<SpectrumValue>
-MmWaveBeamforming::GetChannelGainVector (Ptr<const SpectrumValue> txPsd, Ptr<BeamformingParams> bfParams, double speed) const
+MmWaveBeamforming::GetChannelGainVector (Ptr<const SpectrumValue>  txPsd, Ptr<BeamformingParams> bfParams, double speed) const
 {
   NS_LOG_FUNCTION (this);
-  Ptr<SpectrumValue> tempPsd = Copy<SpectrumValue> (txPsd);
+  Ptr<SpectrumValue> gainPsd = Copy (txPsd);
   if (m_fixSpeed)
     {
       speed = m_ueSpeed;
@@ -507,13 +507,11 @@ MmWaveBeamforming::GetChannelGainVector (Ptr<const SpectrumValue> txPsd, Ptr<Bea
   Time time = Simulator::Now ();
   double t = time.GetSeconds ();
 
-  Values::iterator vit = tempPsd->ValuesBegin ();
+  Values::iterator vit = gainPsd->ValuesBegin ();
   uint16_t iSubband = 0;
-  while (vit != tempPsd->ValuesEnd ())
+  while (vit != gainPsd->ValuesEnd ())
     {
       std::complex<double> subsbandGain (0.0,0.0);
-      if ((*vit) != 0.00)
-        {
           double fsb = m_phyMacConfig->GetCenterFrequency () - GetSystemBandwidth () / 2 + m_phyMacConfig->GetChunkWidth () * iSubband;
           for (unsigned int pathIndex = 0; pathIndex < m_pathNum; pathIndex++)
             {
@@ -536,12 +534,11 @@ MmWaveBeamforming::GetChannelGainVector (Ptr<const SpectrumValue> txPsd, Ptr<Bea
               std::complex<double> smallScaleFading = m_smallScale ? sqrt (2) * sigma * doppler * delay : sqrt (2) * sigma;
               subsbandGain = subsbandGain + (*bfParams->m_beam).at (pathIndex) * smallScaleFading;
             }
-          *vit = (*vit) * (norm (subsbandGain));
-        }
+          *vit = norm (subsbandGain);
       vit++;
       iSubband++;
     }
-  return tempPsd;
+  return gainPsd;
 
 }
 
@@ -665,9 +662,10 @@ MmWaveBeamforming::DoCalcRxPowerSpectralDensityMultiLayers (Ptr<const SpectrumVa
   double relativeSpeed = (rxSpeed.x - txSpeed.x)
     + (rxSpeed.y - txSpeed.y) + (rxSpeed.z - txSpeed.z);
 
-  Ptr<SpectrumValue> bfPsd = GetChannelGainVector (rxPsd, bfParams,  relativeSpeed);
-  SpectrumValue bfGain = (*bfPsd) / (*rxPsd);
-  int nbands = bfGain.GetSpectrumModel ()->GetNumBands ();
+  Ptr<SpectrumValue>  bfGain = GetChannelGainVector (rxPsd, bfParams,  relativeSpeed);
+  Ptr<SpectrumValue> bfPsd = Copy(rxPsd);
+  (*bfPsd) *= (* bfGain);
+  int nbands = bfGain->GetSpectrumModel ()->GetNumBands ();
 //	NS_LOG_UNCOND (*bfPsd);
 //	NS_LOG_UNCOND (Sum((*bfPsd)/(*rxPsd)));
 //	std::cout << "beam: ";
@@ -703,11 +701,11 @@ MmWaveBeamforming::DoCalcRxPowerSpectralDensityMultiLayers (Ptr<const SpectrumVa
 
   if (downlink)
     {
-      NS_LOG_INFO ("****** DL BF gain (RNTI " << uePhy->GetRnti () << ") == " << Sum (bfGain) / nbands << " RX PSD " << Sum (*rxPsd) / nbands);         // print avg bf gain
+      NS_LOG_INFO ("****** DL BF gain (RNTI " << uePhy->GetRnti () << ") == " << Sum (*bfGain) / nbands << " RX PSD " << Sum (*rxPsd) / nbands);         // print avg bf gain
     }
   else
     {
-      NS_LOG_INFO ("****** UL BF gain (RNTI " << uePhy->GetRnti () << ") == " << Sum (bfGain) / nbands << " RX PSD " << Sum (*rxPsd) / nbands);
+      NS_LOG_INFO ("****** UL BF gain (RNTI " << uePhy->GetRnti () << ") == " << Sum (*bfGain) / nbands << " RX PSD " << Sum (*rxPsd) / nbands);
     }
   return bfPsd;
 }

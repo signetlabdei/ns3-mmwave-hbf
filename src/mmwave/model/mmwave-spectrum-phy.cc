@@ -54,6 +54,8 @@
 #include <ns3/mmwave-mi-error-model.h>
 #include "mmwave-mac-pdu-tag.h"
 
+#include "mmwave-hbf-spectrum-channel.h"
+
 namespace ns3 {
 
 NS_LOG_COMPONENT_DEFINE ("MmWaveSpectrumPhy");
@@ -414,7 +416,11 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
 	}
       if (isAllocated)
         {
-	  if (mmwaveDataRxParams->cellId == m_cellId )
+	  // This "BF correction code" must be used when the ns3
+	  // default MultiModelSpectrumChannel channel is connected to the PHY
+	  // but is not necessary when we use our custom MmwaveHbfSpectrumChannel
+	  Ptr<MmwaveHbfSpectrumChannel> testMmwaveHbfSpectrumChannel = DynamicCast<MmwaveHbfSpectrumChannel>(m_channel);
+	  if (testMmwaveHbfSpectrumChannel == 0)
 	    {
 	      double correctBFinterferenceGain = 0.01;// set to 0 for perfect suppression
 	      Ptr<MobilityModel> txMobility = mmwaveDataRxParams->txPhy->GetMobility ();
@@ -425,8 +431,9 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
 	      //assuming that BF gain is frequency-flat and use only the first coefficient
 	      correctBFinterferenceGain = ( (*psdMyLayer)[0] / (*psdWrongLayer)[0]);
 	      *(mmwaveDataRxParams->psd) *= correctBFinterferenceGain;
-	      NS_LOG_INFO("Corrected BF gain of layer 0 to layer " << (int) layerInd << " by factor "<< correctBFinterferenceGain);
+	      NS_LOG_INFO("Corrected BF gain of default layer to layer " << (int) layerInd << " by factor "<< correctBFinterferenceGain);
 	    }
+	  NS_LOG_INFO("RNTI "<< (int )bearerTag.GetRnti () <<" sees a signal with power "<<*(mmwaveDataRxParams->psd)[0]);
 	  m_interferenceData->AddSignal (mmwaveDataRxParams->psd, mmwaveDataRxParams->duration);
           if (mmwaveDataRxParams->cellId == m_cellId && isMyLayer)
             {
@@ -978,6 +985,7 @@ MmWaveSpectrumPhy::StartTxDataFrames (Ptr<PacketBurst> pb, std::list<Ptr<MmWaveC
 //			traceParam.m_subframeno = ueTx->GetPhy ()->GetAbsoluteSubframeNo ();
 //			m_reportUePacketCount (traceParam);
 //		}
+
 
         m_channel->StartTx (txParams);
 

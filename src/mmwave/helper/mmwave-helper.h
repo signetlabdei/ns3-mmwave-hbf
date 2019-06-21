@@ -87,6 +87,7 @@
 
 #include <ns3/mmwave-component-carrier-enb.h>
 
+#include <ns3/mmwave-hbf-spectrum-channel.h>
 
 namespace ns3 {
 

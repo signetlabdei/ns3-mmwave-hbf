@@ -67,6 +67,7 @@ main (int argc, char *argv[])
 	//LogComponentEnable ("PacketSink", LOG_LEVEL_INFO);
 	LogComponentEnable ("MmWaveBeamforming", LOG_LEVEL_INFO);
 	//LogComponentEnable("PropagationLossModel",LOG_LEVEL_ALL);
+	LogComponentEnable ("MmwaveHbfSpectrumChannel", LOG_LEVEL_INFO);
 
 	uint16_t numEnb = 1;
 	uint16_t numUe = 3;
@@ -241,7 +242,7 @@ main (int argc, char *argv[])
 		ulClient.SetAttribute ("PacketSize", UintegerValue (packetSize));
 
 		clientApps.Add (dlClient.Install (remoteHost));
-//		clientApps.Add (ulClient.Install (ueNodes.Get(u)));
+		clientApps.Add (ulClient.Install (ueNodes.Get(u)));
 		//      if (u+1 < ueNodes.GetN ())
 		//        {
 		//          clientApps.Add (client.Install (ueNodes.Get(u+1)));
