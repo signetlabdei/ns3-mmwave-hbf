@@ -76,6 +76,7 @@ public:
   uint8_t GetCurrNumLayers ();
 
   Ptr<NetDevice> GetCurrentDevice ();
+  Ptr<NetDevice> GetCurrentDeviceMultilayer (uint8_t layerInd);
   Time GetLastUpdate (Ptr<NetDevice> device);
 
 private:

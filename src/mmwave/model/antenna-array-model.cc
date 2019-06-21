@@ -389,6 +389,12 @@ AntennaArrayModel::GetBeamformingVectorPanel (Ptr<NetDevice> device)
 }
 
 Ptr<NetDevice>
+AntennaArrayModel::GetCurrentDeviceMultilayer (uint8_t layerInd)
+{
+  return m_currentDevList[layerInd];
+}
+
+Ptr<NetDevice>
 AntennaArrayModel::GetCurrentDevice ()
 {
   return m_currentDevList[0];

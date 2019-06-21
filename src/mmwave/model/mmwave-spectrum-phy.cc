@@ -271,6 +271,13 @@ MmWaveSpectrumPhy::SetTxPowerSpectralDensity (Ptr<SpectrumValue> TxPsd)
   m_txPsd = TxPsd;
 }
 
+
+Ptr<SpectrumValue>
+MmWaveSpectrumPhy::GetTxPowerSpectralDensity ()
+{
+  return m_txPsd;
+}
+
 void
 MmWaveSpectrumPhy::SetPhyRxDataEndOkCallback (MmWavePhyRxDataEndOkCallback c)
 {
@@ -412,7 +419,7 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
 	      double correctBFinterferenceGain = 0.01;// set to 0 for perfect suppression
 	      Ptr<MobilityModel> txMobility = mmwaveDataRxParams->txPhy->GetMobility ();
 	      Ptr<MmWaveBeamforming> pathlossmodel = DynamicCast<MmWaveBeamforming>(m_channel->GetSpectrumPropagationLossModel());
-	      Ptr<SpectrumValue> psdWrongLayer = pathlossmodel->CalcRxPowerSpectralDensityMultiLayers(mmwaveDataRxParams->psd,txMobility,this->GetMobility (),0);
+	      Ptr<SpectrumValue> psdWrongLayer = pathlossmodel->CalcRxPowerSpectralDensity(mmwaveDataRxParams->psd,txMobility,this->GetMobility ());
 	      Ptr<SpectrumValue> psdMyLayer = pathlossmodel->CalcRxPowerSpectralDensityMultiLayers(mmwaveDataRxParams->psd,txMobility,this->GetMobility (),layerInd);
 
 	      //assuming that BF gain is frequency-flat and use only the first coefficient

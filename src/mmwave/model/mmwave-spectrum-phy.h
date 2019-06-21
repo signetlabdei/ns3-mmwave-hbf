@@ -132,6 +132,7 @@ public:
 
   void SetNoisePowerSpectralDensity (Ptr<const SpectrumValue> noisePsd);
   void SetTxPowerSpectralDensity (Ptr<SpectrumValue> TxPsd);
+  Ptr<SpectrumValue> GetTxPowerSpectralDensity ();
   void StartRx (Ptr<SpectrumSignalParameters> params);
   void StartRxData (Ptr<MmwaveSpectrumSignalParametersDataFrame> params);
   void StartRxCtrl (Ptr<SpectrumSignalParameters> params);

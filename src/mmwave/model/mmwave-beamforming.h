@@ -174,7 +174,8 @@ private:
   Ptr<SpectrumValue> DoCalcRxPowerSpectralDensityMultiLayers (Ptr<const SpectrumValue> txPsd,
                                                               Ptr<const MobilityModel> a,
                                                               Ptr<const MobilityModel> b,
-                                                              uint8_t layerInd) const;
+                                                              uint8_t layerInd,
+							      bool findTheLayer) const;
 
   /**
   * \breif Store the channel matrix to channelMatrixMap
@@ -209,6 +210,8 @@ private:
    * \brief Get the pair of Ptr<AntennaArrayModel> of UE and eNB, given the NetDevices
    */
   antennaPair GetUeEnbAntennaPair (Ptr<NetDevice> ueDevice, Ptr<NetDevice> enbDevice) const;
+
+  uint8_t GetSpectrumPhyLayerInd (Ptr<AntennaArrayModel> enbAntennaArray, Ptr<NetDevice> ueDevice) const;
 
   /**
   * \a map to store channel matrix

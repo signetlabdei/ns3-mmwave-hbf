@@ -33,12 +33,6 @@
 #include <ns3/propagation-loss-model.h>
 #include <ns3/propagation-delay-model.h>
 #include <ns3/antenna-model.h>
-//#include <ns3/antenna-array-model.h>
-//#include <ns3/mmwave-spectrum-signal-parameters.h>
-//#include <ns3/mmwave-spectrum-phy.h>
-//#include <ns3/mmwave-3gpp-channel.h>
-//#include <ns3/mmwave-channel-matrix.h>
-//#include <ns3/mmwave-channel-raytracing.h>
 #include <ns3/angles.h>
 #include <iostream>
 #include <utility>

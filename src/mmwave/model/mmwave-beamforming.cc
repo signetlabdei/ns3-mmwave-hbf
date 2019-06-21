@@ -550,7 +550,7 @@ MmWaveBeamforming::CalcRxPowerSpectralDensity (Ptr<const SpectrumValue> txPsd,
                                                Ptr<const MobilityModel> a,
                                                Ptr<const MobilityModel> b) const
 {
-  return DoCalcRxPowerSpectralDensityMultiLayers (txPsd, a, b, 0);
+  return DoCalcRxPowerSpectralDensityMultiLayers (txPsd, a, b, 0, true);
 }
 
 Ptr<SpectrumValue>
@@ -558,7 +558,7 @@ MmWaveBeamforming::DoCalcRxPowerSpectralDensity (Ptr<const SpectrumValue> txPsd,
                                                  Ptr<const MobilityModel> a,
                                                  Ptr<const MobilityModel> b) const
 {
-  return DoCalcRxPowerSpectralDensityMultiLayers (txPsd, a, b, 0);
+  return DoCalcRxPowerSpectralDensityMultiLayers (txPsd, a, b, 0, true);
 }
 
 Ptr<SpectrumValue>
@@ -567,14 +567,15 @@ MmWaveBeamforming::CalcRxPowerSpectralDensityMultiLayers (Ptr<const SpectrumValu
                                                          Ptr<const MobilityModel> b,
                                                          uint8_t layerInd) const
 {
-  return DoCalcRxPowerSpectralDensityMultiLayers (txPsd, a, b, layerInd);
+  return DoCalcRxPowerSpectralDensityMultiLayers (txPsd, a, b, layerInd, false);
 }
 
 Ptr<SpectrumValue>
 MmWaveBeamforming::DoCalcRxPowerSpectralDensityMultiLayers (Ptr<const SpectrumValue> txPsd,
                                                             Ptr<const MobilityModel> a,
                                                             Ptr<const MobilityModel> b,
-                                                            uint8_t layerInd) const
+                                                            uint8_t layerInd,
+							    bool findTheLayer) const
 {
   bool downlink;
   Ptr<NetDevice> enbDevice, ueDevice;
@@ -613,6 +614,15 @@ MmWaveBeamforming::DoCalcRxPowerSpectralDensityMultiLayers (Ptr<const SpectrumVa
   antennaPair antennaArrays = GetUeEnbAntennaPair (ueDevice, enbDevice);
   Ptr<AntennaArrayModel> enbAntennaArray = antennaArrays.second;
   Ptr<AntennaArrayModel> ueAntennaArray = antennaArrays.first;
+  uint8_t layerIndEffective = 0;
+  if (findTheLayer)
+    {
+      layerIndEffective=GetSpectrumPhyLayerInd(enbAntennaArray,ueDevice);
+    }
+  else
+    {
+      layerIndEffective = layerInd;
+    }
 
   if (enbAntennaArray->IsOmniTx ())
     {
@@ -628,7 +638,7 @@ MmWaveBeamforming::DoCalcRxPowerSpectralDensityMultiLayers (Ptr<const SpectrumVa
   else
     {
       complexVector_t ueW = ueAntennaArray->GetBeamformingVectorPanel ();
-      complexVector_t enbW = enbAntennaArray->GetBeamformingVectorPanelMultiLayer (layerInd);
+      complexVector_t enbW = enbAntennaArray->GetBeamformingVectorPanelMultiLayer (layerIndEffective);
 
       if (!ueW.empty () && !enbW.empty ())
         {
@@ -740,6 +750,29 @@ MmWaveBeamforming::GetUeEnbAntennaPair (Ptr<NetDevice> ueDevice, Ptr<NetDevice> 
   Ptr<AntennaArrayModel> enbAntennaArray = DynamicCast<AntennaArrayModel> (enbPhy->GetDlSpectrumPhyList ().at(0)->GetRxAntenna ());
 
   return antennaPair (ueAntennaArray, enbAntennaArray);
+}
+
+uint8_t
+MmWaveBeamforming::GetSpectrumPhyLayerInd (Ptr<AntennaArrayModel> enbAntennaArray, Ptr<NetDevice> ueDevice) const
+{
+  uint8_t ctr =0;
+  while ( ctr < enbAntennaArray->GetCurrNumLayers())
+    {
+      if ( ueDevice == enbAntennaArray->GetCurrentDeviceMultilayer(ctr) )
+	{
+	  break;
+	}
+      ctr++;
+    }
+
+  if ( ctr < enbAntennaArray->GetCurrNumLayers() )
+    {
+      return ctr;
+    }
+  else
+    {
+      return 0;
+    }
 }
 
 } // namespace mmwave
