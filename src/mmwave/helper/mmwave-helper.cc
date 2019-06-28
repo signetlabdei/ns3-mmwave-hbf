@@ -86,10 +86,10 @@ MmWaveHelper::MmWaveHelper (void)
     m_useIdealRrc (false)
 {
   NS_LOG_FUNCTION (this);
-//  m_channelFactory.SetTypeId (MultiModelSpectrumChannel::GetTypeId ());
-  m_channelFactory.SetTypeId (MmwaveHbfSpectrumChannel::GetTypeId ());
-//  m_lteChannelFactory.SetTypeId (MultiModelSpectrumChannel::GetTypeId ());
-  m_lteChannelFactory.SetTypeId (MmwaveHbfSpectrumChannel::GetTypeId ());
+  m_channelFactory.SetTypeId (MultiModelSpectrumChannel::GetTypeId ());
+//  m_channelFactory.SetTypeId (MmwaveHbfSpectrumChannel::GetTypeId ());
+  m_lteChannelFactory.SetTypeId (MultiModelSpectrumChannel::GetTypeId ());
+//  m_lteChannelFactory.SetTypeId (MmwaveHbfSpectrumChannel::GetTypeId ());
   m_enbNetDeviceFactory.SetTypeId (MmWaveEnbNetDevice::GetTypeId ());
   m_lteEnbNetDeviceFactory.SetTypeId (LteEnbNetDevice::GetTypeId ());
   m_ueNetDeviceFactory.SetTypeId (MmWaveUeNetDevice::GetTypeId ());

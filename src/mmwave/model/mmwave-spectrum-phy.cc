@@ -410,30 +410,29 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
           isMyLayer = false;
         }
 
-      if (enbRx !=0)
-	{//starting from here, in the BS Rx part, beamforming is evaluated for this mmwave-spectrum-phy index, not signal transmission index
-    	  layerInd = m_layerInd;
-	}
+
       if (isAllocated)
         {
-	  // This "BF correction code" must be used when the ns3
+	  // This "BF gain calculation" must be used when the ns3
 	  // default MultiModelSpectrumChannel channel is connected to the PHY
 	  // but is not necessary when we use our custom MmwaveHbfSpectrumChannel
 	  Ptr<MmwaveHbfSpectrumChannel> testMmwaveHbfSpectrumChannel = DynamicCast<MmwaveHbfSpectrumChannel>(m_channel);
 	  if (testMmwaveHbfSpectrumChannel == 0)
 	    {
-	      double correctBFinterferenceGain = 0.01;// set to 0 for perfect suppression
 	      Ptr<MobilityModel> txMobility = mmwaveDataRxParams->txPhy->GetMobility ();
 	      Ptr<MmWaveBeamforming> pathlossmodel = DynamicCast<MmWaveBeamforming>(m_channel->GetSpectrumPropagationLossModel());
-	      Ptr<SpectrumValue> psdWrongLayer = pathlossmodel->CalcRxPowerSpectralDensity(mmwaveDataRxParams->psd,txMobility,this->GetMobility ());
-	      Ptr<SpectrumValue> psdMyLayer = pathlossmodel->CalcRxPowerSpectralDensityMultiLayers(mmwaveDataRxParams->psd,txMobility,this->GetMobility (),layerInd);
-
-	      //assuming that BF gain is frequency-flat and use only the first coefficient
-	      correctBFinterferenceGain = ( (*psdMyLayer)[0] / (*psdWrongLayer)[0]);
-	      *(mmwaveDataRxParams->psd) *= correctBFinterferenceGain;
-	      NS_LOG_INFO("Corrected BF gain of default layer to layer " << (int) layerInd << " by factor "<< correctBFinterferenceGain);
+	      if (enbRx !=0)
+		{//in the BS Rx case, beamforming is evaluated using the layer of this mmwave-spectrum-phy, not the transmission layer index
+		  mmwaveDataRxParams->psd = pathlossmodel->CalcRxPowerSpectralDensityMultiLayers(mmwaveDataRxParams->psd,txMobility,this->GetMobility (),m_layerInd);
+		  NS_LOG_INFO("Computed the BF gain at BS receiving in layer " << (int ) m_layerInd << " SpectrumPhy::StartRx for signal of layer " << (int) layerInd);
+		}
+	      else
+		{
+		  mmwaveDataRxParams->psd = pathlossmodel->CalcRxPowerSpectralDensityMultiLayers(mmwaveDataRxParams->psd,txMobility,this->GetMobility (),layerInd);
+		  NS_LOG_INFO("Computed the BF gain at UE allocated layer " << (int ) ueRx->GetPhy (m_componentCarrierId)->GetAllocLayerInd() << " SpectrumPhy::StartRx for signal of layer " << (int) layerInd);
+		}
 	    }
-	  NS_LOG_INFO("RNTI "<< (int )bearerTag.GetRnti () <<" sees a signal with power "<<(*(mmwaveDataRxParams->psd))[0]);
+	  NS_LOG_INFO("Node "<<  GetDevice()->GetAddress() <<" detected in layer " << (int) m_layerInd << " a signal with power "<<Sum (*(mmwaveDataRxParams->psd)));
 	  m_interferenceData->AddSignal (mmwaveDataRxParams->psd, mmwaveDataRxParams->duration);
           if (mmwaveDataRxParams->cellId == m_cellId && isMyLayer)
             {

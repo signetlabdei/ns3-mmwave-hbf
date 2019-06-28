@@ -547,7 +547,7 @@ MmWaveBeamforming::CalcRxPowerSpectralDensity (Ptr<const SpectrumValue> txPsd,
                                                Ptr<const MobilityModel> a,
                                                Ptr<const MobilityModel> b) const
 {
-  return DoCalcRxPowerSpectralDensityMultiLayers (txPsd, a, b, 0, true);
+  return DoCalcRxPowerSpectralDensity (txPsd, a, b);
 }
 
 Ptr<SpectrumValue>
@@ -555,7 +555,14 @@ MmWaveBeamforming::DoCalcRxPowerSpectralDensity (Ptr<const SpectrumValue> txPsd,
                                                  Ptr<const MobilityModel> a,
                                                  Ptr<const MobilityModel> b) const
 {
-  return DoCalcRxPowerSpectralDensityMultiLayers (txPsd, a, b, 0, true);
+
+  // made this function do nothing in order to relocate the actual BF vector calculation
+  // to MmwaveSpectrumPhy::StartRx() instead of MultiModelSpectrumChannel::StartTx()
+  // uncomment the following to restore legacy behavior (not compatible with HBF)
+  //return DoCalcRxPowerSpectralDensityMultiLayers (txPsd, a, b, 0, true);
+
+  Ptr<SpectrumValue> retPsd = Copy<SpectrumValue> (txPsd);// we have to copy it because there is a const type missmatch
+  return retPsd;
 }
 
 Ptr<SpectrumValue>

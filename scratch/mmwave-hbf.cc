@@ -67,7 +67,7 @@ main (int argc, char *argv[])
 	//LogComponentEnable ("PacketSink", LOG_LEVEL_INFO);
 	LogComponentEnable ("MmWaveBeamforming", LOG_LEVEL_INFO);
 	//LogComponentEnable("PropagationLossModel",LOG_LEVEL_ALL);
-	LogComponentEnable ("MmwaveHbfSpectrumChannel", LOG_LEVEL_INFO);
+//	LogComponentEnable ("MmwaveHbfSpectrumChannel", LOG_LEVEL_INFO);
 
 	uint16_t numEnb = 1;
 	uint16_t numUe = 3;
