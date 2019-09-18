@@ -331,7 +331,7 @@ MmWaveUePhy::RegisterToEnb (uint16_t cellId, Ptr<MmWavePhyMacCommon> config)
   Ptr<AntennaArrayModel> txAntennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhy ()->GetRxAntenna ());
   if (txAntennaArray != 0)
     {
-      txAntennaArray->ChangeBeamformingVectorPanel (enbNetDevice);
+      txAntennaArray->ChangeBeamformingVector (enbNetDevice);
     }
   else
     {
@@ -626,7 +626,7 @@ MmWaveUePhy::StartSlot ()
     {
       if (txAntennaArray != 0)
         {
-          txAntennaArray->ChangeBeamformingVectorPanel (m_registeredEnb.find (m_cellId)->second.second);
+          txAntennaArray->ChangeBeamformingVector (m_registeredEnb.find (m_cellId)->second.second);
         }
       else
         {
