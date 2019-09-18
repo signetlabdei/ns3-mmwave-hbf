@@ -49,11 +49,6 @@
 #include "mmwave-radio-bearer-tag.h"
 #include "mc-ue-net-device.h"
 
-#include "mmwave-beamforming.h"
-#include "mmwave-channel-matrix.h"
-#include "mmwave-channel-raytracing.h"
-#include "mmwave-3gpp-channel.h"
-
 #include <ns3/node-list.h>
 #include <ns3/node.h>
 #include <ns3/pointer.h>
@@ -837,33 +832,9 @@ MmWaveEnbPhy::UpdateUeSinrEstimate ()
       Ptr<SpectrumValue> rxPsd = txPsd->Copy ();
       *(rxPsd) *= pathGainLinear;
 
-      Ptr<MmWaveBeamforming> beamforming = DynamicCast<MmWaveBeamforming> (m_spectrumPropagationLossModel);
-      //beamforming->SetBeamformingVector(ue->second, m_netDevice);
-      Ptr<MmWaveChannelMatrix> channelMatrix = DynamicCast<MmWaveChannelMatrix> (m_spectrumPropagationLossModel);
-      Ptr<MmWaveChannelRaytracing> rayTracing = DynamicCast<MmWaveChannelRaytracing> (m_spectrumPropagationLossModel);
-      Ptr<MmWave3gppChannel> mmWave3gpp = DynamicCast<MmWave3gppChannel> (m_spectrumPropagationLossModel);
-      if (beamforming != 0)
-        {
-          rxPsd = beamforming->CalcRxPowerSpectralDensity (rxPsd, ueMob, enbMob);
-          NS_LOG_LOGIC ("RxPsd " << *rxPsd);
-        }
-      else if (channelMatrix != 0)
-        {
-          rxPsd = channelMatrix->CalcRxPowerSpectralDensity (rxPsd, ueMob, enbMob);
-          NS_LOG_LOGIC ("RxPsd " << *rxPsd);
-        }
-      else if (rayTracing != 0)
-        {
-          rxPsd = rayTracing->CalcRxPowerSpectralDensity (rxPsd, ueMob, enbMob);
-          NS_LOG_LOGIC ("RxPsd " << *rxPsd);
-        }
-      else if (mmWave3gpp != 0)
-        {
-          mmWave3gpp->SetInterferenceOrDataMode (false);
-          rxPsd = mmWave3gpp->CalcRxPowerSpectralDensity (rxPsd, ueMob, enbMob);
-          NS_LOG_LOGIC ("RxPsd " << *rxPsd);
-          mmWave3gpp->SetInterferenceOrDataMode (true);
-        }
+      rxPsd = m_spectrumPropagationLossModel->CalcRxPowerSpectralDensity (rxPsd, ueMob, enbMob);
+      NS_LOG_LOGIC ("RxPsd " << *rxPsd);
+
       m_rxPsdMap[ue->first] = rxPsd;
       *totalReceivedPsd += *rxPsd;
 
