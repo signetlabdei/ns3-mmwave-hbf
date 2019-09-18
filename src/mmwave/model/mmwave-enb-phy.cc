@@ -666,10 +666,6 @@ MmWaveEnbPhy::CallPathloss ()
         }
       if (m_propagationLoss)
         {
-          if (m_losTracker != 0)               // if I am using the PL propagation model with Aditya's traces
-            {
-              m_losTracker->UpdateLosNlosState (ueMob,enbMob);                  // update the maps to keep trak of the real PL values, before computing the PL
-            }
           double propagationGainDb = m_propagationLoss->CalcRxPower (0, ueMob, enbMob);
           NS_LOG_LOGIC ("propagationGainDb = " << propagationGainDb << " dB");
           pathLossDb -= propagationGainDb;
@@ -818,10 +814,6 @@ MmWaveEnbPhy::UpdateUeSinrEstimate ()
         }
       if (m_propagationLoss)
         {
-          if (m_losTracker != 0)               // if I am using the PL propagation model with Aditya's traces
-            {
-              m_losTracker->UpdateLosNlosState (ueMob,enbMob);                  // update the maps to keep trak of the real PL values, before computing the PL
-            }
           double propagationGainDb = m_propagationLoss->CalcRxPower (0, ueMob, enbMob);
           NS_LOG_LOGIC ("propagationGainDb = " << propagationGainDb << " dB");
           pathLossDb -= propagationGainDb;
