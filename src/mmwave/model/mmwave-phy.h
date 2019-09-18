@@ -184,7 +184,6 @@ protected:
   // hack to allow eNB to compute the SINR, periodically, without pilots
   Ptr<SpectrumPropagationLossModel> m_spectrumPropagationLossModel;
   Ptr<PropagationLossModel> m_propagationLoss;
-  Ptr<MmWaveLosTracker> m_losTracker;
 
   /// component carrier Id used to address sap
   uint8_t m_componentCarrierId;

@@ -56,11 +56,11 @@
 #include <ns3/lte-chunk-processor.h>
 #include <ns3/isotropic-antenna-model.h>
 #include <ns3/mmwave-propagation-loss-model.h>
-#include <ns3/mmwave-3gpp-buildings-propagation-loss-model.h>
 #include <ns3/lte-enb-component-carrier-manager.h>
 #include <ns3/lte-ue-component-carrier-manager.h>
 #include <ns3/cc-helper.h>
 #include <ns3/object-map.h>
+#include <ns3/three-gpp-spectrum-propagation-loss-model.h>
 
 
 namespace ns3 {
@@ -75,11 +75,6 @@ NS_OBJECT_ENSURE_REGISTERED (MmWaveHelper);
 MmWaveHelper::MmWaveHelper (void)
   : m_imsiCounter (0),
     m_cellIdCounter (1),
-    m_noTxAntenna (64),
-    // TODO fix # antennas and # panels attributes
-    m_noRxAntenna (16),
-    m_noEnbPanels (3),
-    m_noUePanels (2),
     m_harqEnabled (false),
     m_rlcAmEnabled (false),
     m_snrTest (false),
@@ -93,6 +88,8 @@ MmWaveHelper::MmWaveHelper (void)
   m_ueNetDeviceFactory.SetTypeId (MmWaveUeNetDevice::GetTypeId ());
 
   m_mcUeNetDeviceFactory.SetTypeId (McUeNetDevice::GetTypeId ());
+
+  // TODO Add the possibility to set the type of the antennas
   m_enbAntennaModelFactory.SetTypeId (AntennaArrayModel::GetTypeId ());
   m_ueAntennaModelFactory.SetTypeId (AntennaArrayModel::GetTypeId ());
 
@@ -204,16 +201,6 @@ MmWaveHelper::GetTypeId (void)
                    "The next value will be the first  imsi",
                    UintegerValue (0),
                    MakeUintegerAccessor (&MmWaveHelper::m_imsiCounter),
-                   MakeUintegerChecker<uint16_t> ())
-    .AddAttribute ("NumUePanels",
-                   "Number of panels for the UE",
-                   UintegerValue (1),
-                   MakeUintegerAccessor (&MmWaveHelper::m_noUePanels),
-                   MakeUintegerChecker<uint16_t> ())
-    .AddAttribute ("NumEnbPanels",
-                   "Number of panels for the eNB",
-                   UintegerValue (1),
-                   MakeUintegerAccessor (&MmWaveHelper::m_noEnbPanels),
                    MakeUintegerChecker<uint16_t> ())
     .AddAttribute ("EnbComponentCarrierManager",
                    "The type of Component Carrier Manager to be used for gNBs. "
@@ -354,80 +341,15 @@ MmWaveHelper::MmWaveChannelModelInitialization (void)
               NS_LOG_LOGIC (this << " using a PropagationLossModel");
               channel->AddPropagationLossModel (splm);
             }
-
-          if (m_pathlossModelType == "ns3::BuildingsObstaclePropagationLossModel")
-            {
-              Ptr<MmWaveLosTracker> losTracker = CreateObject<MmWaveLosTracker> ();                  // create and initialize m_losTracker
-              Ptr<BuildingsObstaclePropagationLossModel> building = pathlossModel->GetObject<BuildingsObstaclePropagationLossModel> ();
-              building->SetConfigurationParameters (phyMacCommon);
-              //building->SetBeamforming (m_beamforming); //dove viene creato m_beamforming??
-              building->SetLosTracker (losTracker);                  // use m_losTracker in BuildingsObstaclePropagationLossModel
-
-              m_losTracker [it->first] = losTracker;
-            }
-          else if (m_pathlossModelType == "ns3::MmWavePropagationLossModel")
-            {
-              pathlossModel->GetObject<MmWavePropagationLossModel> ()->SetConfigurationParameters (phyMacCommon);
-            }
-          else if (m_pathlossModelType == "ns3::MmWave3gppPropagationLossModel")
-            {
-              pathlossModel->GetObject<MmWave3gppPropagationLossModel> ()->SetConfigurationParameters (phyMacCommon);
-            }
-          else if (m_pathlossModelType == "ns3::MmWave3gppBuildingsPropagationLossModel")
-            {
-              pathlossModel->GetObject<MmWave3gppBuildingsPropagationLossModel> ()->SetConfigurationParameters (phyMacCommon);
-            }
-
-          m_pathlossModel [it->first] = pathlossModel;
+          // TODO initialize propagation model (if needed)
         }
       else
         {
           NS_LOG_UNCOND (this << " No PropagationLossModel!");
         }
 
-      if (m_channelModelType == "ns3::MmWaveBeamforming")
-        {
-          Ptr<MmWaveBeamforming> beamforming = CreateObject<MmWaveBeamforming> (m_noTxAntenna, m_noRxAntenna);
-          channel->AddSpectrumPropagationLossModel (beamforming);
-          beamforming->SetConfigurationParameters (phyMacCommon);
+      // TODO create and configure the SpectrumPropagationLossModel
 
-          m_beamforming [it->first] = beamforming;
-        }
-      else if (m_channelModelType == "ns3::MmWaveChannelMatrix")
-        {
-          Ptr<MmWaveChannelMatrix> channelMatrix = CreateObject<MmWaveChannelMatrix> ();
-          channel->AddSpectrumPropagationLossModel (channelMatrix);
-          channelMatrix->SetConfigurationParameters (phyMacCommon);
-
-          m_channelMatrix [it->first] = channelMatrix;
-        }
-      else if (m_channelModelType == "ns3::MmWaveChannelRaytracing")
-        {
-          Ptr<MmWaveChannelRaytracing> raytracing = CreateObject<MmWaveChannelRaytracing> ();
-          channel->AddSpectrumPropagationLossModel (raytracing);
-          raytracing->SetConfigurationParameters (phyMacCommon);
-
-          m_raytracing [it->first] = raytracing;
-        }
-      else if (m_channelModelType == "ns3::MmWave3gppChannel")
-        {
-          Ptr<MmWave3gppChannel> gppChannel = CreateObject<MmWave3gppChannel> ();
-          channel->AddSpectrumPropagationLossModel (gppChannel);
-          gppChannel->SetConfigurationParameters (phyMacCommon);
-          gppChannel->SetAttribute ("Blockage", BooleanValue (m_3gppBlockage [it->first]));
-
-          if (m_pathlossModelType == "ns3::MmWave3gppBuildingsPropagationLossModel" || m_pathlossModelType == "ns3::MmWave3gppPropagationLossModel" )
-            {
-              Ptr<PropagationLossModel> pl = m_pathlossModel.at (it->first)->GetObject<PropagationLossModel> ();
-              gppChannel->SetPathlossModel (pl);
-            }
-          else
-            {
-              NS_FATAL_ERROR ("The 3GPP channel and propagation loss should be enabled at the same time");
-            }
-
-          m_3gppChannel [it->first] = gppChannel;
-        }
       m_channel [it->first] = channel;
     }    //end for
 }
@@ -470,13 +392,6 @@ MmWaveHelper::LteChannelModelInitialization (void)
     }
   // TODO consider if adding LTE fading
   // TODO add mac & phy LTE stats
-}
-
-void
-MmWaveHelper::SetAntenna (uint16_t Nrx, uint16_t Ntx)
-{
-  m_noTxAntenna = Ntx;
-  m_noRxAntenna = Nrx;
 }
 
 void
@@ -739,34 +654,6 @@ MmWaveHelper::InstallSingleMcUeDevice (Ptr<Node> n)
       //ulPhy->SetHarqPhyModule (harq);
       phy->SetHarqPhyModule (harq);
 
-      /* Do not do this here. Do it during registration with the BS
-       * phy->SetConfigurationParameters(m_phyMacCommon);*/
-
-      if (m_channelModelType == "ns3::MmWaveBeamforming")
-        {
-          phy->AddSpectrumPropagationLossModel (m_beamforming.at (it->first));
-        }
-      else if (m_channelModelType == "ns3::MmWaveChannelMatrix")
-        {
-          phy->AddSpectrumPropagationLossModel (m_channelMatrix.at (it->first));
-        }
-      else if (m_channelModelType == "ns3::MmWaveChannelRaytracing")
-        {
-          phy->AddSpectrumPropagationLossModel (m_raytracing.at (it->first));
-        }
-      if (!m_pathlossModelType.empty ())
-        {
-          Ptr<PropagationLossModel> splm = m_pathlossModel.at (it->first)->GetObject<PropagationLossModel> ();
-          if ( splm )
-            {
-              phy->AddPropagationLossModel (splm);
-            }
-        }
-      else
-        {
-          NS_LOG_UNCOND (this << " No PropagationLossModel!");
-        }
-
       /*
 Ptr<LteChunkProcessor> pRs = Create<LteChunkProcessor> ();
 pRs->AddCallback (MakeCallback (&LteUePhy::ReportRsReceivedPower, phy));
@@ -814,14 +701,21 @@ pCtrl->AddCallback (MakeCallback (&LteUePhy::GenerateCtrlCqiReport, phy));
       dlPhy->SetMobility (mm);
       ulPhy->SetMobility (mm);
 
-      Ptr<AntennaModel> antenna = (m_ueAntennaModelFactory.Create ())->GetObject<AntennaModel> ();
-      DynamicCast<AntennaArrayModel> (antenna)->SetPlanesNumber (m_noUePanels);
-      DynamicCast<AntennaArrayModel> (antenna)->SetDeviceType (true);
+      Ptr<AntennaArrayBasicModel> antenna = m_ueAntennaModelFactory.Create<AntennaArrayBasicModel> ();
       NS_LOG_INFO("MC device->GetAntennaNum() " << device->GetAntennaNum());
-      DynamicCast<AntennaArrayModel> (antenna)->SetTotNoArrayElements (device->GetAntennaNum());
+      antenna->SetAntennaNumDim1 (sqrt (device->GetAntennaNum()));
+      antenna->SetAntennaNumDim2 (sqrt (device->GetAntennaNum()));
       NS_ASSERT_MSG (antenna, "error in creating the AntennaModel object");
       dlPhy->SetAntenna (antenna);
       ulPhy->SetAntenna (antenna);
+
+      // initialize the 3GPP channel model
+      Ptr<SpectrumPropagationLossModel> splm = m_channel.at (it->first)->GetSpectrumPropagationLossModel ();
+      Ptr<ThreeGppSpectrumPropagationLossModel> threeGppSplm = DynamicCast<ThreeGppSpectrumPropagationLossModel> (splm);
+      if (threeGppSplm)
+      {
+        threeGppSplm->AddDevice (device, antenna);
+      }
 
       it->second->SetPhy (phy);
     }
@@ -1363,34 +1257,6 @@ MmWaveHelper::InstallSingleUeDevice (Ptr<Node> n)
       //ulPhy->SetHarqPhyModule (harq);
       phy->SetHarqPhyModule (harq);
 
-      /* Do not do this here. Do it during registration with the BS
-       * phy->SetConfigurationParameters(m_phyMacCommon);*/
-
-      if (m_channelModelType == "ns3::MmWaveBeamforming")
-        {
-          phy->AddSpectrumPropagationLossModel (m_beamforming.at (it->first));
-        }
-      else if (m_channelModelType == "ns3::MmWaveChannelMatrix")
-        {
-          phy->AddSpectrumPropagationLossModel (m_channelMatrix.at (it->first));
-        }
-      else if (m_channelModelType == "ns3::MmWaveChannelRaytracing")
-        {
-          phy->AddSpectrumPropagationLossModel (m_raytracing.at (it->first));
-        }
-      if (!m_pathlossModelType.empty ())
-        {
-          Ptr<PropagationLossModel> splm = m_pathlossModel.at (it->first)->GetObject<PropagationLossModel> ();
-          if ( splm )
-            {
-              phy->AddPropagationLossModel (splm);
-            }
-        }
-      else
-        {
-          NS_LOG_UNCOND (this << " No PropagationLossModel!");
-        }
-
       /*
 Ptr<LteChunkProcessor> pRs = Create<LteChunkProcessor> ();
 pRs->AddCallback (MakeCallback (&LteUePhy::ReportRsReceivedPower, phy));
@@ -1438,14 +1304,21 @@ pCtrl->AddCallback (MakeCallback (&LteUePhy::GenerateCtrlCqiReport, phy));
       dlPhy->SetMobility (mm);
       ulPhy->SetMobility (mm);
 
-      Ptr<AntennaModel> antenna = (m_ueAntennaModelFactory.Create ())->GetObject<AntennaModel> ();
-      DynamicCast<AntennaArrayModel> (antenna)->SetPlanesNumber (m_noUePanels);
-      DynamicCast<AntennaArrayModel> (antenna)->SetDeviceType (true);
-      NS_LOG_INFO("UE device->GetAntennaNum() " << device->GetAntennaNum());
-      DynamicCast<AntennaArrayModel> (antenna)->SetTotNoArrayElements (device->GetAntennaNum());
+      Ptr<AntennaArrayBasicModel> antenna = m_ueAntennaModelFactory.Create<AntennaArrayBasicModel> ();
+      // TODO find a better way to set the number of antenna elements
+      antenna->SetAntennaNumDim1 (sqrt (device->GetAntennaNum()));
+      antenna->SetAntennaNumDim2 (sqrt (device->GetAntennaNum()));
       NS_ASSERT_MSG (antenna, "error in creating the AntennaModel object");
       dlPhy->SetAntenna (antenna);
       ulPhy->SetAntenna (antenna);
+
+      // initialize the 3GPP channel model
+      Ptr<SpectrumPropagationLossModel> splm = m_channel.at (it->first)->GetSpectrumPropagationLossModel ();
+      Ptr<ThreeGppSpectrumPropagationLossModel> threeGppSplm = DynamicCast<ThreeGppSpectrumPropagationLossModel> (splm);
+      if (threeGppSplm)
+      {
+        threeGppSplm->AddDevice (device, antenna);
+      }
 
       it->second->SetPhy (phy);
     }
@@ -1623,33 +1496,12 @@ MmWaveHelper::InstallSingleEnbDevice (Ptr<Node> n)
       dlPhy->SetMobility (mm);
 
       // hack to allow periodic computation of SINR at the eNB, without pilots
-      if (m_channelModelType == "ns3::MmWaveBeamforming")
-        {
-          phy->AddSpectrumPropagationLossModel (m_beamforming.at (it->first));
-        }
-      else if (m_channelModelType == "ns3::MmWaveChannelMatrix")
-        {
-          phy->AddSpectrumPropagationLossModel (m_channelMatrix.at (it->first));
-        }
-      else if (m_channelModelType == "ns3::MmWaveChannelRaytracing")
-        {
-          phy->AddSpectrumPropagationLossModel (m_raytracing.at (it->first));
-        }
-      else if (m_channelModelType == "ns3::MmWave3gppChannel")
-        {
-          phy->AddSpectrumPropagationLossModel (m_3gppChannel.at (it->first));
-        }
+      phy->AddSpectrumPropagationLossModel (m_channel.at (it->first)->GetSpectrumPropagationLossModel ());
+
       if (!m_pathlossModelType.empty ())
         {
           Ptr<PropagationLossModel> splm = m_pathlossModel.at (it->first)->GetObject<PropagationLossModel> ();
-          if ( splm )
-            {
-              phy->AddPropagationLossModel (splm);
-              if (m_losTracker.find (it->first) != m_losTracker.end ())
-                {
-                  phy->AddLosTracker (m_losTracker.at (it->first));                             // use m_losTracker in phy (and in particular in enbPhy)
-                }
-            }
+          phy->AddPropagationLossModel (splm);
         }
       else
         {
@@ -1657,11 +1509,12 @@ MmWaveHelper::InstallSingleEnbDevice (Ptr<Node> n)
         }
 
       /* Antenna model */
-      Ptr<AntennaModel> antenna = (m_enbAntennaModelFactory.Create ())->GetObject<AntennaModel> ();
-      DynamicCast<AntennaArrayModel> (antenna)->SetPlanesNumber (m_noEnbPanels);
-      DynamicCast<AntennaArrayModel> (antenna)->SetDeviceType (false);
-      NS_LOG_INFO("eNB device->GetAntennaNum() " << device->GetAntennaNum());
-      DynamicCast<AntennaArrayModel> (antenna)->SetTotNoArrayElements (device->GetAntennaNum());      
+      // it does not make sense to have an factory for the antenna
+      // or maybe yes, to choose between the different radiation patterns
+      Ptr<AntennaArrayBasicModel> antenna = m_enbAntennaModelFactory.Create<AntennaArrayBasicModel> ();
+      // TODO find a better way to set the number of antenna elements
+      antenna->SetAntennaNumDim1 (sqrt (device->GetAntennaNum ()));
+      antenna->SetAntennaNumDim2 (sqrt (device->GetAntennaNum ()));
       NS_ASSERT_MSG (antenna, "error in creating the AntennaModel object");
       dlPhy->SetAntenna (antenna);
       ulPhy->SetAntenna (antenna);
@@ -1853,6 +1706,7 @@ it->second->GetFfrAlgorithm ()->SetLteFfrRrcSapUser (rrc->GetLteFfrRrcSapUser (i
       //double freq = LteSpectrumValueHelper::GetCarrierFrequency (it->second->m_dlEarfcn);
       double freq = it->second->GetCenterFrequency ();
 
+      // TODO move this to MmWaveChannelModelInitialization
       NS_LOG_LOGIC ("Channel Frequency: " << freq);
       if (!m_pathlossModelType.empty ())
         {
@@ -2181,34 +2035,18 @@ MmWaveHelper::AttachToClosestEnb (NetDeviceContainer ueDevices, NetDeviceContain
     {
 
       // initialize the beamforming vectors
-      for (NetDeviceContainer::Iterator i = ueDevices.Begin (); i != ueDevices.End (); i++)
-        {
-          for (NetDeviceContainer::Iterator enbIter = enbDevices.Begin ();
-               enbIter != enbDevices.End (); ++enbIter)
-            {
-              Ptr<AntennaArrayModel> ueAntennaArray = DynamicCast<AntennaArrayModel> (
-                  (DynamicCast<MmWaveUeNetDevice> (*i))->GetPhy (it->first)->GetDlSpectrumPhy ()->GetRxAntenna ());
-              complexVector_t dummy;
-              ueAntennaArray->SetBeamformingVectorPanel (dummy,*enbIter);
-            }
-        }
-
-      if (m_channelModelType == "ns3::MmWaveBeamforming")
-        {
-          m_beamforming.at (it->first)->Initial (ueDevices,enbDevices);
-        }
-      else if (m_channelModelType == "ns3::MmWaveChannelMatrix")
-        {
-          m_channelMatrix.at (it->first)->Initial (ueDevices,enbDevices);
-        }
-      else if (m_channelModelType == "ns3::MmWaveChannelRaytracing")
-        {
-          m_raytracing.at (it->first)->Initial (ueDevices,enbDevices);
-        }
-      else if (m_channelModelType == "ns3::MmWave3gppChannel")
-        {
-          m_3gppChannel.at (it->first)->Initial (ueDevices,enbDevices);
-        }
+      // TODO do I have to initialize the beamforming vectors now?
+      // for (NetDeviceContainer::Iterator i = ueDevices.Begin (); i != ueDevices.End (); i++)
+      //   {
+      //     for (NetDeviceContainer::Iterator enbIter = enbDevices.Begin ();
+      //          enbIter != enbDevices.End (); ++enbIter)
+      //       {
+      //         Ptr<AntennaArrayModel> ueAntennaArray = DynamicCast<AntennaArrayModel> (
+      //             (DynamicCast<MmWaveUeNetDevice> (*i))->GetPhy (it->first)->GetDlSpectrumPhy ()->GetRxAntenna ());
+      //         complexVector_t dummy;
+      //         ueAntennaArray->SetBeamformingVectorPanel (dummy,*enbIter);
+      //       }
+      //   }
     }
 
   for (NetDeviceContainer::Iterator i = ueDevices.Begin (); i != ueDevices.End (); i++)
@@ -2226,26 +2064,6 @@ MmWaveHelper::AttachToClosestEnb (NetDeviceContainer ueDevices, NetDeviceContain
   for (NetDeviceContainer::Iterator i = ueDevices.Begin (); i != ueDevices.End (); i++)
     {
       AttachMcToClosestEnb (*i, mmWaveEnbDevices, lteEnbDevices);
-    }
-
-  for (std::map<uint8_t, MmWaveComponentCarrier >::iterator it = m_componentCarrierPhyParams.begin (); it != m_componentCarrierPhyParams.end (); ++it)
-    {
-      if (m_channelModelType == "ns3::MmWaveBeamforming")
-        {
-          m_beamforming.at (it->first)->Initial (ueDevices,mmWaveEnbDevices);
-        }
-      else if (m_channelModelType == "ns3::MmWaveChannelMatrix")
-        {
-          m_channelMatrix.at (it->first)->Initial (ueDevices,mmWaveEnbDevices);
-        }
-      else if (m_channelModelType == "ns3::MmWaveChannelRaytracing")
-        {
-          m_raytracing.at (it->first)->Initial (ueDevices,mmWaveEnbDevices);
-        }
-      else if (m_channelModelType == "ns3::MmWave3gppChannel")
-        {
-          m_3gppChannel.at (it->first)->Initial (ueDevices,mmWaveEnbDevices);
-        }
     }
 }
 
