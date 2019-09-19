@@ -334,13 +334,13 @@ MmWaveHelper::MmWaveChannelModelInitialization (void)
 
       if (!m_pathlossModelType.empty ())
         {
-          Ptr<Object> pathlossModel = m_pathlossModelFactory.Create ();
-          Ptr<PropagationLossModel> splm = pathlossModel->GetObject<PropagationLossModel> ();
-          if ( splm )
+          Ptr<PropagationLossModel> plm = m_pathlossModelFactory.Create<PropagationLossModel> ();
+          if (plm)
             {
-              NS_LOG_LOGIC (this << " using a PropagationLossModel");
-              channel->AddPropagationLossModel (splm);
+              plm->SetAttributeFailSafe ("Frequency", DoubleValue (phyMacCommon->GetCenterFrequency ()));
+              channel->AddPropagationLossModel (plm);
             }
+          m_pathlossModel[it->first] = plm;
           // TODO initialize propagation model (if needed)
         }
       else
