@@ -64,7 +64,7 @@ def build(bld):
 
     module_test = bld.create_ns3_module_test_library('mmwave')
     module_test.source = [
-        #'mmwave-test-suite.cc'
+        'test/mmwave-channel-model-initialization-test.cc',
         ]
 
     headers = bld(features='ns3header')
