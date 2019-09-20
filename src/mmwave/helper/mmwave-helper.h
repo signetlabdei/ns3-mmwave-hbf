@@ -311,7 +311,7 @@ private:
   Ptr<Object> m_uplinkPathlossModel;         /// The path loss model used in the LTE uplink channel.
 
 
-  std::string m_channelModelType;
+  std::string m_spectrumPropagationLossModelType; //!< the type of the SpectrumPropagationLossModel to use (if needed)
 
   ObjectFactory m_enbNetDeviceFactory;
   ObjectFactory m_lteEnbNetDeviceFactory;
@@ -320,6 +320,7 @@ private:
   ObjectFactory m_channelFactory;               // TODO check if one factory for the channel is enough
   ObjectFactory m_channelConditionModelFactory; //!< the factory for the ChannelConditionModel objects
   ObjectFactory m_pathlossModelFactory;         // Each channel (mmWave, LteUl & LteDl) may have a different pathloss with diff attributes
+  ObjectFactory m_spectrumPropagationLossModelFactory; //!< the factory for the SpectrumPropagationLossModel objects
   ObjectFactory m_schedulerFactory;
   ObjectFactory m_lteSchedulerFactory;       // Factory for LTE scheduler
   ObjectFactory m_ffrAlgorithmFactory;

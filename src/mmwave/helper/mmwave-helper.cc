@@ -119,14 +119,14 @@ MmWaveHelper::GetTypeId (void)
                    "The type of path-loss model to be used. "
                    "The allowed values for this attributes are the type names "
                    "of any class inheriting from ns3::PropagationLossModel.",
-                   StringValue ("ns3::MmWavePropagationLossModel"),
+                   StringValue ("ns3::ThreeGppUmaPropagationLossModel"),
                    MakeStringAccessor (&MmWaveHelper::SetPathlossModelType),
                    MakeStringChecker ())
     .AddAttribute ("ChannelModel",
                    "The type of MIMO channel model to be used. "
                    "The allowed values for this attributes are the type names "
                    "of any class inheriting from ns3::SpectrumPropagationLossModel.",
-                   StringValue ("ns3::MmWaveBeamforming"),
+                   StringValue ("ns3::ThreeGppSpectrumPropagationLossModel"),
                    MakeStringAccessor (&MmWaveHelper::SetChannelModelType),
                    MakeStringChecker ())
     .AddAttribute ("Scheduler",
@@ -375,7 +375,36 @@ MmWaveHelper::MmWaveChannelModelInitialization (void)
           NS_LOG_UNCOND (this << " No PropagationLossModel!");
         }
 
-      // TODO create and configure the SpectrumPropagationLossModel
+      // create and configure the SpectrumPropagationLossModel
+      if (!m_spectrumPropagationLossModelType.empty ())
+        {
+          Ptr<SpectrumPropagationLossModel> splm = m_spectrumPropagationLossModelFactory.Create<SpectrumPropagationLossModel> ();
+          if (splm)
+            {
+              splm->SetAttributeFailSafe ("Frequency", DoubleValue (phyMacCommon->GetCenterFrequency ()));
+
+              // associate the channel condition model to the propagation loss model (if needed)
+              if (ccm)
+              {
+                //TODO this is needed only for the 3gpp channel model
+                // find a better way to do this (maybe define an attribute for
+                // the channel condition model in the propagation loss model class)
+                // and use SetAttributeFailSafe
+                Ptr<ThreeGppSpectrumPropagationLossModel> threeGppSplm = DynamicCast<ThreeGppSpectrumPropagationLossModel> (splm);
+                if (threeGppSplm)
+                {
+                  threeGppSplm->SetChannelConditionModel (ccm);
+                }
+              }
+
+              // set the propagation loss model in the channel
+              channel->AddSpectrumPropagationLossModel (splm);
+            }
+        }
+      else
+        {
+          NS_LOG_UNCOND (this << " No SpectrumPropagationLossModel!");
+        }
 
       m_channel [it->first] = channel;
     }    //end for
@@ -465,7 +494,12 @@ void
 MmWaveHelper::SetChannelModelType (std::string type)
 {
   NS_LOG_FUNCTION (this << type);
-  m_channelModelType = type;
+  m_spectrumPropagationLossModelType = type;
+  if (!type.empty ())
+    {
+      m_spectrumPropagationLossModelFactory = ObjectFactory ();
+      m_spectrumPropagationLossModelFactory.SetTypeId (type);
+    }
 }
 
 void
