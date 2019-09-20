@@ -332,12 +332,17 @@ MmWaveHelper::MmWaveChannelModelInitialization (void)
       Ptr<SpectrumChannel> channel = m_channelFactory.Create<SpectrumChannel> ();
       Ptr<MmWavePhyMacCommon> phyMacCommon = m_componentCarrierPhyParams.at (it->first).GetConfigurationParameters ();
 
+      // TODO create and configure the channel condition model
+      
       if (!m_pathlossModelType.empty ())
         {
           Ptr<PropagationLossModel> plm = m_pathlossModelFactory.Create<PropagationLossModel> ();
           if (plm)
             {
               plm->SetAttributeFailSafe ("Frequency", DoubleValue (phyMacCommon->GetCenterFrequency ()));
+
+              // TODO set the channel condition model (if necessary)
+
               channel->AddPropagationLossModel (plm);
             }
           m_pathlossModel[it->first] = plm;
