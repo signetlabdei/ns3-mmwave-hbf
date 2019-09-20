@@ -61,6 +61,8 @@
 #include <ns3/cc-helper.h>
 #include <ns3/object-map.h>
 #include <ns3/three-gpp-spectrum-propagation-loss-model.h>
+#include <ns3/channel-condition-model.h>
+#include <ns3/three-gpp-propagation-loss-model.h>
 
 
 namespace ns3 {
@@ -332,8 +334,14 @@ MmWaveHelper::MmWaveChannelModelInitialization (void)
       Ptr<SpectrumChannel> channel = m_channelFactory.Create<SpectrumChannel> ();
       Ptr<MmWavePhyMacCommon> phyMacCommon = m_componentCarrierPhyParams.at (it->first).GetConfigurationParameters ();
 
-      // TODO create and configure the channel condition model
-      
+      // create the channel condition model (if needed)
+      Ptr<ChannelConditionModel> ccm;
+      if (!m_channelConditionModelType.empty ())
+      {
+        ccm = m_channelConditionModelFactory.Create<ChannelConditionModel> ();
+      }
+
+      // create the propagation loss model
       if (!m_pathlossModelType.empty ())
         {
           Ptr<PropagationLossModel> plm = m_pathlossModelFactory.Create<PropagationLossModel> ();
@@ -341,12 +349,26 @@ MmWaveHelper::MmWaveChannelModelInitialization (void)
             {
               plm->SetAttributeFailSafe ("Frequency", DoubleValue (phyMacCommon->GetCenterFrequency ()));
 
-              // TODO set the channel condition model (if necessary)
+              // associate the channel condition model to the propagation loss model (if needed)
+              if (ccm)
+              {
+                //TODO this is needed only for the 3gpp channel model
+                // find a better way to do this (maybe define an attribute for
+                // the channel condition model in the propagation loss model class)
+                // and use SetAttributeFailSafe
+                Ptr<ThreeGppPropagationLossModel> threeGppPlm = DynamicCast<ThreeGppPropagationLossModel> (plm);
+                if (threeGppPlm)
+                {
+                  threeGppPlm->SetChannelConditionModel (ccm);
+                }
+              }
 
+              // set the propagation loss model in the channel
               channel->AddPropagationLossModel (plm);
             }
+
+          // store the propagation loss model
           m_pathlossModel[it->first] = plm;
-          // TODO initialize propagation model (if needed)
         }
       else
         {
@@ -407,6 +429,18 @@ MmWaveHelper::SetLtePathlossModelType (std::string type)
   m_dlPathlossModelFactory.SetTypeId (type);
   m_ulPathlossModelFactory = ObjectFactory ();
   m_ulPathlossModelFactory.SetTypeId (type);
+}
+
+void
+MmWaveHelper::SetChannelConditionModelType (std::string type)
+{
+  NS_LOG_FUNCTION (this << type);
+  m_channelConditionModelType = type;
+  if (!type.empty ())
+    {
+      m_channelConditionModelFactory = ObjectFactory ();
+      m_channelConditionModelFactory.SetTypeId (type);
+    }
 }
 
 void
@@ -1708,19 +1742,6 @@ it->second->GetFfrAlgorithm ()->SetLteFfrRrcSapUser (rrc->GetLteFfrRrcSapUser (i
       ccPhy->GetDlSpectrumPhy ()->SetPhyRxCtrlEndOkCallback (MakeCallback (&MmWaveEnbPhy::PhyCtrlMessagesReceived, ccPhy));
       ccPhy->GetDlSpectrumPhy ()->SetPhyUlHarqFeedbackCallback (MakeCallback (&MmWaveEnbPhy::ReceiveUlHarqFeedback, ccPhy));
       NS_LOG_LOGIC ("set the propagation model frequencies");
-      //double freq = LteSpectrumValueHelper::GetCarrierFrequency (it->second->m_dlEarfcn);
-      double freq = it->second->GetCenterFrequency ();
-
-      // TODO move this to MmWaveChannelModelInitialization
-      NS_LOG_LOGIC ("Channel Frequency: " << freq);
-      if (!m_pathlossModelType.empty ())
-        {
-          bool freqOk = m_pathlossModel.at (it->first)->SetAttributeFailSafe ("Frequency", DoubleValue (freq));
-          if (!freqOk)
-            {
-              NS_LOG_WARN ("Propagation model does not have a Frequency attribute");
-            }
-        }
     }              //end for
 
   //mac->SetForwardUpCallback (MakeCallback (&MmWaveEnbNetDevice::Receive, device));

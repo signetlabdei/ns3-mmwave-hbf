@@ -111,6 +111,7 @@ public:
   NetDeviceContainer InstallInterRatHoCapableUeDevice (NodeContainer c);
   NetDeviceContainer InstallEnbDevice (NodeContainer c);
   NetDeviceContainer InstallLteEnbDevice (NodeContainer c);
+  void SetChannelConditionModelType (std::string type);
   void SetPathlossModelType (std::string type);
   void SetChannelModelType (std::string type);
   void SetLtePathlossModelType (std::string type);
@@ -302,9 +303,11 @@ private:
   Ptr<SpectrumChannel> m_downlinkChannel;       /// The downlink LTE channel used in the simulation.
   Ptr<SpectrumChannel> m_uplinkChannel;         /// The uplink LTE channel used in the simulation.
 
+  std::string m_channelConditionModelType; //!< the type of the channel condition model to be used (empty string means no channel condition model)
+
   std::map< uint8_t, Ptr<Object> > m_pathlossModel;
   std::string m_pathlossModelType;
-  Ptr<Object> m_downlinkPathlossModel;            /// The path loss model used in the LTE downlink channel.
+  Ptr<Object> m_downlinkPathlossModel;       /// The path loss model used in the LTE downlink channel.
   Ptr<Object> m_uplinkPathlossModel;         /// The path loss model used in the LTE uplink channel.
 
 
@@ -315,6 +318,7 @@ private:
   ObjectFactory m_ueNetDeviceFactory;
   ObjectFactory m_mcUeNetDeviceFactory;
   ObjectFactory m_channelFactory;               // TODO check if one factory for the channel is enough
+  ObjectFactory m_channelConditionModelFactory; //!< the factory for the ChannelConditionModel objects
   ObjectFactory m_pathlossModelFactory;         // Each channel (mmWave, LteUl & LteDl) may have a different pathloss with diff attributes
   ObjectFactory m_schedulerFactory;
   ObjectFactory m_lteSchedulerFactory;       // Factory for LTE scheduler
