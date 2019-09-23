@@ -2091,24 +2091,6 @@ MmWaveHelper::AttachToClosestEnb (NetDeviceContainer ueDevices, NetDeviceContain
 {
   NS_LOG_FUNCTION (this);
 
-  for (std::map<uint8_t, MmWaveComponentCarrier >::iterator it = m_componentCarrierPhyParams.begin (); it != m_componentCarrierPhyParams.end (); ++it)
-    {
-
-      // initialize the beamforming vectors
-      // TODO do I have to initialize the beamforming vectors now?
-      // for (NetDeviceContainer::Iterator i = ueDevices.Begin (); i != ueDevices.End (); i++)
-      //   {
-      //     for (NetDeviceContainer::Iterator enbIter = enbDevices.Begin ();
-      //          enbIter != enbDevices.End (); ++enbIter)
-      //       {
-      //         Ptr<AntennaArrayModel> ueAntennaArray = DynamicCast<AntennaArrayModel> (
-      //             (DynamicCast<MmWaveUeNetDevice> (*i))->GetPhy (it->first)->GetDlSpectrumPhy ()->GetRxAntenna ());
-      //         complexVector_t dummy;
-      //         ueAntennaArray->SetBeamformingVectorPanel (dummy,*enbIter);
-      //       }
-      //   }
-    }
-
   for (NetDeviceContainer::Iterator i = ueDevices.Begin (); i != ueDevices.End (); i++)
     {
       AttachToClosestEnb (*i, enbDevices);

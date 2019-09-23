@@ -327,16 +327,20 @@ MmWaveUePhy::RegisterToEnb (uint16_t cellId, Ptr<MmWavePhyMacCommon> config)
       DynamicCast<McUeNetDevice> (m_netDevice)->SetMmWaveTargetEnb (enbNetDevice);
     }
   NS_LOG_UNCOND ("UE register to enb " << m_cellId);
-  // call antennaarrya to change the bf vector
-  Ptr<AntennaArrayModel> txAntennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhy ()->GetRxAntenna ());
-  if (txAntennaArray != 0)
-    {
-      txAntennaArray->ChangeBeamformingVector (enbNetDevice);
-    }
-  else
-    {
-      NS_FATAL_ERROR ("UE is not using an AntennaArrayModel");
-    }
+
+  // TODO why do I need to set the beamforming vector now?
+  // I will set it when StartSlot is called
+  
+  // // call antennaarrya to change the bf vector
+  // Ptr<AntennaArrayModel> txAntennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhy ()->GetRxAntenna ());
+  // if (txAntennaArray != 0)
+  //   {
+  //     //txAntennaArray->ChangeBeamformingVector (enbNetDevice);
+  //   }
+  // else
+  //   {
+  //     NS_FATAL_ERROR ("UE is not using an AntennaArrayModel");
+  //   }
 
   if (m_frameNum != 0)
     {
