@@ -2169,6 +2169,9 @@ MmWaveHelper::AttachToClosestEnb (Ptr<NetDevice> ueDevice, NetDeviceContainer en
       Ptr<MmWaveEnbNetDevice> mmWaveEnb = (*i)->GetObject<MmWaveEnbNetDevice> ();
 
       std::map<uint8_t, Ptr<MmWaveComponentCarrierEnb> > enbCcMap = mmWaveEnb->GetCcMap ();
+
+      // TODO here I have to pair UE CC and eNB CC with the same CCid, CCs with different
+      // IDs cannot communicate
       for (std::map<uint8_t, Ptr<MmWaveComponentCarrierEnb> >::iterator itEnb = enbCcMap.begin (); itEnb != enbCcMap.end (); ++itEnb)
         {
           uint16_t mmWaveCellId = itEnb->second->GetCellId ();
@@ -2186,9 +2189,13 @@ MmWaveHelper::AttachToClosestEnb (Ptr<NetDevice> ueDevice, NetDeviceContainer en
         }
     }
 
+  // TODO check: the initial access is performed by the PCC, the method RegisterToEnb
+  // should be called only on the PCC PHY. The configuration of the SCCs will be
+  // performed by UE RRC during the connection setup phase
   uint16_t cellId = closestEnbDevice->GetObject<MmWaveEnbNetDevice> ()->GetCellId ();
   Ptr<MmWavePhyMacCommon> configParams = closestEnbDevice->GetObject<MmWaveEnbNetDevice> ()->GetPhy ()->GetConfigurationParameters ();
 
+  // this has alread been called in the for loop above
   closestEnbDevice->GetObject<MmWaveEnbNetDevice> ()->GetPhy ()->AddUePhy (ueDevice->GetObject<MmWaveUeNetDevice> ()->GetImsi (), ueDevice);
   ueDevice->GetObject<MmWaveUeNetDevice> ()->GetPhy ()->RegisterToEnb (cellId, configParams);
   closestEnbDevice->GetObject<MmWaveEnbNetDevice> ()->GetMac ()->AssociateUeMAC (ueDevice->GetObject<MmWaveUeNetDevice> ()->GetImsi ());
