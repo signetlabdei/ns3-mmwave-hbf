@@ -2147,6 +2147,8 @@ MmWaveHelper::AttachToClosestEnb (Ptr<NetDevice> ueDevice, NetDeviceContainer en
   NS_LOG_FUNCTION (this);
   NS_ASSERT_MSG (enbDevices.GetN () > 0, "empty enb device container");
   Vector uepos = ueDevice->GetNode ()->GetObject<MobilityModel> ()->GetPosition ();
+
+  // find the closest BS
   double minDistance = std::numeric_limits<double>::infinity ();
   Ptr<NetDevice> closestEnbDevice;
   for (NetDeviceContainer::Iterator i = enbDevices.Begin (); i != enbDevices.End (); ++i)
@@ -2161,6 +2163,7 @@ MmWaveHelper::AttachToClosestEnb (Ptr<NetDevice> ueDevice, NetDeviceContainer en
     }
   NS_ASSERT (closestEnbDevice != 0);
 
+  // connect the UE to the closest BS
   Ptr<MmWaveUeNetDevice> mmWaveUe = ueDevice->GetObject<MmWaveUeNetDevice> ();
 
   // Necessary operation to connect MmWave UE to eNB at lower layers
