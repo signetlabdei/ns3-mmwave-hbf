@@ -645,11 +645,11 @@ MmWaveEnbPhy::UpdateUeSinrEstimate ()
       // compute rx psd
 
       // adjuts beamforming of antenna model wrt user
-      Ptr<AntennaArrayModel> rxAntennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhy ()->GetRxAntenna ());
-      rxAntennaArray->ChangeBeamformingVector (ue->second);                                                                                // TODO check if this is the correct antenna
-      Ptr<AntennaArrayModel> txAntennaArray = DynamicCast<AntennaArrayModel> (uePhy->GetDlSpectrumPhy ()->GetRxAntenna ());          // Dl, since the Ul is not actually used (TDD device)
-      txAntennaArray->ChangeBeamformingVector (m_netDevice);                                                                               // TODO check if this is the correct antenna
+      m_downlinkSpectrumPhy->ConfigureBeamforming (ue->second);
+      uePhy->GetDlSpectrumPhy ()->ConfigureBeamforming (m_netDevice);
 
+      Ptr<AntennaArrayModel> rxAntennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhy ()->GetRxAntenna ());
+      Ptr<AntennaArrayModel> txAntennaArray = DynamicCast<AntennaArrayModel> (uePhy->GetDlSpectrumPhy ()->GetRxAntenna ());          // Dl, since the Ul is not actually used (TDD device)
       double pathLossDb = 0;
       if (txAntennaArray != 0)
         {
@@ -688,14 +688,14 @@ MmWaveEnbPhy::UpdateUeSinrEstimate ()
         {                                                                                                                       // target not set yet
           if ((ueNetDevice->GetTargetEnb () != m_netDevice) && (ueNetDevice->GetTargetEnb () != 0))
             {
-              txAntennaArray->ChangeBeamformingVector (ueNetDevice->GetTargetEnb ());
+              uePhy->GetDlSpectrumPhy ()->ConfigureBeamforming (ueNetDevice->GetTargetEnb ());
             }
         }
       else if (mcUeDev != 0)           // it may be a MC device
         {                                                                                                                               // target not set yet
           if ((mcUeDev->GetMmWaveTargetEnb () != m_netDevice) && (mcUeDev->GetMmWaveTargetEnb () != 0))
             {
-              txAntennaArray->ChangeBeamformingVector (mcUeDev->GetMmWaveTargetEnb ());
+              uePhy->GetDlSpectrumPhy ()->ConfigureBeamforming (mcUeDev->GetMmWaveTargetEnb ());
             }
         }
       else
@@ -1152,9 +1152,8 @@ MmWaveEnbPhy::StartSlot (void)
 
           if (currSlot.m_rnti == ueRnti && m_netDevice == associatedEnb)
             {
-              //NS_LOG_DEBUG ("Change Beamforming Vector");
-              Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhy ()->GetRxAntenna ());
-              antennaArray->ChangeBeamformingVector (m_deviceMap.at (i));
+              // point the beam towards the user
+              m_downlinkSpectrumPhy->ConfigureBeamforming (m_deviceMap.at (i));
               break;
             }
         }
@@ -1274,8 +1273,7 @@ MmWaveEnbPhy::SendDataChannels (Ptr<PacketBurst> pb, Time slotPrd, SlotAllocInfo
           if (slotInfo.m_dci.m_rnti == ueRnti && m_netDevice == associatedEnb)
             {
               NS_LOG_DEBUG ("Change Beamforming Vector");
-              Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhy ()->GetRxAntenna ());
-              antennaArray->ChangeBeamformingVector (m_deviceMap.at (i));
+              m_downlinkSpectrumPhy->ConfigureBeamforming (m_deviceMap.at (i));
               break;
             }
 

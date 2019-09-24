@@ -295,6 +295,12 @@ MmWaveSpectrumPhy::SetPhyUlHarqFeedbackCallback (MmWavePhyUlHarqFeedbackCallback
 }
 
 void
+MmWaveSpectrumPhy::ConfigureBeamforming (Ptr<NetDevice> device)
+{
+
+}
+
+void
 MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
 {
 

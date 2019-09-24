@@ -126,6 +126,13 @@ public:
   Ptr<AntennaModel> GetRxAntenna ();
   void SetAntenna (Ptr<AntennaModel> a);
 
+  /**
+  * Compute the beamforming vector and update the antenna configuration
+  * to point the beam towards the target device.
+  * \param device target device
+  */
+  void ConfigureBeamforming (Ptr<NetDevice> device);
+
   void SetNoisePowerSpectralDensity (Ptr<const SpectrumValue> noisePsd);
   void SetTxPowerSpectralDensity (Ptr<SpectrumValue> TxPsd);
   void StartRx (Ptr<SpectrumSignalParameters> params);
@@ -201,6 +208,7 @@ private:
   Time m_firstRxDuration;
 
   Ptr<AntennaModel> m_antenna;
+  //Ptr<MmWaveBeamforming> m_beamforming; //!< used to compute the beamforming vector
 
   uint16_t m_cellId;
 
