@@ -21,6 +21,11 @@
 
 #include "ns3/object.h"
 
+// this is to include the definition of complexVector_t
+// TODO define complexVector_t in a separate header and include it here
+// and in the antenna classes
+#include "ns3/antenna-array-basic-model.h"
+
 namespace ns3 {
 
 namespace mmwave {
@@ -47,6 +52,13 @@ public:
    * \return the type id
    */
   static TypeId GetTypeId (void);
+
+  /**
+   * Returns the beamforming vector to be used to communicate with a target
+   * device
+   * \param the target device
+   */
+  virtual AntennaArrayBasicModel::complexVector_t GetBeamformingVectorForDevice (Ptr<NetDevice> device) = 0;
 };
 
 } // namespace mmwave
