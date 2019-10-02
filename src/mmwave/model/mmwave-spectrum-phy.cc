@@ -218,13 +218,22 @@ MmWaveSpectrumPhy::GetRxSpectrumModel () const
 Ptr<AntennaModel>
 MmWaveSpectrumPhy::GetRxAntenna ()
 {
-  return m_antenna;
+  return m_beamforming->GetAntenna ();
 }
 
+// TODO remove this method
+// void
+// MmWaveSpectrumPhy::SetAntenna (Ptr<AntennaModel> a)
+// {
+//   m_antenna = a;
+// }
+
 void
-MmWaveSpectrumPhy::SetAntenna (Ptr<AntennaModel> a)
+MmWaveSpectrumPhy::SetBeamformingModule (Ptr<MmWaveBeamforming> bfModule)
 {
-  m_antenna = a;
+  NS_LOG_FUNCTION (this);
+
+  m_beamforming = bfModule;
 }
 
 void
@@ -772,7 +781,7 @@ MmWaveSpectrumPhy::StartTxDataFrames (Ptr<PacketBurst> pb, std::list<Ptr<MmWaveC
           txParams->cellId = m_cellId;
           txParams->ctrlMsgList = ctrlMsgList;
           txParams->slotInd = slotInd;
-          txParams->txAntenna = m_antenna;
+          txParams->txAntenna = GetRxAntenna ();
 
           m_channel->StartTx (txParams);
 
@@ -815,7 +824,7 @@ MmWaveSpectrumPhy::StartTxDlControlFrames (std::list<Ptr<MmWaveControlMessage> >
           txParams->cellId = m_cellId;
           txParams->pss = true;
           txParams->ctrlMsgList = ctrlMsgList;
-          txParams->txAntenna = m_antenna;
+          txParams->txAntenna = GetRxAntenna ();
 
           m_channel->StartTx (txParams);
 

@@ -63,6 +63,7 @@
 #include <ns3/three-gpp-spectrum-propagation-loss-model.h>
 #include <ns3/channel-condition-model.h>
 #include <ns3/three-gpp-propagation-loss-model.h>
+#include <ns3/mmwave-beamforming.h>
 
 
 namespace ns3 {
@@ -779,8 +780,10 @@ pCtrl->AddCallback (MakeCallback (&LteUePhy::GenerateCtrlCqiReport, phy));
       antenna->SetAntennaNumDim1 (sqrt (device->GetAntennaNum()));
       antenna->SetAntennaNumDim2 (sqrt (device->GetAntennaNum()));
       NS_ASSERT_MSG (antenna, "error in creating the AntennaModel object");
-      dlPhy->SetAntenna (antenna);
-      ulPhy->SetAntenna (antenna);
+
+      // TODO make the bf module configurable
+      Ptr<MmWaveDftBeamforming> bfModule = CreateObjectWithAttributes<MmWaveDftBeamforming> ("MobilityModel", PointerValue (mm), "AntennaArray", PointerValue (antenna));
+      dlPhy->SetBeamformingModule (bfModule);
 
       // initialize the 3GPP channel model
       Ptr<SpectrumPropagationLossModel> splm = m_channel.at (it->first)->GetSpectrumPropagationLossModel ();
@@ -1382,8 +1385,10 @@ pCtrl->AddCallback (MakeCallback (&LteUePhy::GenerateCtrlCqiReport, phy));
       antenna->SetAntennaNumDim1 (sqrt (device->GetAntennaNum()));
       antenna->SetAntennaNumDim2 (sqrt (device->GetAntennaNum()));
       NS_ASSERT_MSG (antenna, "error in creating the AntennaModel object");
-      dlPhy->SetAntenna (antenna);
-      ulPhy->SetAntenna (antenna);
+
+      // TODO make the bf module configurable
+      Ptr<MmWaveDftBeamforming> bfModule = CreateObjectWithAttributes<MmWaveDftBeamforming> ("MobilityModel", PointerValue (mm), "AntennaArray", PointerValue (antenna));
+      dlPhy->SetBeamformingModule (bfModule);
 
       // initialize the 3GPP channel model
       Ptr<SpectrumPropagationLossModel> splm = m_channel.at (it->first)->GetSpectrumPropagationLossModel ();
@@ -1589,8 +1594,10 @@ MmWaveHelper::InstallSingleEnbDevice (Ptr<Node> n)
       antenna->SetAntennaNumDim1 (sqrt (device->GetAntennaNum ()));
       antenna->SetAntennaNumDim2 (sqrt (device->GetAntennaNum ()));
       NS_ASSERT_MSG (antenna, "error in creating the AntennaModel object");
-      dlPhy->SetAntenna (antenna);
-      ulPhy->SetAntenna (antenna);
+
+      // TODO make the bf module configurable
+      Ptr<MmWaveDftBeamforming> bfModule = CreateObjectWithAttributes<MmWaveDftBeamforming> ("MobilityModel", PointerValue (mm), "AntennaArray", PointerValue (antenna));
+      dlPhy->SetBeamformingModule (bfModule);
 
       Ptr<MmWaveEnbMac> mac = CreateObject<MmWaveEnbMac> ();
       mac->SetConfigurationParameters (it->second->GetConfigurationParameters ());
