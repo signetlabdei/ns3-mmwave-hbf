@@ -1599,6 +1599,14 @@ MmWaveHelper::InstallSingleEnbDevice (Ptr<Node> n)
       Ptr<MmWaveDftBeamforming> bfModule = CreateObjectWithAttributes<MmWaveDftBeamforming> ("MobilityModel", PointerValue (mm), "AntennaArray", PointerValue (antenna));
       dlPhy->SetBeamformingModule (bfModule);
 
+      // initialize the 3GPP channel model
+      Ptr<SpectrumPropagationLossModel> splm = m_channel.at (it->first)->GetSpectrumPropagationLossModel ();
+      Ptr<ThreeGppSpectrumPropagationLossModel> threeGppSplm = DynamicCast<ThreeGppSpectrumPropagationLossModel> (splm);
+      if (threeGppSplm)
+      {
+        threeGppSplm->AddDevice (device, antenna);
+      }
+
       Ptr<MmWaveEnbMac> mac = CreateObject<MmWaveEnbMac> ();
       mac->SetConfigurationParameters (it->second->GetConfigurationParameters ());
       Ptr<MmWaveMacScheduler> sched = m_schedulerFactory.Create<MmWaveMacScheduler> ();
