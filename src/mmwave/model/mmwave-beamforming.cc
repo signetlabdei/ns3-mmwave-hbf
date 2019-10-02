@@ -43,7 +43,8 @@ MmWaveBeamforming::GetTypeId ()
     .AddAttribute ("AntennaArray",
                    "Poiter to the antenna array",
                    PointerValue (),
-                   MakePointerAccessor (&MmWaveBeamforming::m_antenna),
+                   MakePointerAccessor (&MmWaveBeamforming::SetAntenna,
+                                        &MmWaveBeamforming::GetAntenna),
                    MakePointerChecker<AntennaArrayBasicModel> ())
   ;
   return tid;
@@ -57,6 +58,22 @@ MmWaveBeamforming::MmWaveBeamforming ()
 MmWaveBeamforming::~MmWaveBeamforming ()
 {
 
+}
+
+Ptr<AntennaArrayBasicModel>
+MmWaveBeamforming::GetAntenna () const
+{
+  NS_LOG_FUNCTION (this);
+
+  return m_antenna;
+}
+
+void
+MmWaveBeamforming::SetAntenna (Ptr<AntennaArrayBasicModel> antenna)
+{
+  NS_LOG_FUNCTION (this);
+
+  m_antenna = antenna;
 }
 
 /*----------------------------------------------------------------------------*/

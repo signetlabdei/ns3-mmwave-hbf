@@ -53,6 +53,18 @@ public:
   static TypeId GetTypeId (void);
 
   /**
+   * Returns the antenna object
+   * \return the antenna object
+   */
+  Ptr<AntennaArrayBasicModel> GetAntenna (void) const;
+
+  /**
+   * Set the antenna array object.
+   * \param antenna the antenna object
+   */
+  void SetAntenna (Ptr<AntennaArrayBasicModel> antenna);
+
+  /**
    * Returns the beamforming vector to be used to communicate with a target
    * device
    * \param the target device
