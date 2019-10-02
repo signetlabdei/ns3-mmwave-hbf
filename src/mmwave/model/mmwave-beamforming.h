@@ -20,15 +20,14 @@
 #define SRC_MMWAVE_BEAMFORMING_H_
 
 #include "ns3/object.h"
-
-// this is to include the definition of complexVector_t
-// TODO define complexVector_t in a separate header and include it here
-// and in the antenna classes
 #include "ns3/antenna-array-basic-model.h"
 
 namespace ns3 {
 
+class MobilityModel;
+
 namespace mmwave {
+
 
 /**
  * This class handles the beamforming operations.
@@ -58,7 +57,46 @@ public:
    * device
    * \param the target device
    */
-  virtual AntennaArrayBasicModel::complexVector_t GetBeamformingVectorForDevice (Ptr<NetDevice> device) = 0;
+  virtual AntennaArrayBasicModel::complexVector_t SetBeamformingVectorForDevice (Ptr<NetDevice> device) = 0;
+
+protected:
+  Ptr<AntennaArrayBasicModel> m_antenna; // pointer to the antenna array instance
+};
+
+
+/**
+ * This class extends the MmWaveBeamforming interface.
+ * It implements a DFT-based beamforming algorithm.
+ */
+class MmWaveDftBeamforming : public MmWaveBeamforming
+{
+public:
+  /**
+   * Constructor
+   */
+  MmWaveDftBeamforming ();
+
+  /**
+   * Destructor
+   */
+  virtual ~MmWaveDftBeamforming ();
+
+  /**
+   * Returns the object type id
+   * \return the type id
+   */
+  static TypeId GetTypeId (void);
+
+  /**
+   * Returns the beamforming vector to be used to communicate with a target
+   * device. The beamforming vector is computed using a DFT-based beamforming
+   * algorithm.
+   * \param the target device
+   */
+  AntennaArrayBasicModel::complexVector_t SetBeamformingVectorForDevice (Ptr<NetDevice> otherDevice) override;
+
+private:
+  Ptr<MobilityModel> m_mobility; // pointer to the MobilityModel installed in this device
 };
 
 } // namespace mmwave

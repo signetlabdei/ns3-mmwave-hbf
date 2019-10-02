@@ -17,6 +17,10 @@
 */
 
 #include "ns3/mmwave-beamforming.h"
+#include "ns3/mobility-model.h"
+#include "ns3/pointer.h"
+#include "ns3/net-device.h"
+#include "ns3/node.h"
 #include "ns3/log.h"
 
 namespace ns3 {
@@ -24,6 +28,8 @@ namespace ns3 {
 namespace mmwave {
 
 NS_LOG_COMPONENT_DEFINE ("MmWaveBeamforming");
+
+/*----------------------------------------------------------------------------*/
 
 NS_OBJECT_ENSURE_REGISTERED (MmWaveBeamforming);
 
@@ -34,6 +40,11 @@ MmWaveBeamforming::GetTypeId ()
     tid =
     TypeId ("ns3::MmWaveBeamforming")
     .SetParent<Object> ()
+    .AddAttribute ("AntennaArray",
+                   "Poiter to the antenna array",
+                   PointerValue (),
+                   MakePointerAccessor (&MmWaveBeamforming::m_antenna),
+                   MakePointerChecker<AntennaArrayBasicModel> ())
   ;
   return tid;
 }
@@ -46,6 +57,92 @@ MmWaveBeamforming::MmWaveBeamforming ()
 MmWaveBeamforming::~MmWaveBeamforming ()
 {
 
+}
+
+/*----------------------------------------------------------------------------*/
+
+NS_OBJECT_ENSURE_REGISTERED (MmWaveDftBeamforming);
+
+TypeId
+MmWaveDftBeamforming::GetTypeId ()
+{
+  static TypeId
+    tid =
+    TypeId ("ns3::MmWaveDftBeamforming")
+    .SetParent<MmWaveBeamforming> ()
+    .AddConstructor<MmWaveDftBeamforming> ()
+    .AddAttribute ("MobilityModel",
+                   "Poiter to the MobilityModel associated with this device",
+                   PointerValue (),
+                   MakePointerAccessor (&MmWaveDftBeamforming::m_mobility),
+                   MakePointerChecker<MobilityModel> ())
+  ;
+  return tid;
+}
+
+MmWaveDftBeamforming::MmWaveDftBeamforming ()
+{
+  NS_LOG_FUNCTION (this);
+}
+
+MmWaveDftBeamforming::~MmWaveDftBeamforming ()
+{
+
+}
+
+AntennaArrayBasicModel::complexVector_t
+MmWaveDftBeamforming::SetBeamformingVectorForDevice (Ptr<NetDevice> otherDevice)
+{
+  NS_LOG_FUNCTION (this);
+
+  AntennaArrayBasicModel::complexVector_t antennaWeights;
+
+  // retrieve the position of the two devices
+  Vector aPos = m_mobility->GetPosition ();
+  Vector bPos = otherDevice->GetNode ()->GetObject<MobilityModel> ()->GetPosition ();
+
+  // compute the azimuth and the elevation angles
+  Angles completeAngle (bPos,aPos);
+
+  double posX = bPos.x - aPos.x;
+  double phiAngle = atan ((bPos.y - aPos.y) / posX);
+
+  if (posX < 0)
+    {
+      phiAngle = phiAngle + M_PI;
+    }
+  if (phiAngle < 0)
+    {
+      phiAngle = phiAngle + 2 * M_PI;
+    }
+
+  double hAngleRadian = fmod ((phiAngle + M_PI),2 * M_PI - M_PI); // the azimuth angle
+  double vAngleRadian = completeAngle.theta; // the elevation angle
+
+  // retrieve the number of antenna elements
+  uint16_t antennaNum [2]; //TODO check type
+  antennaNum[0] = m_antenna->GetAntennaNumDim1 ();
+  antennaNum[1] = m_antenna->GetAntennaNumDim2 ();
+  uint32_t totNoArrayElements = antennaNum[0]*antennaNum[1]; //TODO check type
+
+  // the total power is divided equally among the antenna elements
+  double power = 1 / sqrt (totNoArrayElements);
+
+  // compute the antenna weights
+  for (uint32_t ind = 0; ind < totNoArrayElements; ind++)
+    {
+      Vector loc = m_antenna->GetAntennaLocation (ind);
+      double phase = -2 * M_PI * (sin (vAngleRadian) * cos (hAngleRadian) * loc.x
+                                  + sin (vAngleRadian) * sin (hAngleRadian) * loc.y
+                                  + cos (vAngleRadian) * loc.z);
+      antennaWeights.push_back (exp (std::complex<double> (0, phase)) * power);
+    }
+
+  // configure the antenna to use the new beamforming vector
+  AntennaArrayBasicModel::BeamId bId = 0; // TODO how to set the bid?
+  m_antenna->SetBeamformingVector (antennaWeights, bId, otherDevice);
+
+  return antennaWeights;
 }
 
 } // namespace mmwave

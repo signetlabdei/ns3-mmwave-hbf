@@ -297,7 +297,8 @@ MmWaveSpectrumPhy::SetPhyUlHarqFeedbackCallback (MmWavePhyUlHarqFeedbackCallback
 void
 MmWaveSpectrumPhy::ConfigureBeamforming (Ptr<NetDevice> device)
 {
-
+  NS_LOG_FUNCTION (this);
+  AntennaArrayBasicModel::complexVector_t bfVector = m_beamforming->SetBeamformingVectorForDevice (device);
 }
 
 void
