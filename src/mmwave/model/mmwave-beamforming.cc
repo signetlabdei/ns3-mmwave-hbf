@@ -116,6 +116,9 @@ MmWaveDftBeamforming::SetBeamformingVectorForDevice (Ptr<NetDevice> otherDevice)
 
   // retrieve the position of the two devices
   Vector aPos = m_mobility->GetPosition ();
+
+  NS_ASSERT_MSG (otherDevice->GetNode (), "the device " << otherDevice << " is not associated to a node");
+  NS_ASSERT_MSG (otherDevice->GetNode ()->GetObject<MobilityModel> (), "the device " << otherDevice << " has not a mobility model");
   Vector bPos = otherDevice->GetNode ()->GetObject<MobilityModel> ()->GetPosition ();
 
   // compute the azimuth and the elevation angles
