@@ -137,10 +137,10 @@ MmWaveDftBeamforming::SetBeamformingVectorForDevice (Ptr<NetDevice> otherDevice)
   double vAngleRadian = completeAngle.theta; // the elevation angle
 
   // retrieve the number of antenna elements
-  uint16_t antennaNum [2]; //TODO check type
+  uint16_t antennaNum [2];
   antennaNum[0] = m_antenna->GetAntennaNumDim1 ();
   antennaNum[1] = m_antenna->GetAntennaNumDim2 ();
-  uint32_t totNoArrayElements = antennaNum[0]*antennaNum[1]; //TODO check type
+  uint32_t totNoArrayElements = antennaNum[0]*antennaNum[1];
 
   // the total power is divided equally among the antenna elements
   double power = 1 / sqrt (totNoArrayElements);
