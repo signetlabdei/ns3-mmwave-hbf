@@ -504,6 +504,13 @@ MmWaveHelper::SetChannelModelType (std::string type)
 }
 
 void
+MmWaveHelper::SetChannelModelAttribute (std::string name, const AttributeValue &value)
+{
+  NS_LOG_FUNCTION (this);
+  m_spectrumPropagationLossModelFactory.Set (name, value);
+}
+
+void
 MmWaveHelper::SetSchedulerType (std::string type)
 {
   NS_LOG_FUNCTION (this << type);

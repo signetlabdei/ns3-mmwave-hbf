@@ -111,6 +111,14 @@ public:
   void SetChannelConditionModelType (std::string type);
   void SetPathlossModelType (std::string type);
   void SetChannelModelType (std::string type);
+
+  /**
+   * Set an attribute to the SpectrumPropagationLossModels
+   * \param name name of the attribute to set
+   * \param value value to set
+   */
+  void SetChannelModelAttribute (std::string name, const AttributeValue &value);
+
   void SetLtePathlossModelType (std::string type);
 
   /**
