@@ -67,6 +67,7 @@ def build(bld):
     module_test.source = [
         'test/mmwave-channel-model-initialization-test.cc',
         'test/mmwave-antenna-initialization-test.cc',
+        'test/mmwave-beamforming-test.cc',
         ]
 
     headers = bld(features='ns3header')
