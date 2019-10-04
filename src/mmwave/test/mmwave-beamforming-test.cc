@@ -62,6 +62,18 @@ MmWaveBeamformingTestCase::~MmWaveBeamformingTestCase ()
 {
 }
 
+/**
+* Overload the operator << to print the beamforming vectors
+*/
+std::ostream& operator<<(std::ostream& os, const AntennaArrayModel::complexVector_t& bfVector)
+{
+  for (auto index : bfVector)
+  {
+    os << index << " ";
+  }
+  return os;
+}
+
 void
 MmWaveBeamformingTestCase::DoRun (void)
 {
@@ -99,18 +111,6 @@ MmWaveBeamformingTestCase::DoRun (void)
   std::cout << bfVector << std::endl;
 
   // TODO to be completed
-}
-
-/**
-* Overload the operator << to print the beamforming vectors
-*/
-std::ostream& operator<<(std::ostream& os, const AntennaArrayModel::complexVector_t& bfVector)
-{
-  for (auto index : bfVector)
-  {
-    os << index << " ";
-  }
-  return os;
 }
 
 /**
