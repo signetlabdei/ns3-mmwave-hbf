@@ -68,6 +68,7 @@ def build(bld):
         'test/mmwave-channel-model-initialization-test.cc',
         'test/mmwave-antenna-initialization-test.cc',
         'test/mmwave-beamforming-test.cc',
+        'test/mmwave-attachment-test.cc',
         ]
 
     headers = bld(features='ns3header')
