@@ -97,6 +97,8 @@ MmWaveBeamformingTestCase::DoRun (void)
   AntennaArrayBasicModel::complexVector_t bfVector = bfModule->SetBeamformingVectorForDevice (otherDevice);
 
   std::cout << bfVector << std::endl;
+
+  // TODO to be completed
 }
 
 /**
