@@ -221,13 +221,6 @@ MmWaveSpectrumPhy::GetRxAntenna ()
   return m_beamforming->GetAntenna ();
 }
 
-// TODO remove this method
-// void
-// MmWaveSpectrumPhy::SetAntenna (Ptr<AntennaModel> a)
-// {
-//   m_antenna = a;
-// }
-
 void
 MmWaveSpectrumPhy::SetBeamformingModule (Ptr<MmWaveBeamforming> bfModule)
 {

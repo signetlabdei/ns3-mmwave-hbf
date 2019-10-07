@@ -125,7 +125,6 @@ public:
   Ptr<const SpectrumModel> GetRxSpectrumModel () const;
 
   Ptr<AntennaModel> GetRxAntenna ();
-  // void SetAntenna (Ptr<AntennaModel> a); //TODO remove this method
 
   /**
   * Set the beamforming module
