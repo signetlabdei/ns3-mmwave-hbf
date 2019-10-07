@@ -12,7 +12,7 @@
  MmWave module
 =================================
 This is an ns-3 mmWave module for the simulation of 5G mmWave cellular networks.
-A description of this module can be found on IEEExplore (open access).
+A description of this module can be found in [MZ2018]_.
 
 The mmWave module for ns-3 can be used to simulate 5G cellular networks at
 mmWave frequencies. This module builds on top of the LTE one, and currently
@@ -37,13 +37,13 @@ module:
 
 * [MZ2018]_ is a comprehensive tutorial with a detailed description of the whole module. We advise the researchers interested in this module to start reading from this paper;
 
-* Integration of Carrier Aggregation and Dual Connectivity for the ns-3 mmWave Module describes the Carrier Aggregation implementation;
+* [ZP2018]_ describes the Carrier Aggregation implementation;
 
-* ns-3 Implementation of the 3GPP MIMO Channel Model for Frequency Spectrum above 6 GHz describes the implementation of the 3GPP channel model;
+* [ZP2017]_ describes the implementation of the 3GPP channel model;
 
-* Multi-Sector and Multi-Panel Performance in 5G mmWave Cellular Networks describes the multi-sector addition to the 3GPP channel model;
+* [RP2018]_ describes the multi-sector addition to the 3GPP channel model;
 
-* Performance Comparison of Dual Connectivity and Hard Handover for LTE-5G Tight Integration describes the Dual Connectivity feature.
+* [PM2016]_ describes the Dual Connectivity feature.
 
 If you use this module in your research, please cite::
 
@@ -64,7 +64,6 @@ and reception of signals through the SpectrumChannel. Each mmWave device has one
 or multiple MmWaveSpectrumPhy instances, which are controlled by the PHY layer and
 act as interface(s) towards the SpectrumChannel(s).
 
-TODO add figure and describe the structure of this class.
 
 When the current slot is assigned for data or control transmission to a certain
 device, its PHY layer triggers the associated MmWaveSpectrumPhy instance by
@@ -73,12 +72,16 @@ The MmWaveSpectrumPhy instance creates the structure
 MmwaveSpectrumSignalParametersDataFrame or MmWaveSpectrumSignalParametersDlCtrlFrame
 containing the signal parameters, such as the signal duration, the Power Spectral
 Density (PSD) and the information carried, and forwards it to the SpectrumChannel
-by calling the method StartTx ().
+by calling the method StartTx (). This behavior is depicted in
+Figure :ref:`fig-mmwave-spectrum-phy-tx`.
+
 
 .. _fig-mmwave-spectrum-phy-tx:
 
 .. figure:: figures/mmwave-spectrum-phy-tx.*
    :align: center
+
+   Call graph for data or control transmission.
 
 When a signal is received, the SpectrumChannel triggers the MmWaveSpectrumPhy
 instance by scheduling a call to the method StartRx ().
@@ -86,12 +89,15 @@ First, it checks if the signal carries data or control information and then
 calls the method StartRxData () or StartRxCtrl (), respectively. If the signal
 is neither a mmWave data nor mmWave control signal, or it belongs to another
 cell, it is treated as interferer.
+Figure :ref:`fig-mmwave-spectrum-phy-rx` shows the call graph in case of data
+reception.
 
 .. _fig-mmwave-spectrum-phy-rx:
 
 .. figure:: figures/mmwave-spectrum-phy-rx.*
    :align: center
 
+   Call graph for data reception.
 
 Reception of a data signal
 ##########################
@@ -142,3 +148,22 @@ References
 .. [MZ2018] Marco Mezzavilla, Menglei Zhang, Michele Polese, Russell Ford,
    Sourjya Dutta, Sundeep Rangan, Michele Zorzi, “End-to-End Simulation of 5G
    mmWave Networks”, IEEE Communications Surveys and Tutorials. 2018.
+
+.. [ZP2018] Tommaso Zugno, Michele Polese, and Michele Zorzi. 2018. “Integration of carrier
+   aggregation and dual connectivity for the ns-3 mmWave module.”
+   In Proceedings of the 10th Workshop on ns-3 (WNS3 '18). ACM, New York, NY,
+   USA, 45-52.
+
+.. [ZP2017] Menglei Zhang, Michele Polese, Marco Mezzavilla, Sundeep Rangan, and
+   Michele Zorzi. 2017. “ns-3 Implementation of the 3GPP MIMO Channel Model for
+   Frequency Spectrum above 6 GHz.” In Proceedings of the Workshop on
+   ns-3 (WNS3 '17). ACM, New York, NY, USA, 71-78.
+
+.. [RP2018] M. Rebato, M. Polese, and M. Zorzi, “Multi-Sector and Multi-Panel
+   Performance in 5G mmWave Cellular Networks,” in IEEE Global Communications
+   Conference: Communication QoS, Reliability and Modeling (Globecom2018 CQRM),
+   Abu Dhabi, UAE, Dec 2018
+
+.. [PM2016] M. Polese, M. Mezzavilla, and M. Zorzi, “Performance Comparison of
+   Dual Connectivity and Hard Handover for LTE-5G Tight Integration,” in SIMUTools
+   2016
