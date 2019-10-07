@@ -353,15 +353,7 @@ MmWaveHelper::MmWaveChannelModelInitialization (void)
               // associate the channel condition model to the propagation loss model (if needed)
               if (ccm)
               {
-                //TODO this is needed only for the 3gpp channel model
-                // find a better way to do this (maybe define an attribute for
-                // the channel condition model in the propagation loss model class)
-                // and use SetAttributeFailSafe
-                Ptr<ThreeGppPropagationLossModel> threeGppPlm = DynamicCast<ThreeGppPropagationLossModel> (plm);
-                if (threeGppPlm)
-                {
-                  threeGppPlm->SetChannelConditionModel (ccm);
-                }
+                plm->SetAttributeFailSafe ("ChannelConditionModel", PointerValue (ccm));
               }
 
               // set the propagation loss model in the channel
@@ -387,15 +379,7 @@ MmWaveHelper::MmWaveChannelModelInitialization (void)
               // associate the channel condition model to the propagation loss model (if needed)
               if (ccm)
               {
-                //TODO this is needed only for the 3gpp channel model
-                // find a better way to do this (maybe define an attribute for
-                // the channel condition model in the propagation loss model class)
-                // and use SetAttributeFailSafe
-                Ptr<ThreeGppSpectrumPropagationLossModel> threeGppSplm = DynamicCast<ThreeGppSpectrumPropagationLossModel> (splm);
-                if (threeGppSplm)
-                {
-                  threeGppSplm->SetChannelConditionModel (ccm);
-                }
+                splm->SetAttributeFailSafe ("ChannelConditionModel", PointerValue (ccm));
               }
 
               // set the propagation loss model in the channel

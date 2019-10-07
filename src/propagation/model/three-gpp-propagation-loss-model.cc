@@ -56,6 +56,11 @@ ThreeGppPropagationLossModel::GetTypeId (void)
                    TimeValue (MilliSeconds (100.0)),
                    MakeTimeAccessor (&ThreeGppPropagationLossModel::m_updatePeriod),
                    MakeTimeChecker ())
+    .AddAttribute ("ChannelConditionModel", "Pointer to the channel condition model.",
+                   PointerValue (),
+                   MakePointerAccessor (&ThreeGppPropagationLossModel::SetChannelConditionModel,
+                                        &ThreeGppPropagationLossModel::GetChannelConditionModel),
+                   MakePointerChecker<ChannelConditionModel> ())
   ;
   return tid;
 }

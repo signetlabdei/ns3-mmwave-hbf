@@ -84,7 +84,7 @@ public:
    * Get the associated channel condition model
    * \return a pointer to the ChannelConditionModel object
    */
-  Ptr<ChannelConditionModel> GetChannelConditionModel ();
+  Ptr<ChannelConditionModel> GetChannelConditionModel () const;
 
   /**
    * Set the operating frequency

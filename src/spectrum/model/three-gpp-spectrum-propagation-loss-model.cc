@@ -29,6 +29,7 @@
 #include "ns3/double.h"
 #include "ns3/string.h"
 #include "ns3/simulator.h"
+#include "ns3/pointer.h"
 #include <map>
 
 namespace ns3 {
@@ -58,15 +59,21 @@ ThreeGppSpectrumPropagationLossModel::GetTypeId (void)
     .AddAttribute ("Frequency",
                    "The operating Frequency in Hz",
                    DoubleValue (0),
-                   MakeDoubleAccessor (&ThreeGppSpectrumPropagationLossModel::GetFrequency,
-                                       &ThreeGppSpectrumPropagationLossModel::SetFrequency),
+                   MakeDoubleAccessor (&ThreeGppSpectrumPropagationLossModel::SetFrequency,
+                                       &ThreeGppSpectrumPropagationLossModel::GetFrequency),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("Scenario",
                    "The 3GPP scenario (RMa, UMa, UMi-StreetCanyon, InH-OfficeOpen, InH-OfficeMixed)",
                    StringValue (""),
-                   MakeStringAccessor (&ThreeGppSpectrumPropagationLossModel::GetScenario,
-                                       &ThreeGppSpectrumPropagationLossModel::SetScenario),
+                   MakeStringAccessor (&ThreeGppSpectrumPropagationLossModel::SetScenario,
+                                       &ThreeGppSpectrumPropagationLossModel::GetScenario),
                    MakeStringChecker ())
+    .AddAttribute ("ChannelConditionModel",
+                   "Pointer to the channel condition model",
+                   PointerValue (),
+                   MakePointerAccessor (&ThreeGppSpectrumPropagationLossModel::SetChannelConditionModel,
+                                        &ThreeGppSpectrumPropagationLossModel::GetChannelConditionModel),
+                   MakePointerChecker<ChannelConditionModel> ())
     ;
   return tid;
 }
@@ -85,7 +92,7 @@ ThreeGppSpectrumPropagationLossModel::SetChannelConditionModel (Ptr<ChannelCondi
 }
 
 Ptr<ChannelConditionModel>
-ThreeGppSpectrumPropagationLossModel::GetChannelConditionModel ()
+ThreeGppSpectrumPropagationLossModel::GetChannelConditionModel () const
 {
   return m_channelConditionModel;
 }
