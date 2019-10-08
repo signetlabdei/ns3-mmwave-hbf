@@ -106,11 +106,13 @@ MmWaveBeamformingTestCase::DoRun (void)
   // create the beamforming module
   Ptr<MmWaveDftBeamforming> bfModule = CreateObjectWithAttributes<MmWaveDftBeamforming> ("MobilityModel", PointerValue (mm1), "AntennaArray", PointerValue (antenna));
 
-  AntennaArrayBasicModel::complexVector_t bfVector = bfModule->SetBeamformingVectorForDevice (otherDevice);
+  bfModule->SetBeamformingVectorForDevice (otherDevice);
+  AntennaArrayBasicModel::BeamformingVector bfVector = antenna->GetCurrentBeamformingVector ();
 
-  std::cout << bfVector << std::endl;
+  std::cout << AntennaArrayBasicModel::GetVector (bfVector) << std::endl;
 
   // TODO to be completed
+  NS_FATAL_ERROR ("This test needs to be completed");
 }
 
 /**

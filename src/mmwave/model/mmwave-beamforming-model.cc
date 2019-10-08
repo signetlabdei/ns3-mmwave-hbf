@@ -17,6 +17,7 @@
 */
 
 #include "ns3/mmwave-beamforming-model.h"
+#include "ns3/antenna-array-basic-model.h"
 #include "ns3/mobility-model.h"
 #include "ns3/pointer.h"
 #include "ns3/net-device.h"
@@ -107,7 +108,7 @@ MmWaveDftBeamforming::~MmWaveDftBeamforming ()
 
 }
 
-AntennaArrayBasicModel::complexVector_t
+void
 MmWaveDftBeamforming::SetBeamformingVectorForDevice (Ptr<NetDevice> otherDevice)
 {
   NS_LOG_FUNCTION (this);
@@ -161,8 +162,6 @@ MmWaveDftBeamforming::SetBeamformingVectorForDevice (Ptr<NetDevice> otherDevice)
   // configure the antenna to use the new beamforming vector
   AntennaArrayBasicModel::BeamId bId = 0; // TODO how to set the bid?
   m_antenna->SetBeamformingVector (antennaWeights, bId, otherDevice);
-
-  return antennaWeights;
 }
 
 } // namespace mmwave

@@ -20,11 +20,12 @@
 #define SRC_MMWAVE_BEAMFORMING_MODEL_H_
 
 #include "ns3/object.h"
-#include "ns3/antenna-array-basic-model.h"
 
 namespace ns3 {
 
 class MobilityModel;
+class AntennaArrayBasicModel;
+class NetDevice;
 
 namespace mmwave {
 
@@ -65,11 +66,11 @@ public:
   void SetAntenna (Ptr<AntennaArrayBasicModel> antenna);
 
   /**
-   * Returns the beamforming vector to be used to communicate with a target
-   * device
+   * Computes the beamforming vector to communicate with the target device
+   * and sets the antenna.
    * \param the target device
    */
-  virtual AntennaArrayBasicModel::complexVector_t SetBeamformingVectorForDevice (Ptr<NetDevice> device) = 0;
+  virtual void SetBeamformingVectorForDevice (Ptr<NetDevice> device) = 0;
 
 protected:
   Ptr<AntennaArrayBasicModel> m_antenna; // pointer to the antenna array instance
@@ -100,12 +101,13 @@ public:
   static TypeId GetTypeId (void);
 
   /**
-   * Returns the beamforming vector to be used to communicate with a target
-   * device. The beamforming vector is computed using a DFT-based beamforming
+   * Computes the beamforming vector to communicate with the target device
+   * and sets the antenna.
+   * The beamforming vector is computed using a DFT-based beamforming
    * algorithm.
    * \param the target device
    */
-  AntennaArrayBasicModel::complexVector_t SetBeamformingVectorForDevice (Ptr<NetDevice> otherDevice) override;
+  void SetBeamformingVectorForDevice (Ptr<NetDevice> otherDevice) override;
 
 private:
   Ptr<MobilityModel> m_mobility; // pointer to the MobilityModel installed in this device
