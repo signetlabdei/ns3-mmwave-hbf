@@ -16,7 +16,7 @@
 *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include "ns3/mmwave-beamforming.h"
+#include "ns3/mmwave-beamforming-model.h"
 #include "ns3/mobility-model.h"
 #include "ns3/pointer.h"
 #include "ns3/net-device.h"
@@ -27,41 +27,41 @@ namespace ns3 {
 
 namespace mmwave {
 
-NS_LOG_COMPONENT_DEFINE ("MmWaveBeamforming");
+NS_LOG_COMPONENT_DEFINE ("MmWaveBeamformingModel");
 
 /*----------------------------------------------------------------------------*/
 
-NS_OBJECT_ENSURE_REGISTERED (MmWaveBeamforming);
+NS_OBJECT_ENSURE_REGISTERED (MmWaveBeamformingModel);
 
 TypeId
-MmWaveBeamforming::GetTypeId ()
+MmWaveBeamformingModel::GetTypeId ()
 {
   static TypeId
     tid =
-    TypeId ("ns3::MmWaveBeamforming")
+    TypeId ("ns3::MmWaveBeamformingModel")
     .SetParent<Object> ()
     .AddAttribute ("AntennaArray",
                    "Poiter to the antenna array",
                    PointerValue (),
-                   MakePointerAccessor (&MmWaveBeamforming::SetAntenna,
-                                        &MmWaveBeamforming::GetAntenna),
+                   MakePointerAccessor (&MmWaveBeamformingModel::SetAntenna,
+                                        &MmWaveBeamformingModel::GetAntenna),
                    MakePointerChecker<AntennaArrayBasicModel> ())
   ;
   return tid;
 }
 
-MmWaveBeamforming::MmWaveBeamforming ()
+MmWaveBeamformingModel::MmWaveBeamformingModel ()
 {
   NS_LOG_FUNCTION (this);
 }
 
-MmWaveBeamforming::~MmWaveBeamforming ()
+MmWaveBeamformingModel::~MmWaveBeamformingModel ()
 {
 
 }
 
 Ptr<AntennaArrayBasicModel>
-MmWaveBeamforming::GetAntenna () const
+MmWaveBeamformingModel::GetAntenna () const
 {
   NS_LOG_FUNCTION (this);
 
@@ -69,7 +69,7 @@ MmWaveBeamforming::GetAntenna () const
 }
 
 void
-MmWaveBeamforming::SetAntenna (Ptr<AntennaArrayBasicModel> antenna)
+MmWaveBeamformingModel::SetAntenna (Ptr<AntennaArrayBasicModel> antenna)
 {
   NS_LOG_FUNCTION (this);
 
@@ -86,7 +86,7 @@ MmWaveDftBeamforming::GetTypeId ()
   static TypeId
     tid =
     TypeId ("ns3::MmWaveDftBeamforming")
-    .SetParent<MmWaveBeamforming> ()
+    .SetParent<MmWaveBeamformingModel> ()
     .AddConstructor<MmWaveDftBeamforming> ()
     .AddAttribute ("MobilityModel",
                    "Poiter to the MobilityModel associated with this device",

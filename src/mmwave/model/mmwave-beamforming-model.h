@@ -16,8 +16,8 @@
 *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef SRC_MMWAVE_BEAMFORMING_H_
-#define SRC_MMWAVE_BEAMFORMING_H_
+#ifndef SRC_MMWAVE_BEAMFORMING_MODEL_H_
+#define SRC_MMWAVE_BEAMFORMING_MODEL_H_
 
 #include "ns3/object.h"
 #include "ns3/antenna-array-basic-model.h"
@@ -33,18 +33,18 @@ namespace mmwave {
  * This class handles the beamforming operations.
  * Extend this class to implement a specific beamforming algorithm.
  */
-class MmWaveBeamforming : public Object
+class MmWaveBeamformingModel : public Object
 {
 public:
   /**
    * Constructor
    */
-  MmWaveBeamforming ();
+  MmWaveBeamformingModel ();
 
   /**
    * Destructor
    */
-  virtual ~MmWaveBeamforming ();
+  virtual ~MmWaveBeamformingModel ();
 
   /**
    * Returns the object type id
@@ -77,10 +77,10 @@ protected:
 
 
 /**
- * This class extends the MmWaveBeamforming interface.
+ * This class extends the MmWaveBeamformingModel interface.
  * It implements a DFT-based beamforming algorithm.
  */
-class MmWaveDftBeamforming : public MmWaveBeamforming
+class MmWaveDftBeamforming : public MmWaveBeamformingModel
 {
 public:
   /**
@@ -114,4 +114,4 @@ private:
 } // namespace mmwave
 } // namespace ns3
 
-#endif /* SRC_MMWAVE_BEAMFORMING_H_ */
+#endif /* SRC_MMWAVE_BEAMFORMING_MODEL_H_ */

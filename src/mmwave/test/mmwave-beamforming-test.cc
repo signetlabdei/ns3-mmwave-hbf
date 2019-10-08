@@ -15,7 +15,7 @@
 *
 */
 
-#include "ns3/mmwave-beamforming.h"
+#include "ns3/mmwave-beamforming-model.h"
 #include "ns3/test.h"
 #include "ns3/simple-net-device.h"
 #include "ns3/constant-position-mobility-model.h"

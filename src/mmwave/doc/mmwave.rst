@@ -119,11 +119,11 @@ EndRxCtrl () after the signal duration.
 The error model is not applied to control messages, then the method EndRxCtrl ()
 simply fires the callback m_phyRxCtrlEndOkCallback to trigger the PHY layer.
 
-MmWaveBeamforming
-=================
+MmWaveBeamformingModel
+======================
 
-MmWaveBeamforming is a base class handling the beamforming operations.
-The classes deriving from MmWaveBeamforming implement specific beamforming
+MmWaveBeamformingModel is a base class handling the beamforming operations.
+The classes deriving from MmWaveBeamformingModel implement specific beamforming
 schemes.
 It holds a pointer to an instance of the class AntennaArrayBasicModel implementing
 the antenna model.

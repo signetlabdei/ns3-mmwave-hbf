@@ -56,7 +56,7 @@
 #include "mmwave-interference.h"
 #include "mmwave-control-messages.h"
 #include "mmwave-harq-phy.h"
-#include "ns3/mmwave-beamforming.h"
+#include "ns3/mmwave-beamforming-model.h"
 
 namespace ns3 {
 
@@ -130,7 +130,7 @@ public:
   * Set the beamforming module
   * \param bfModule the beamforming module
   */
-  void SetBeamformingModule (Ptr<MmWaveBeamforming> bfModule);
+  void SetBeamformingModel (Ptr<MmWaveBeamformingModel> bfModule);
 
   /**
   * Compute the beamforming vector and update the antenna configuration
@@ -214,7 +214,7 @@ private:
   Time m_firstRxDuration;
 
   Ptr<AntennaModel> m_antenna;
-  Ptr<MmWaveBeamforming> m_beamforming; //!< used to compute the beamforming vector
+  Ptr<MmWaveBeamformingModel> m_beamforming; //!< used to compute the beamforming vector
 
   uint16_t m_cellId;
 

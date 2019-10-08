@@ -222,7 +222,7 @@ MmWaveSpectrumPhy::GetRxAntenna ()
 }
 
 void
-MmWaveSpectrumPhy::SetBeamformingModule (Ptr<MmWaveBeamforming> bfModule)
+MmWaveSpectrumPhy::SetBeamformingModel (Ptr<MmWaveBeamformingModel> bfModule)
 {
   NS_LOG_FUNCTION (this);
 
