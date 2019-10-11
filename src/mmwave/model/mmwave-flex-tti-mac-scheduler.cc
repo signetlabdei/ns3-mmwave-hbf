@@ -1918,9 +1918,21 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
 
   NS_LOG_UNCOND ("Fr "<< (int)ret.m_sfnSf.m_frameNum<<" Sf "<<(int)ret.m_sfnSf.m_sfNum <<" DL slot no. "<< 0 << " DL CTRL sym range "<<(int) ret.m_sfAllocInfo.m_slotAllocInfo[0].m_dci.m_symStart << " to "<<(int) ret.m_sfAllocInfo.m_slotAllocInfo[0].m_dci.m_numSym+(int) ret.m_sfAllocInfo.m_slotAllocInfo[0].m_dci.m_symStart-1 << " of " << m_phyMacConfig->GetSymbolsPerSubframe () <<" layerIdx " << (int) ret.m_sfAllocInfo.m_slotAllocInfo[0].m_dci.m_layerInd <<" of "<< (int) ret.m_sfAllocInfo.m_numAllocLayers);
 
+
+//  //change the Ul slots from end-of-frame justification scratch to begin-of-UL-section-of-frame justification
+//  for (uint8_t lay = 0; lay < m_phyMacConfig->GetNumEnbLayers (); lay++)
+//     {
+//       for (std::deque<SlotAllocInfo>::iterator slot = tempUlslotAllocInfo[lay].begin (); slot < tempUlslotAllocInfo[lay].end (); slot ++)
+//	 {
+//	   slot->m_dci.m_symStart-= (lastSymAvailLayer[lay] - maxNextSymAvailLayer -2);
+//	 }
+//     }
+
   //pass the temporary SlotAllocInfo 2d lists to a single deque as expected by the PHY
   uint8_t finalSlotIdx = 1; //ctrl already inserted
   std::vector<std::deque<SlotAllocInfo>::iterator> itSlotDl, itSlotUl; //we insert all UL slots after all DL slots
+
+  //add the fresh slots to the lists that
   for (uint8_t lay = 0; lay < m_phyMacConfig->GetNumEnbLayers (); lay++)
     {
       itSlotDl.push_back (tempDlslotAllocInfo[lay].begin ());
@@ -2015,8 +2027,22 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
                            << (int) itSlotUl[layerIdx]->m_dci.m_layerInd << " of "
                            << (int) ret.m_sfAllocInfo.m_numAllocLayers
 			   << " mcs " << (int ) itSlotDl[layerIdx]->m_dci.m_mcs);
-      itSlotUl[layerIdx]++;
 
+//      NS_LOG_UNCOND("I try to shift this <-- by "<< lastSymAvailLayer[layerIdx] - maxNextSymAvailLayer -2 << " slots");
+//      itSlotUl[layerIdx]->m_dci.m_symStart-= (lastSymAvailLayer[layerIdx] - maxNextSymAvailLayer -2);
+//
+//      NS_LOG_UNCOND ("Fr " << (int) ret.m_sfnSf.m_frameNum << " Sf " << (int) ret.m_sfnSf.m_sfNum
+//                           << " UL slot no. " << (int) finalSlotIdx - 1 << " to UE "
+//                           << itSlotUl[layerIdx]->m_dci.m_rnti << " sym range "
+//                           << (int) itSlotUl[layerIdx]->m_dci.m_symStart << " to "
+//                           << (int) itSlotUl[layerIdx]->m_dci.m_numSym +
+//                                  itSlotUl[layerIdx]->m_dci.m_symStart - 1
+//                           << " of " << m_phyMacConfig->GetSymbolsPerSubframe () << " layerIdx "
+//                           << (int) itSlotUl[layerIdx]->m_dci.m_layerInd << " of "
+//                           << (int) ret.m_sfAllocInfo.m_numAllocLayers
+//			   << " mcs " << (int ) itSlotDl[layerIdx]->m_dci.m_mcs);
+
+      itSlotUl[layerIdx]++;
       if (itSlotUl[layerIdx] == tempUlslotAllocInfo[layerIdx].end ())
         {
           done = true;

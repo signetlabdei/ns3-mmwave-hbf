@@ -60,8 +60,8 @@ main (int argc, char *argv[])
 	//LogComponentEnable("MmWavePointToPointEpcHelper",LOG_LEVEL_ALL);
 	//LogComponentEnable("EpcUeNas",LOG_LEVEL_ALL);
 	LogComponentEnable ("MmWaveSpectrumPhy", LOG_LEVEL_INFO);
-	//LogComponentEnable ("MmWaveUePhy", LOG_LEVEL_DEBUG);
-	LogComponentEnable ("MmWaveEnbPhy", LOG_LEVEL_DEBUG);
+	LogComponentEnable ("MmWaveUePhy", LOG_LEVEL_INFO);
+	LogComponentEnable ("MmWaveEnbPhy", LOG_LEVEL_INFO);
 	//LogComponentEnable ("MmWaveUeMac", LOG_LEVEL_LOGIC);
 	//LogComponentEnable ("UdpClient", LOG_LEVEL_INFO);
 	//LogComponentEnable ("PacketSink", LOG_LEVEL_INFO);
@@ -242,7 +242,7 @@ main (int argc, char *argv[])
 		ulClient.SetAttribute ("PacketSize", UintegerValue (packetSize));
 
 		clientApps.Add (dlClient.Install (remoteHost));
-		clientApps.Add (ulClient.Install (ueNodes.Get(u)));
+//		clientApps.Add (ulClient.Install (ueNodes.Get(u)));
 		//      if (u+1 < ueNodes.GetN ())
 		//        {
 		//          clientApps.Add (client.Install (ueNodes.Get(u+1)));

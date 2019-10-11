@@ -1585,6 +1585,16 @@ MmWaveEnbPhy::StartSlot (void)
                             << (int) currSlot.m_dci.m_layerInd);
             }
           slotPeriod = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () * currSlotBundleInfo.m_minNumSym); //schedule for EndSlot()
+
+//          Time thisSlotStart = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () *
+//					    m_currSfAllocInfo.m_slotAllocInfo[m_slotNum].m_dci.m_symStart);
+//          Time nextSlotStart = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () *
+//					    m_currSfAllocInfo.m_slotAllocInfo[1+m_slotNum].m_dci.m_symStart);
+//          Time difSlotStart = nextSlotStart - thisSlotStart;
+//          if ( difSlotStart < slotPeriod )
+//            {//the case when we start slot A at time t1, then slot B must start at time t2>t1, before end of slot A at time t3>t2>t1.
+//              Simulator::Schedule ( difSlotStart + m_lastSfStart - Simulator::Now (), &MmWaveEnbPhy::StartSlot, this);
+//            }
         }
     }
 
@@ -1640,7 +1650,7 @@ MmWaveEnbPhy::EndSlot (void)
       m_slotNum++;
       nextSlotStart = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () *
                                    m_currSfAllocInfo.m_slotAllocInfo[m_slotNum].m_dci.m_symStart);
-      NS_LOG_INFO ("Next slot number:" << (int)m_slotNum << ", nextSlotStart:" << nextSlotStart << ", m_lastSfStart:" << m_lastSfStart);
+      NS_LOG_INFO ("Next slot number:" << (int)m_slotNum << ", nextSlotStart:" << nextSlotStart << ", m_lastSfStart:" << m_lastSfStart << ", time-gap: " << nextSlotStart + m_lastSfStart - Simulator::Now ());
       Simulator::Schedule (nextSlotStart + m_lastSfStart - Simulator::Now (), &MmWaveEnbPhy::StartSlot, this);
     }
   

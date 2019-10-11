@@ -898,7 +898,6 @@ MmWaveSpectrumPhy::EndRxData ()
     {
       m_phyRxCtrlEndOkCallback (m_rxControlMessageList);
     }
-
   m_state = IDLE;
   m_rxPacketBurstList.clear ();
   m_expectedTbs.clear ();
@@ -944,7 +943,7 @@ MmWaveSpectrumPhy::StartTxDataFrames (Ptr<PacketBurst> pb, std::list<Ptr<MmWaveC
         std::list<Ptr<Packet>> pkts = pb->GetPackets ();
         MmWaveMacPduTag macTag;
         pkts.front ()->PeekPacketTag (macTag);
-        NS_LOG_INFO ("Data transmission slot "<< (int ) slotInd <<" with layer " << (int ) macTag.GetLayerInd ());
+        NS_LOG_INFO ("Data transmission slot "<< (int ) slotInd <<" duration "<< duration <<" with layer " << (int ) macTag.GetLayerInd ());
         uint8_t layerInd = macTag.GetLayerInd ();
 
         m_state = TX;
