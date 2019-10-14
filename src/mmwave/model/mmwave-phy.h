@@ -155,7 +155,7 @@ protected:
   Ptr<MmWaveSpectrumPhy> m_spectrumPhy;
   Ptr<MmWaveSpectrumPhy> m_downlinkSpectrumPhy;
   Ptr<MmWaveSpectrumPhy> m_uplinkSpectrumPhy;
-  std::vector <Ptr<MmWaveSpectrumPhy> > m_downlinkSpectrumPhyList;  
+  std::vector <Ptr<MmWaveSpectrumPhy> > m_downlinkSpectrumPhyList;
   std::vector <Ptr<MmWaveSpectrumPhy> > m_uplinkSpectrumPhyList;
   
   double m_txPower;

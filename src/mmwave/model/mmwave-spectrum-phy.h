@@ -53,10 +53,10 @@
 #include <ns3/packet-burst.h>
 #include "mmwave-spectrum-signal-parameters.h"
 #include "ns3/random-variable-stream.h"
-#include "ns3/mmwave-beamforming.h"
 #include "mmwave-interference.h"
 #include "mmwave-control-messages.h"
 #include "mmwave-harq-phy.h"
+#include "ns3/mmwave-beamforming-model.h"
 
 namespace ns3 {
 
@@ -106,7 +106,7 @@ public:
 
   enum State
   {
-    IDLE = 0,
+    IDLE,
     TX,
     RX_DATA,
     RX_CTRL
@@ -126,16 +126,26 @@ public:
   Ptr<const SpectrumModel> GetRxSpectrumModel () const;
 
   Ptr<AntennaModel> GetRxAntenna ();
-  void SetAntenna (Ptr<AntennaModel> a);
 
-  void SetState (State newState);
+  /**
+  * Set the beamforming module
+  * \param bfModule the beamforming module
+  */
+  void SetBeamformingModel (Ptr<MmWaveBeamformingModel> bfModule);
+
+  /**
+  * Compute the beamforming vector and update the antenna configuration
+  * to point the beam towards the target device.
+  * \param device target device
+  */
+  void ConfigureBeamforming (Ptr<NetDevice> device);
 
   void SetNoisePowerSpectralDensity (Ptr<const SpectrumValue> noisePsd);
   void SetTxPowerSpectralDensity (Ptr<SpectrumValue> TxPsd);
   Ptr<SpectrumValue> GetTxPowerSpectralDensity ();
   void StartRx (Ptr<SpectrumSignalParameters> params);
   void StartRxData (Ptr<MmwaveSpectrumSignalParametersDataFrame> params);
-  void StartRxCtrl (Ptr<SpectrumSignalParameters> params);
+  void StartRxCtrl (Ptr<MmWaveSpectrumSignalParametersDlCtrlFrame> params);
   Ptr<SpectrumChannel> GetSpectrumChannel ();
   void SetCellId (uint16_t cellId);
 
@@ -183,6 +193,11 @@ public:
   uint8_t GetLayerInd ();
 
 private:
+
+  /**
+   * \brief change the state
+   * \param the new state
+   */
   void ChangeState (State newState);
   void EndTx ();
   void EndRxData ();
@@ -202,6 +217,7 @@ private:
   Time m_firstRxDuration;
 
   Ptr<AntennaModel> m_antenna;
+  Ptr<MmWaveBeamformingModel> m_beamforming; //!< used to compute the beamforming vector
 
   uint16_t m_cellId;
 

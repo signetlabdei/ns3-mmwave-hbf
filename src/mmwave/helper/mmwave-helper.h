@@ -53,7 +53,7 @@
 #include <ns3/mmwave-enb-phy.h>
 #include <ns3/mmwave-spectrum-value-helper.h>
 #include <ns3/mmwave-phy-mac-common.h>
-#include <ns3/antenna-array-model.h>
+#include <ns3/antenna-array-basic-model.h>
 #include <ns3/mmwave-rrc-protocol-ideal.h>
 #include "mmwave-phy-rx-trace.h"
 #include <ns3/epc-helper.h>
@@ -63,13 +63,10 @@
 #include <ns3/boolean.h>
 #include <ns3/epc-helper.h>
 #include <ns3/lte-ffr-algorithm.h>
-#include <ns3/mmwave-beamforming.h>
-#include <ns3/mmwave-channel-matrix.h>
 #include <ns3/mmwave-bearer-stats-calculator.h>
 #include <ns3/mc-stats-calculator.h>
 #include <ns3/mmwave-bearer-stats-connector.h>
 #include <ns3/propagation-loss-model.h>
-#include <ns3/mmwave-channel-raytracing.h>
 
 #include <ns3/lte-enb-mac.h>
 #include <ns3/lte-enb-net-device.h>
@@ -80,11 +77,6 @@
 #include <ns3/lte-anr.h>
 #include <ns3/lte-spectrum-value-helper.h>
 #include <ns3/core-network-stats-calculator.h>
-#include <ns3/mmwave-los-tracker.h>
-
-#include <ns3/buildings-obstacle-propagation-loss-model.h>
-#include <ns3/mmwave-3gpp-channel.h>
-
 #include <ns3/mmwave-component-carrier-enb.h>
 
 #include <ns3/mmwave-hbf-spectrum-channel.h>
@@ -117,9 +109,17 @@ public:
   NetDeviceContainer InstallInterRatHoCapableUeDevice (NodeContainer c);
   NetDeviceContainer InstallEnbDevice (NodeContainer c);
   NetDeviceContainer InstallLteEnbDevice (NodeContainer c);
-  void SetAntenna (uint16_t Nrx, uint16_t Ntx);
+  void SetChannelConditionModelType (std::string type);
   void SetPathlossModelType (std::string type);
   void SetChannelModelType (std::string type);
+
+  /**
+   * Set an attribute to the SpectrumPropagationLossModels
+   * \param name name of the attribute to set
+   * \param value value to set
+   */
+  void SetChannelModelAttribute (std::string name, const AttributeValue &value);
+
   void SetLtePathlossModelType (std::string type);
 
   /**
@@ -309,26 +309,24 @@ private:
   Ptr<SpectrumChannel> m_downlinkChannel;       /// The downlink LTE channel used in the simulation.
   Ptr<SpectrumChannel> m_uplinkChannel;         /// The uplink LTE channel used in the simulation.
 
-  std::map< uint8_t, Ptr<MmWaveBeamforming> > m_beamforming;
-  std::map< uint8_t, Ptr<MmWaveLosTracker> > m_losTracker;
-  std::map< uint8_t, Ptr<MmWaveChannelMatrix> > m_channelMatrix;
-  std::map< uint8_t, Ptr<MmWaveChannelRaytracing> > m_raytracing;
-  std::map< uint8_t, Ptr<MmWave3gppChannel> > m_3gppChannel;
+  std::string m_channelConditionModelType; //!< the type of the channel condition model to be used (empty string means no channel condition model)
 
   std::map< uint8_t, Ptr<Object> > m_pathlossModel;
   std::string m_pathlossModelType;
-  Ptr<Object> m_downlinkPathlossModel;            /// The path loss model used in the LTE downlink channel.
+  Ptr<Object> m_downlinkPathlossModel;       /// The path loss model used in the LTE downlink channel.
   Ptr<Object> m_uplinkPathlossModel;         /// The path loss model used in the LTE uplink channel.
 
 
-  std::string m_channelModelType;
+  std::string m_spectrumPropagationLossModelType; //!< the type of the SpectrumPropagationLossModel to use (if needed)
 
   ObjectFactory m_enbNetDeviceFactory;
   ObjectFactory m_lteEnbNetDeviceFactory;
   ObjectFactory m_ueNetDeviceFactory;
   ObjectFactory m_mcUeNetDeviceFactory;
   ObjectFactory m_channelFactory;               // TODO check if one factory for the channel is enough
+  ObjectFactory m_channelConditionModelFactory; //!< the factory for the ChannelConditionModel objects
   ObjectFactory m_pathlossModelFactory;         // Each channel (mmWave, LteUl & LteDl) may have a different pathloss with diff attributes
+  ObjectFactory m_spectrumPropagationLossModelFactory; //!< the factory for the SpectrumPropagationLossModel objects
   ObjectFactory m_schedulerFactory;
   ObjectFactory m_lteSchedulerFactory;       // Factory for LTE scheduler
   ObjectFactory m_ffrAlgorithmFactory;
@@ -346,12 +344,6 @@ private:
 
   uint64_t m_imsiCounter;
   uint16_t m_cellIdCounter;
-
-  uint16_t m_noTxAntenna;
-  uint16_t m_noRxAntenna;
-
-  uint16_t m_noEnbPanels;
-  uint16_t m_noUePanels;
   Ptr<MmWavePhyRxTrace> m_phyStats;
 
   ObjectFactory m_enbAntennaModelFactory;
