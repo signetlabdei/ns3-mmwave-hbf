@@ -53,11 +53,6 @@
 #include "mmwave-radio-bearer-tag.h"
 #include "mc-ue-net-device.h"
 
-#include "mmwave-beamforming.h"
-#include "mmwave-channel-matrix.h"
-#include "mmwave-channel-raytracing.h"
-#include "mmwave-3gpp-channel.h"
-
 #include <ns3/node-list.h>
 #include <ns3/node.h>
 #include <ns3/pointer.h>
@@ -71,6 +66,7 @@
 #include <algorithm>
 #include <array>
 
+#include <ns3/three-gpp-spectrum-propagation-loss-model.h>
 
 namespace ns3 {
 
@@ -235,7 +231,7 @@ MmWaveEnbPhy::DoInitialize (void)
     {
       NS_ASSERT_MSG ((double)m_transient / m_updateSinrPeriod >= 16, "Window too small to compute the variance according to the ApplyFilter method");
     }
-  //Simulator::Schedule (MicroSeconds (0), &MmWaveEnbPhy::UpdateUeSinrEstimate, this);
+  Simulator::Schedule (MicroSeconds (0), &MmWaveEnbPhy::UpdateUeSinrEstimate, this);
   //Simulator::Schedule (MicroSeconds (0), &MmWaveEnbPhy::CallPathloss, this);
   MmWavePhy::DoInitialize ();
 }
@@ -687,11 +683,13 @@ MmWaveEnbPhy::CallPathloss ()
       // compute rx psd
 
       // adjuts beamforming of antenna model wrt user
-      // Antenna model is same for all layers
+      // Antenna model points to same object for all layers
+      GetDlSpectrumPhyList ().at(0)->ConfigureBeamforming (ue->second);
+      uePhy->GetDlSpectrumPhy ()->ConfigureBeamforming (m_netDevice);
+
       Ptr<AntennaArrayModel> rxAntennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhyList ().at(0)->GetRxAntenna ());
-      rxAntennaArray->ChangeBeamformingVectorPanel (ue->second);                                                                                // TODO check if this is the correct antenna
       Ptr<AntennaArrayModel> txAntennaArray = DynamicCast<AntennaArrayModel> (uePhy->GetDlSpectrumPhy ()->GetRxAntenna ());          // Dl, since the Ul is not actually used (TDD device)
-      txAntennaArray->ChangeBeamformingVectorPanel (m_netDevice);                                                                               // TODO check if this is the correct antenna
+
 
       double pathLossDb = 0;
       if (txAntennaArray != 0)
@@ -710,10 +708,6 @@ MmWaveEnbPhy::CallPathloss ()
         }
       if (m_propagationLoss)
         {
-          if (m_losTracker != 0)               // if I am using the PL propagation model with Aditya's traces
-            {
-              m_losTracker->UpdateLosNlosState (ueMob,enbMob);                  // update the maps to keep trak of the real PL values, before computing the PL
-            }
           double propagationGainDb = m_propagationLoss->CalcRxPower (0, ueMob, enbMob);
           NS_LOG_LOGIC ("propagationGainDb = " << propagationGainDb << " dB");
           pathLossDb -= propagationGainDb;
@@ -724,25 +718,10 @@ MmWaveEnbPhy::CallPathloss ()
       Ptr<SpectrumValue> rxPsd = txPsd->Copy ();
       *(rxPsd) *= pathGainLinear;
 
-      Ptr<MmWaveBeamforming> beamforming = DynamicCast<MmWaveBeamforming> (m_spectrumPropagationLossModel);
-      //beamforming->SetBeamformingVector(ue->second, m_netDevice);
-      Ptr<MmWaveChannelMatrix> channelMatrix = DynamicCast<MmWaveChannelMatrix> (m_spectrumPropagationLossModel);
-      Ptr<MmWaveChannelRaytracing> rayTracing = DynamicCast<MmWaveChannelRaytracing> (m_spectrumPropagationLossModel);
-      if (beamforming != 0)
-        {
-          rxPsd = beamforming->CalcRxPowerSpectralDensity (rxPsd, ueMob, enbMob);
-          NS_LOG_LOGIC ("RxPsd " << *rxPsd);
-        }
-      else if (channelMatrix != 0)
-        {
-          rxPsd = channelMatrix->CalcRxPowerSpectralDensity (rxPsd, ueMob, enbMob);
-          NS_LOG_LOGIC ("RxPsd " << *rxPsd);
-        }
-      else if (rayTracing != 0)
-        {
-          rxPsd = rayTracing->CalcRxPowerSpectralDensity (rxPsd, ueMob, enbMob);
-          NS_LOG_LOGIC ("RxPsd " << *rxPsd);
-        }
+      Ptr<ThreeGppSpectrumPropagationLossModel> pathlossmodel = DynamicCast<ThreeGppSpectrumPropagationLossModel>(m_spectrumPropagationLossModel);
+      rxPsd = pathlossmodel->CalcRxPowerSpectralDensityMultiLayers (rxPsd, ueMob, enbMob,0);
+      NS_LOG_LOGIC ("RxPsd " << *rxPsd);
+
       m_rxPsdMap[ue->first] = rxPsd;
       *totalReceivedPsd += *rxPsd;
 
@@ -751,14 +730,14 @@ MmWaveEnbPhy::CallPathloss ()
         {                                                                                                                       // target not set yet
           if ((ueNetDevice->GetTargetEnb () != m_netDevice) && (ueNetDevice->GetTargetEnb () != 0))
             {
-              txAntennaArray->ChangeBeamformingVectorPanel (ueNetDevice->GetTargetEnb ());
+              uePhy->GetDlSpectrumPhy ()->ConfigureBeamforming (ueNetDevice->GetTargetEnb ());
             }
         }
       else if (mcUeDev != 0)           // it may be a MC device
         {                                                                                                                               // target not set yet
           if ((mcUeDev->GetMmWaveTargetEnb () != m_netDevice) && (mcUeDev->GetMmWaveTargetEnb () != 0))
             {
-              txAntennaArray->ChangeBeamformingVectorPanel (mcUeDev->GetMmWaveTargetEnb ());
+              uePhy->GetDlSpectrumPhy ()->ConfigureBeamforming (mcUeDev->GetMmWaveTargetEnb ());
             }
         }
       else
@@ -840,7 +819,7 @@ MmWaveEnbPhy::UpdateUeSinrEstimate ()
       // compute rx psd
 
       // adjuts beamforming of antenna model wrt user
-      m_downlinkSpectrumPhy->ConfigureBeamforming (ue->second);
+      GetDlSpectrumPhyList ().at(0)->ConfigureBeamforming (ue->second);
       uePhy->GetDlSpectrumPhy ()->ConfigureBeamforming (m_netDevice);
 
       Ptr<AntennaArrayModel> rxAntennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhy ()->GetRxAntenna ());

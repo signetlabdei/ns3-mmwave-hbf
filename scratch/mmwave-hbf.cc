@@ -65,7 +65,7 @@ main (int argc, char *argv[])
 	//LogComponentEnable ("MmWaveUeMac", LOG_LEVEL_LOGIC);
 	//LogComponentEnable ("UdpClient", LOG_LEVEL_INFO);
 	//LogComponentEnable ("PacketSink", LOG_LEVEL_INFO);
-	LogComponentEnable ("MmWaveBeamforming", LOG_LEVEL_INFO);
+	LogComponentEnable ("ThreeGppSpectrumPropagationLossModel", LOG_LEVEL_INFO);
 	//LogComponentEnable("PropagationLossModel",LOG_LEVEL_ALL);
 //	LogComponentEnable ("MmwaveHbfSpectrumChannel", LOG_LEVEL_INFO);
 
@@ -86,8 +86,8 @@ main (int argc, char *argv[])
 	double sfPeriod = 1000.0; //micro second unit
 	double symPeriod = sfPeriod/symPerSf; //micro second unit
 	unsigned run = 0;
-	bool smallScale = false;
-	double speed = 3;
+//	bool smallScale = false;
+//	double speed = 3;
 
 	// Command line arguments
 	CommandLine cmd;
@@ -120,16 +120,16 @@ main (int argc, char *argv[])
 	Config::SetDefault ("ns3::MmWavePhyMacCommon::SymbolPeriod", DoubleValue (symPeriod));
 	Config::SetDefault ("ns3::MmWavePhyMacCommon::TbDecodeLatency", UintegerValue (200.0));
 	Config::SetDefault ("ns3::MmWavePhyMacCommon::NumEnbLayers", UintegerValue (numEnbLayers));
-	Config::SetDefault ("ns3::MmWaveBeamforming::LongTermUpdatePeriod", TimeValue (MilliSeconds (100.0)));
+	//Config::SetDefault ("ns3::MmWaveBeamforming::LongTermUpdatePeriod", TimeValue (MilliSeconds (100.0)));
 	Config::SetDefault ("ns3::LteEnbRrc::SystemInformationPeriodicity", TimeValue (MilliSeconds (5.0)));
-	//Config::SetDefault ("ns3::MmWavePropagationLossModel::ChannelStates", StringValue ("n"));
+	Config::SetDefault ("ns3::MmWavePropagationLossModel::ChannelStates", StringValue ("n"));
 	Config::SetDefault ("ns3::LteRlcAm::ReportBufferStatusTimer", TimeValue (MicroSeconds (100.0)));
 	Config::SetDefault ("ns3::LteRlcUmLowLat::ReportBufferStatusTimer", TimeValue (MicroSeconds (100.0)));
 	Config::SetDefault ("ns3::LteEnbRrc::SrsPeriodicity", UintegerValue (320));
 	Config::SetDefault ("ns3::LteEnbRrc::FirstSibTime", UintegerValue (2));
-	Config::SetDefault ("ns3::MmWaveBeamforming::SmallScaleFading", BooleanValue (smallScale));
-	Config::SetDefault ("ns3::MmWaveBeamforming::FixSpeed", BooleanValue (true));
-	Config::SetDefault ("ns3::MmWaveBeamforming::UeSpeed", DoubleValue (speed));
+	//Config::SetDefault ("ns3::MmWaveBeamforming::SmallScaleFading", BooleanValue (smallScale));
+	//Config::SetDefault ("ns3::MmWaveBeamforming::FixSpeed", BooleanValue (true));
+	//Config::SetDefault ("ns3::MmWaveBeamforming::UeSpeed", DoubleValue (speed));
 
 	RngSeedManager::SetSeed (1234);
 	RngSeedManager::SetRun (run);
