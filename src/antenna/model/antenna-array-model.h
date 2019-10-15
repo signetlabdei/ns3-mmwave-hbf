@@ -72,36 +72,6 @@ public:
   virtual double GetGainDb (Angles a) override;
 
   /**
-     * This function sets the number of hybrid beamforming RF chains of
-     * the array. Each RF chain can hold a separate current beamforming
-     * vector pointing at a different device. This implements spatial
-     * multiplexing with currNumLayers layers. Beamforming control may
-     * use the older single-layer functions, in which case the operation
-     * is always executed on layer 0
-     * \param currNumLayers the number of layers selected
-     */
-  void SetCurrNumLayers (uint8_t currNumLayers);
-
-  /**
-     * This function reads the number of hybrid beamforming RF chains of
-     * the array. Each RF chain can hold a separate current beamforming
-     * vector pointing at a different device. This implements spatial
-     * multiplexing with GetCurrNumLayers() layers. Beamforming control may
-     * use the older single-layer functions, in which case the operation
-     * is always executed at layer zero 0
-     * \return the number of RF chains / layers selected
-     */
-  uint8_t GetCurrNumLayers ();
-
-  /**
-   * Wipes the list containing the current beamforming vectors
-   * in use in all RF chains / spatial multiplexing layers of
-   * the array
-   */
-  void ClearBeamformingVectorList ();
-
-
-  /**
    * This function sets the beamforming weights of the antenna
    * for transmission or reception to/from a specified connected device
    * using the beam that is specified by the beamId
@@ -113,16 +83,11 @@ public:
   virtual void SetBeamformingVector (complexVector_t antennaWeights, BeamId beamId,
                                      Ptr<NetDevice> device);
 
-  virtual void SetBeamformingVectorMultilayers (complexVector_t antennaWeights, BeamId beamId,
-                                     Ptr<NetDevice> device, uint8_t layerInd);
-
   /**
    * Change the beamforming vector for a device
    * \param device Device to change the beamforming vector for
    */
   virtual void ChangeBeamformingVector (Ptr<NetDevice> device);
-
-  virtual void ChangeBeamformingVectorMultilayers (Ptr<NetDevice> device, uint8_t layerInd);
 
   /**
    * Change the antenna model to omnidirectional (ignoring the beams)
@@ -135,7 +100,6 @@ public:
    * \return the current beamforming vector
    */
   virtual BeamformingVector GetCurrentBeamformingVector ();
-  virtual BeamformingVector GetCurrentBeamformingVectorMultilayers (uint8_t layerInd);
 
   /**
    * This function that returns the beamforming vector weights that is used to
@@ -217,21 +181,9 @@ private:
                                                                                to the device and the value is the BeamformingVector element */
   typedef std::map<Ptr<NetDevice>, Time> BeamformingStorageUpdateTimes;  /*!< A type that represents a map in which are pairs of the pointer to the
                                                                                the device and the time at which is updated the beamforming vector for that device*/
-
-  typedef std::map<uint8_t, BeamformingVector> BeamformingVectorList; /*!< A type represents a map where the key is the RF chain index / spatial mux layer
-                                                                                 and the value is the BeamformingVector element */
-//TODO decide whether to include the following for faster lookups
-//  typedef std::map<uint8_t, Ptr<NetDevice>> BeamformingLayerToDeviceList; /*!< A type represents a map where the key is the RF chain index / spatial mux layer
-//                                                                                   and the value is the pointer to the targeted device */
-//  typedef std::map<Ptr<NetDevice>,uint8_t> BeamformingDeviceToLayerList; /*!< A type represents a reverse map of the above to accelerate search */
-
   bool m_omniTx; //!< true if the antenna is omni, false otherwise
-  //  BeamformingVector m_currentBeamformingVector; //!< the current beamforming vector
-  BeamformingVectorList m_currentBeamformingVectorList; //!< the current beamforming vector assigned to each active RF chain / spatial mux layer
-//TODO decide whether to include the following for faster lookups
-//  BeamformingLayerToDeviceList m_currentBeamformingLay2DevList; //!< the current target device assigned to each active RF chain / spatial mux layer
-//  BeamformingDeviceToLayerList m_currentBeamformingDev2LayList; //!< the current active RF chain / spatial mux layer assigned to each  target device
-  BeamformingStorage m_beamformingVectorMap; //!< the map containing the beamforming vectors for each known UE
+  BeamformingVector m_currentBeamformingVector; //!< the current beamforming vector
+  BeamformingStorage m_beamformingVectorMap; //!< the map containing the beamforming vectors
   BeamformingStorageUpdateTimes m_beamformingVectorUpdateTimes;
 
 protected:
@@ -241,8 +193,6 @@ protected:
 
   uint8_t m_antennaNumDim1; //!< the number of antenna elements in the first dimension.
   uint8_t m_antennaNumDim2; //!< the number of antenna elements in the second dimension.
-
-  uint8_t m_currNumLayers; //the number of parallel DAC/ADCs used in hybrid beamforming
 };
 
 } /* namespace ns3 */

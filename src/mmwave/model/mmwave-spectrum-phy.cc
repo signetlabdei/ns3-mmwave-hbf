@@ -54,8 +54,6 @@
 #include <ns3/mmwave-mi-error-model.h>
 #include "mmwave-mac-pdu-tag.h"
 
-#include <ns3/three-gpp-spectrum-propagation-loss-model.h>
-
 namespace ns3 {
 
 NS_LOG_COMPONENT_DEFINE ("MmWaveSpectrumPhy");
@@ -292,7 +290,6 @@ MmWaveSpectrumPhy::AddExpectedTb (uint16_t rnti, uint8_t ndi, uint32_t tbSize, u
                                   std::vector<int> chunkMap, uint8_t harqId, uint8_t rv, bool downlink,
                                   uint8_t symStart, uint8_t numSym)
 {
-  //layer = layer;
   ExpectedTbMap_t::iterator it;
   it = m_expectedTbs.find (rnti);
   if (it != m_expectedTbs.end ())
@@ -436,7 +433,7 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
         {
 	  // This "BF gain calculation" must be used 
 	      Ptr<MobilityModel> txMobility = mmwaveDataRxParams->txPhy->GetMobility ();
-	      Ptr<ThreeGppSpectrumPropagationLossModel> pathlossmodel = DynamicCast<ThreeGppSpectrumPropagationLossModel>(m_channel->GetSpectrumPropagationLossModel());
+	      Ptr<MmWaveBeamforming> pathlossmodel = DynamicCast<MmWaveBeamforming>(m_channel->GetSpectrumPropagationLossModel());
 	      if (enbRx !=0)
 		{//in the BS Rx case, beamforming is evaluated using the layer of this mmwave-spectrum-phy, not the transmission layer index
 		  mmwaveDataRxParams->psd = pathlossmodel->CalcRxPowerSpectralDensityMultiLayers(mmwaveDataRxParams->psd,txMobility,this->GetMobility (),m_layerInd);
@@ -475,7 +472,7 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
         {
           if (DlCtrlRxParams->cellId == m_cellId)
             {
-              StartRxCtrl (DlCtrlRxParams);
+              StartRxCtrl (params);
             }
           else
             {
@@ -573,6 +570,8 @@ MmWaveSpectrumPhy::StartRxCtrl (Ptr<MmWaveSpectrumSignalParametersDlCtrlFrame> d
       {
         // the behavior is similar when we're IDLE or RX because we can receive more signals
         // simultaneously (e.g., at the eNB).
+        Ptr<MmWaveSpectrumSignalParametersDlCtrlFrame> dlCtrlRxParams = \
+          DynamicCast<MmWaveSpectrumSignalParametersDlCtrlFrame> (params);
         // To check if we're synchronized to this signal, we check for the CellId
         uint16_t cellId = 0;
         if (dlCtrlRxParams != 0)
@@ -605,7 +604,7 @@ MmWaveSpectrumPhy::StartRxCtrl (Ptr<MmWaveSpectrumSignalParametersDlCtrlFrame> d
                     NS_FATAL_ERROR ("UE already receiving control data from serving cell");
                   }
                 NS_ASSERT ((m_firstRxStart == Simulator::Now ())
-                           && (m_firstRxDuration == dlCtrlRxParams->duration));
+                           && (m_firstRxDuration == params->duration));
               }
             NS_LOG_LOGIC (this << " synchronized with this signal (cellId=" << cellId << ")");
             if (m_state == IDLE)
@@ -613,11 +612,11 @@ MmWaveSpectrumPhy::StartRxCtrl (Ptr<MmWaveSpectrumSignalParametersDlCtrlFrame> d
                 // first transmission, i.e., we're IDLE and we start RX
                 NS_ASSERT (m_rxControlMessageList.empty ());
                 m_firstRxStart = Simulator::Now ();
-                m_firstRxDuration = dlCtrlRxParams->duration;
-                NS_LOG_LOGIC (this << " scheduling EndRx with delay " << dlCtrlRxParams->duration);
+                m_firstRxDuration = params->duration;
+                NS_LOG_LOGIC (this << " scheduling EndRx with delay " << params->duration);
                 // store the DCIs
                 m_rxControlMessageList = dlCtrlRxParams->ctrlMsgList;
-                m_endRxDlCtrlEvent = Simulator::Schedule (dlCtrlRxParams->duration, &MmWaveSpectrumPhy::EndRxCtrl, this);
+                m_endRxDlCtrlEvent = Simulator::Schedule (params->duration, &MmWaveSpectrumPhy::EndRxCtrl, this);
                 ChangeState (RX_CTRL);
               }
             else

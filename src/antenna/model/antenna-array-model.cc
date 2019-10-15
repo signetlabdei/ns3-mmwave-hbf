@@ -42,7 +42,7 @@ AntennaArrayModel::AntennaArrayModel () : AntennaArrayBasicModel ()
 
 AntennaArrayModel::~AntennaArrayModel ()
 {
-  m_currentBeamformingVectorList.clear();
+
 }
 
 TypeId
@@ -83,7 +83,6 @@ AntennaArrayModel::GetTypeId ()
   return tid;
 }
 
-
 double
 AntennaArrayModel::GetGainDb (Angles a)
 {
@@ -92,35 +91,9 @@ AntennaArrayModel::GetGainDb (Angles a)
   return 0;
 }
 
-
-void
-AntennaArrayModel::SetCurrNumLayers (uint8_t currNumLayers)
-{
-  m_currNumLayers = currNumLayers;
-}
-
-uint8_t
-AntennaArrayModel::GetCurrNumLayers ()
-{
-  return m_currNumLayers;
-}
-
-void
-AntennaArrayModel::ClearBeamformingVectorList ()
-{
-  m_currentBeamformingVectorList.clear();
-}
-
 void
 AntennaArrayModel::SetBeamformingVector (complexVector_t antennaWeights, BeamId beamId,
                                          Ptr<NetDevice> device)
-{
-  SetBeamformingVectorMultilayers(antennaWeights,beamId,device,0);
-}
-
-void
-AntennaArrayModel::SetBeamformingVectorMultilayers (complexVector_t antennaWeights, BeamId beamId,
-                                         Ptr<NetDevice> device, uint8_t layerInd)
 {
   NS_LOG_INFO ("SetBeamformingVector for node id: "<<device->GetNode()->GetId()<<
                  " at:"<<Simulator::Now().GetSeconds());
@@ -139,35 +112,23 @@ AntennaArrayModel::SetBeamformingVectorMultilayers (complexVector_t antennaWeigh
         }
       m_beamformingVectorUpdateTimes [device] = Simulator::Now();
     }
-  m_currentBeamformingVectorList[layerInd] = std::make_pair (antennaWeights, beamId);
+  m_currentBeamformingVector = std::make_pair (antennaWeights, beamId);
 }
 
 void
 AntennaArrayModel::ChangeBeamformingVector (Ptr<NetDevice> device)
 {
-  ChangeBeamformingVectorMultilayers (device,0);
-}
-
-void
-AntennaArrayModel::ChangeBeamformingVectorMultilayers (Ptr<NetDevice> device, uint8_t layerInd)
-{
   m_omniTx = false;
   BeamformingStorage::iterator it = m_beamformingVectorMap.find (device);
   NS_ASSERT_MSG (it != m_beamformingVectorMap.end (), "could not find the beamforming vector for the provided device");
-  m_currentBeamformingVectorList[layerInd] = it->second;
+  m_currentBeamformingVector = it->second;
 }
 
 AntennaArrayModel::BeamformingVector
 AntennaArrayModel::GetCurrentBeamformingVector ()
 {
-  return GetCurrentBeamformingVectorMultilayers(0);
-}
-
-AntennaArrayModel::BeamformingVector
-AntennaArrayModel::GetCurrentBeamformingVectorMultilayers (uint8_t layerInd)
-{
   NS_ABORT_MSG_IF (m_omniTx, "omni transmission do not need beamforming vector");
-  return m_currentBeamformingVectorList[layerInd];
+  return m_currentBeamformingVector;
 }
 
 void
@@ -194,7 +155,7 @@ AntennaArrayModel::GetBeamformingVector (Ptr<NetDevice> device)
     }
   else
     {
-      beamformingVector = m_currentBeamformingVectorList[0];
+      beamformingVector = m_currentBeamformingVector;
     }
   return beamformingVector;
 }

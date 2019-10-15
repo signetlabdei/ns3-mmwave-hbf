@@ -294,34 +294,8 @@ ThreeGppSpectrumPropagationLossModel::GetLongTerm (Ptr<const MobilityModel> aMob
 
 Ptr<SpectrumValue>
 ThreeGppSpectrumPropagationLossModel::DoCalcRxPowerSpectralDensity (Ptr<const SpectrumValue> txPsd,
-                                                 Ptr<const MobilityModel> a,
-                                                 Ptr<const MobilityModel> b) const
-{
-
-  // we made this function do nothing in order to relocate the actual BF vector calculation
-  // to MmwaveSpectrumPhy::StartRx() instead of MultiModelSpectrumChannel::StartTx()
-  // uncomment the following to restore legacy behavior (not compatible with HBF)
-  //TODO implement a more suitable integration of HBF to the main branch of ns3 in the future
-  //return DoCalcRxPowerSpectralDensityMultiLayers (txPsd, a, b, 0, true);
-
-  Ptr<SpectrumValue> retPsd = Copy<SpectrumValue> (txPsd);// we have to copy it because there is a const type missmatch
-  return retPsd;
-}
-
-Ptr<SpectrumValue>
-ThreeGppSpectrumPropagationLossModel::CalcRxPowerSpectralDensityMultiLayers (Ptr<const SpectrumValue> txPsd,
-                                                         Ptr<const MobilityModel> a,
-                                                         Ptr<const MobilityModel> b,
-                                                         uint8_t layerInd) const
-{
-  return DoCalcRxPowerSpectralDensityMultilayers (txPsd, a, b, layerInd);
-}
-
-Ptr<SpectrumValue>
-ThreeGppSpectrumPropagationLossModel::DoCalcRxPowerSpectralDensityMultilayers (Ptr<const SpectrumValue> txPsd,
                                                                     Ptr<const MobilityModel> a,
-                                                                    Ptr<const MobilityModel> b,
-			                                            uint8_t layerInd) const
+                                                                    Ptr<const MobilityModel> b) const
 {
   NS_LOG_FUNCTION (this);
 
