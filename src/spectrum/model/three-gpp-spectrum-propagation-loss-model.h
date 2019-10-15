@@ -121,6 +121,24 @@ public:
                                                            Ptr<const MobilityModel> a,
                                                            Ptr<const MobilityModel> b) const;
 
+  Ptr<SpectrumValue> CalcRxPowerSpectralDensityMultiLayers (Ptr<const SpectrumValue> txPsd,
+                                                           Ptr<const MobilityModel> a,
+                                                           Ptr<const MobilityModel> b,
+                                                           uint8_t layInd) const;
+  /**
+   * Computes the received PSD
+   * \param tx PSD
+   * \param tx mobility model
+   * \param rx mobility model
+   * \param hbf layer to be used by antenna arrays
+   * \return the received PSD
+   */
+  //TODO why does the single layer version above use virtual? after finding the motivation, apply here if it applies
+  Ptr<SpectrumValue> DoCalcRxPowerSpectralDensityMultilayers (Ptr<const SpectrumValue> txPsd,
+                                                           Ptr<const MobilityModel> a,
+                                                           Ptr<const MobilityModel> b,
+	                                                   uint8_t layerInd) const;
+
 protected:
 private:
   /**

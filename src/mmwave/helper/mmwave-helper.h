@@ -79,7 +79,6 @@
 #include <ns3/core-network-stats-calculator.h>
 #include <ns3/mmwave-component-carrier-enb.h>
 
-#include <ns3/mmwave-hbf-spectrum-channel.h>
 
 namespace ns3 {
 
