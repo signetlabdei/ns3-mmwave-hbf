@@ -369,10 +369,16 @@ ThreeGppSpectrumPropagationLossModel::DoCalcRxPowerSpectralDensityMultilayers (P
   AntennaArrayBasicModel::BeamformingVector txW = castTxArray->GetCurrentBeamformingVectorMultilayers (txLayerInd);
   AntennaArrayBasicModel::BeamformingVector rxW = castRxArray->GetCurrentBeamformingVectorMultilayers (rxLayerInd);
 
-  NS_LOG_DEBUG ("In this calcPSDmultilayer call layerInd: "<<(int ) txLayerInd<<"->"<< (int ) rxLayerInd<< " tx vect size " << txW.first.size() << " rx vect size " << rxW.first.size());
+//  NS_LOG_DEBUG ("In this calcPSDmultilayer call layerInd: "<<(int ) txLayerInd<<"->"<< (int ) rxLayerInd<< " tx vect size " << txW.first.size() << " rx vect size " << rxW.first.size());
+//  NS_LOG_DEBUG ("Tx MAC: "<< txDevice->GetAddress() <<" -> Rx MAC:"<< rxDevice->GetAddress() << " at distance " << a->GetDistanceFrom (b));
+
   // retrieve the long term component
   complexVector_t longTerm = GetLongTerm (a, b, channelMatrix, AntennaArrayBasicModel::GetVector (txW), AntennaArrayBasicModel::GetVector (rxW));
 
+//  for (uint16_t cIndex = 0; cIndex < txW.first.size(); cIndex++)
+//    {
+//      NS_LOG_DEBUG ("    txbfcoef " << (int) cIndex << " = " << txW.first.at(cIndex));
+//    }
   // apply the beamforming gain
   rxPsd = CalBeamformingGain (rxPsd, longTerm, channelMatrix, a->GetVelocity (), b->GetVelocity ());
 

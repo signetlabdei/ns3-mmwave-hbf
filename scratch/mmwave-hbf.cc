@@ -199,7 +199,7 @@ main (int argc, char *argv[])
 	for (unsigned i = 0; i < numUe; i++)
 	{
 		double dist = distRv->GetValue (minDistance, maxDistance);
-		double angle = (double ) i / (double )numUe * 3.14159265;// in radians
+		double angle = ( (double ) i / (double )numUe +.125 ) * 2 * 3.14159265;// in radians, add pi/4 to break specular symmetry of antenna array
 		uePositionAlloc->Add (Vector (dist * cos (angle), dist * sin (angle), 0.0));
 	}
 	uemobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
