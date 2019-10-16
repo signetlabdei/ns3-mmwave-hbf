@@ -131,8 +131,11 @@ main (int argc, char *argv[])
 	//Config::SetDefault ("ns3::MmWaveBeamforming::FixSpeed", BooleanValue (true));
 	//Config::SetDefault ("ns3::MmWaveBeamforming::UeSpeed", DoubleValue (speed));
 
+//	Config::SetDefault ("ns3::ThreeGppChannel::Scenario",StringValue( "UMa" ));//why not working?
 	RngSeedManager::SetSeed (1234);
 	RngSeedManager::SetRun (run);
+
+
 
 	Ptr<MmWaveHelper> mmwaveHelper = CreateObject<MmWaveHelper> ();
 	mmwaveHelper->SetSchedulerType ("ns3::MmWaveFlexTtiMacScheduler");
@@ -140,6 +143,8 @@ main (int argc, char *argv[])
 	mmwaveHelper->SetPathlossModelType ("ns3::ThreeGppUmaPropagationLossModel");
 	mmwaveHelper->SetChannelConditionModelType ("ns3::ThreeGppUmaChannelConditionModel");
 	mmwaveHelper->SetChannelModelType ("ns3::ThreeGppSpectrumPropagationLossModel");
+	mmwaveHelper->SetChannelModelAttribute("Scenario",StringValue( "UMa" ));
+
 	Ptr<MmWavePointToPointEpcHelper>  epcHelper = CreateObject<MmWavePointToPointEpcHelper> ();
 	mmwaveHelper->SetEpcHelper (epcHelper);
 	mmwaveHelper->SetHarqEnabled (harqEnabled);

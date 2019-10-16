@@ -70,7 +70,7 @@ public:
    * and sets the antenna.
    * \param the target device
    */
-  virtual void SetBeamformingVectorForDevice (Ptr<NetDevice> device) = 0;
+  virtual void SetBeamformingVectorForDevice (Ptr<NetDevice> device, uint8_t layerInd = 0) = 0;
 
 protected:
   Ptr<AntennaArrayBasicModel> m_antenna; // pointer to the antenna array instance
@@ -107,7 +107,7 @@ public:
    * algorithm.
    * \param the target device
    */
-  void SetBeamformingVectorForDevice (Ptr<NetDevice> otherDevice) override;
+  void SetBeamformingVectorForDevice (Ptr<NetDevice> otherDevice, uint8_t layerInd = 0) override;
 
 private:
   Ptr<MobilityModel> m_mobility; // pointer to the MobilityModel installed in this device

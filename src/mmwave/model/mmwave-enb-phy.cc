@@ -231,7 +231,7 @@ MmWaveEnbPhy::DoInitialize (void)
     {
       NS_ASSERT_MSG ((double)m_transient / m_updateSinrPeriod >= 16, "Window too small to compute the variance according to the ApplyFilter method");
     }
-  Simulator::Schedule (MicroSeconds (0), &MmWaveEnbPhy::UpdateUeSinrEstimate, this);
+  //Simulator::Schedule (MicroSeconds (0), &MmWaveEnbPhy::UpdateUeSinrEstimate, this);
   //Simulator::Schedule (MicroSeconds (0), &MmWaveEnbPhy::CallPathloss, this);
   MmWavePhy::DoInitialize ();
 }
@@ -683,7 +683,7 @@ MmWaveEnbPhy::CallPathloss ()
       // compute rx psd
 
       // adjuts beamforming of antenna model wrt user
-      // Antenna model points to same object for all layers
+      // The index of the spectrum phy in the vector implicitly identifies the antenna layer in use
       GetDlSpectrumPhyList ().at(0)->ConfigureBeamforming (ue->second);
       uePhy->GetDlSpectrumPhy ()->ConfigureBeamforming (m_netDevice);
 
@@ -719,7 +719,7 @@ MmWaveEnbPhy::CallPathloss ()
       *(rxPsd) *= pathGainLinear;
 
       Ptr<ThreeGppSpectrumPropagationLossModel> pathlossmodel = DynamicCast<ThreeGppSpectrumPropagationLossModel>(m_spectrumPropagationLossModel);
-      rxPsd = pathlossmodel->CalcRxPowerSpectralDensityMultiLayers (rxPsd, ueMob, enbMob,0);
+      rxPsd = pathlossmodel->CalcRxPowerSpectralDensityMultiLayers (rxPsd, ueMob, enbMob,0,0); // at zero because we used the spectrum-phy object corresponding to layer zero above GetDlSpectrumPhyList ().at(0)
       NS_LOG_LOGIC ("RxPsd " << *rxPsd);
 
       m_rxPsdMap[ue->first] = rxPsd;
@@ -819,6 +819,7 @@ MmWaveEnbPhy::UpdateUeSinrEstimate ()
       // compute rx psd
 
       // adjuts beamforming of antenna model wrt user
+      // The index of the spectrum phy in the vector implicitly identifies the antenna layer in use
       GetDlSpectrumPhyList ().at(0)->ConfigureBeamforming (ue->second);
       uePhy->GetDlSpectrumPhy ()->ConfigureBeamforming (m_netDevice);
 
@@ -851,7 +852,8 @@ MmWaveEnbPhy::UpdateUeSinrEstimate ()
       Ptr<SpectrumValue> rxPsd = txPsd->Copy ();
       *(rxPsd) *= pathGainLinear;
 
-      rxPsd = m_spectrumPropagationLossModel->CalcRxPowerSpectralDensity (rxPsd, ueMob, enbMob);
+      Ptr<ThreeGppSpectrumPropagationLossModel> pathlossmodel = DynamicCast<ThreeGppSpectrumPropagationLossModel>(m_spectrumPropagationLossModel);
+      rxPsd = pathlossmodel->CalcRxPowerSpectralDensityMultiLayers (rxPsd, ueMob, enbMob,0,0); // at zero because we used the spectrum-phy object corresponding to layer zero above GetDlSpectrumPhyList ().at(0)
       NS_LOG_LOGIC ("RxPsd " << *rxPsd);
 
       m_rxPsdMap[ue->first] = rxPsd;
@@ -1422,10 +1424,7 @@ MmWaveEnbPhy::StartSlot (void)
         	    {
         	      //NS_LOG_DEBUG ("Change Beamforming Vector");
         	      //Antenna model is same for all layers 
-        	      //Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhyList ().at(0)->GetRxAntenna ());
-     	              //antennaArray->ChangeBeamformingVectorPanelMultiLayer (m_deviceMap.at (i), currSlot.m_dci.m_layerInd);
-     	              //TODO Add MultiLayer functionality to this part of Tommaso's changes
-     	              m_downlinkSpectrumPhyList.at(currSlot.m_dci.m_layerInd)->ConfigureBeamforming (m_deviceMap.at (i));
+        	      GetDlSpectrumPhyList ().at(currSlot.m_dci.m_layerInd)->ConfigureBeamforming (m_deviceMap.at (i)); //always operates in the correct layerind
         	      break;
         	    }
         	}
@@ -1465,10 +1464,7 @@ MmWaveEnbPhy::StartSlot (void)
                 {
                   //NS_LOG_DEBUG ("Change Beamforming Vector");
                   //Antenna model is samle for all layers
-                  //Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhyList ().at (0)->GetRxAntenna ());
-                  //antennaArray->ChangeBeamformingVectorPanel (m_deviceMap.at (i));
-                  //TODO Add MultiLayer functionality to this part of Tommaso's changes
-     	          m_uplinkSpectrumPhyList.at(currSlot.m_dci.m_layerInd)->ConfigureBeamforming (m_deviceMap.at (i));
+        	  GetDlSpectrumPhyList ().at(currSlot.m_dci.m_layerInd)->ConfigureBeamforming (m_deviceMap.at (i));
                   break;
                 }
             }
@@ -1523,10 +1519,7 @@ MmWaveEnbPhy::StartSlot (void)
                     {
                       //NS_LOG_DEBUG ("Change Beamforming Vector");
                       //Antenna model is samle for all layers
-                      //Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhyList ().at (0)->GetRxAntenna ());
-                     //antennaArray->ChangeBeamformingVectorPanel (m_deviceMap.at (i));
-                     //TODO Add MultiLayer functionality to this part of Tommaso's changes
-     	             m_uplinkSpectrumPhyList.at(currSlot.m_dci.m_layerInd)->ConfigureBeamforming (m_deviceMap.at (i));
+                      GetDlSpectrumPhyList ().at(currSlot.m_dci.m_layerInd)->ConfigureBeamforming (m_deviceMap.at (i));
                      break;
                     }
                 }
@@ -1678,10 +1671,7 @@ MmWaveEnbPhy::SendDataChannels (Ptr<PacketBurst> pb, Time slotPrd, SlotAllocInfo
 //            {
 //              NS_LOG_DEBUG ("Change Beamforming Vector");
 //              //Antenna model is same for all layers but the bf vector contained in it is not
-//                //Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhyList ().at (0)->GetRxAntenna ());
-//                //antennaArray->ChangeBeamformingVectorPanel (m_deviceMap.at (i));
-//                //TODO Add MultiLayer functionality to this part of Tommaso's changes but not here because this functionality was moved to StartSlot
-//     	        m_uplinkSpectrumPhyList.at(currSlot.m_dci.m_layerInd)->ConfigureBeamforming (m_deviceMap.at (i));     
+//     	        GetDlSpectrumPhyList ().at(currSlot.m_dci.m_layerInd)->ConfigureBeamforming (m_deviceMap.at (i));
 //              break;
 //            }
 

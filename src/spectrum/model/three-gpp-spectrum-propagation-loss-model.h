@@ -124,7 +124,8 @@ public:
   Ptr<SpectrumValue> CalcRxPowerSpectralDensityMultiLayers (Ptr<const SpectrumValue> txPsd,
                                                            Ptr<const MobilityModel> a,
                                                            Ptr<const MobilityModel> b,
-                                                           uint8_t layInd) const;
+		                                           uint8_t txLayerInd,
+							   uint8_t rxLayerInd) const;
   /**
    * Computes the received PSD
    * \param tx PSD
@@ -137,7 +138,8 @@ public:
   Ptr<SpectrumValue> DoCalcRxPowerSpectralDensityMultilayers (Ptr<const SpectrumValue> txPsd,
                                                            Ptr<const MobilityModel> a,
                                                            Ptr<const MobilityModel> b,
-	                                                   uint8_t layerInd) const;
+		                                           uint8_t txLayerInd,
+							   uint8_t rxLayerInd) const;
 
 protected:
 private:
