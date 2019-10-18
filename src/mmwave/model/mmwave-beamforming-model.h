@@ -110,6 +110,17 @@ public:
   void SetBeamformingVectorForDevice (Ptr<NetDevice> otherDevice, uint8_t layerInd = 0) override;
 
 private:
+
+  /**
+    * Calculate the channel key using the Cantor function
+    * \param x1 first value
+    * \param x2 second value
+    * \return \f$ (((x1 + x2) * (x1 + x2 + 1))/2) + x2; \f$
+    */
+   static constexpr uint32_t GetKey (uint32_t x1, uint32_t x2)
+   {//TODO this is a replica of ThreeGppChannel id generation, it is not required to import modification to that function, but it should be considered
+     return (((x1 + x2) * (x1 + x2 + 1)) / 2) + x2;
+   }
   Ptr<MobilityModel> m_mobility; // pointer to the MobilityModel installed in this device
 };
 

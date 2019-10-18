@@ -26,6 +26,7 @@
 #include <complex.h>
 #include "ns3/angles.h"
 #include "ns3/three-gpp-channel.h"
+#include "ns3/antenna-array-basic-model.h"
 
 namespace ns3 {
 
@@ -154,7 +155,7 @@ private:
    * \param bW the beamforming vector of the second device
    * \return vector containing the long term compoenent for each cluster
    */
-  complexVector_t GetLongTerm (Ptr<const MobilityModel> aMob, Ptr<const MobilityModel> bMob, Ptr<ThreeGppChannelMatrix> channelMatrix, complexVector_t txW, complexVector_t rxW) const;
+  complexVector_t GetLongTerm (Ptr<const MobilityModel> aMob, Ptr<const MobilityModel> bMob, Ptr<ThreeGppChannelMatrix> channelMatrix, AntennaArrayBasicModel::BeamformingVector aBF, AntennaArrayBasicModel::BeamformingVector bBF) const;
   /**
    * Computes the long term component
    * \param the channel matrix H

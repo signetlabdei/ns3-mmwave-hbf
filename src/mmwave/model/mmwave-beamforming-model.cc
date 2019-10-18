@@ -161,7 +161,12 @@ MmWaveDftBeamforming::SetBeamformingVectorForDevice (Ptr<NetDevice> otherDevice 
     }
 
   // configure the antenna to use the new beamforming vector
-  AntennaArrayBasicModel::BeamId bId = 0; // TODO how to set the bid?
+  //AntennaArrayBasicModel::BeamId bId = 0; // TODO how to set the bid?
+  //TODO [fgomez] consider this beamID proposal, the beam is identified by the pair of IDs of the transmitter and receiver
+    uint32_t minId = std::min (m_mobility->GetObject<Node> ()->GetId (), otherDevice->GetNode ()->GetId ());
+    uint32_t maxId = std::max (m_mobility->GetObject<Node> ()->GetId (), otherDevice->GetNode ()->GetId ());
+
+  AntennaArrayBasicModel::BeamId bId = GetKey(minId,maxId); //TODO this is the same Cantor function as in ThreeGppChannel::GetKey (minId, maxId), consider unifying
 
   Ptr<AntennaArrayModel> castAntenna = DynamicCast<AntennaArrayModel>(m_antenna);
   if ( castAntenna != 0 )

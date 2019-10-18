@@ -273,9 +273,13 @@ main (int argc, char *argv[])
 	//Throughput
 	for (uint32_t u=0; u < ueNodes.GetN(); u++)
 	{
-		Ptr<PacketSink> sink = serverApps.Get (u)->GetObject<PacketSink> ();
+		Ptr<PacketSink> sink = serverApps.Get (2*(u+1)-2)->GetObject<PacketSink> ();
 		//double nrThroughput = sink->GetTotalRx () * 8.0 / (1000000.0*(simTime - 0.01));
-		NS_LOG_UNCOND ("The number of received packets for UE " << u+1 << ": " << sink->GetTotalRx ()/packetSize);
+		NS_LOG_UNCOND ("The number of DL received packets for UE " << u+1 << ": " << sink->GetTotalRx ()/packetSize);
+		//NS_LOG_UNCOND ("UE(" << ueIpIface.GetAddress(0) <<") NR throughput: " << nrThroughput << " Mbps");
+		sink = serverApps.Get (2*(u+1)-1)->GetObject<PacketSink> ();
+		//double nrThroughput = sink->GetTotalRx () * 8.0 / (1000000.0*(simTime - 0.01));
+		NS_LOG_UNCOND ("The number of UL received packets for UE " << u+1 << ": " << sink->GetTotalRx ()/packetSize);
 		//NS_LOG_UNCOND ("UE(" << ueIpIface.GetAddress(0) <<") NR throughput: " << nrThroughput << " Mbps");
 	}
 
