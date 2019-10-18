@@ -115,6 +115,7 @@ MmWaveDftBeamforming::SetBeamformingVectorForDevice (Ptr<NetDevice> otherDevice 
   NS_LOG_FUNCTION (this);
 
   AntennaArrayBasicModel::complexVector_t antennaWeights;
+  AntennaArrayBasicModel::BeamId bId;
 
   // retrieve the position of the two devices
   Vector aPos = m_mobility->GetPosition ();
@@ -123,51 +124,93 @@ MmWaveDftBeamforming::SetBeamformingVectorForDevice (Ptr<NetDevice> otherDevice 
   NS_ASSERT_MSG (otherDevice->GetNode ()->GetObject<MobilityModel> (), "the device " << otherDevice << " has not a mobility model");
   Vector bPos = otherDevice->GetNode ()->GetObject<MobilityModel> ()->GetPosition ();
 
-  // compute the azimuth and the elevation angles
-  Angles completeAngle (bPos,aPos);
+  bool update = false;
+  bool notFound = false;
 
-  double posX = bPos.x - aPos.x;
-  double phiAngle = atan ((bPos.y - aPos.y) / posX);
+  // we can make modifications in beamID below without changing map key here
+  uint32_t beamKey = GetKey(m_mobility->GetObject<Node> ()->GetId (),otherDevice->GetNode ()->GetId ());
 
-  if (posX < 0)
+  std::map< uint32_t, Ptr<BFVectorCacheEntry> >::iterator itVectorCache = m_vectorCache.find(beamKey);
+  Ptr<BFVectorCacheEntry> pCacheValue;
+  if ( itVectorCache != m_vectorCache.end() )
     {
-      phiAngle = phiAngle + M_PI;
+      NS_LOG_DEBUG ("found a beam in the map");
+      pCacheValue = m_vectorCache.at(beamKey); // we should be able to do this without a second map-search
+      update = ( aPos.x != pCacheValue->m_myPos.x ) ||
+	( aPos.y != pCacheValue->m_myPos.y ) ||
+	( aPos.z != pCacheValue->m_myPos.z ) ||
+        ( bPos.x != pCacheValue->m_otherPos.x ) ||
+        ( bPos.y != pCacheValue->m_otherPos.y ) ||
+        ( bPos.z != pCacheValue->m_otherPos.z );
     }
-  if (phiAngle < 0)
+  else
+  {
+    NS_LOG_DEBUG ("beam NOT found");
+    notFound = true;
+  }
+
+  if ( notFound || update )
     {
-      phiAngle = phiAngle + 2 * M_PI;
+    // compute the azimuth and the elevation angles
+    Angles completeAngle (bPos,aPos);
+
+    double posX = bPos.x - aPos.x;
+    double phiAngle = atan ((bPos.y - aPos.y) / posX);
+
+    if (posX < 0)
+      {
+	phiAngle = phiAngle + M_PI;
+      }
+    if (phiAngle < 0)
+      {
+	phiAngle = phiAngle + 2 * M_PI;
+      }
+
+    double hAngleRadian = fmod ((phiAngle + M_PI),2 * M_PI - M_PI); // the azimuth angle
+    double vAngleRadian = completeAngle.theta; // the elevation angle
+
+    // retrieve the number of antenna elements
+    uint16_t antennaNum [2];
+    antennaNum[0] = m_antenna->GetAntennaNumDim1 ();
+    antennaNum[1] = m_antenna->GetAntennaNumDim2 ();
+    uint32_t totNoArrayElements = antennaNum[0]*antennaNum[1];
+
+    // the total power is divided equally among the antenna elements
+    double power = 1 / sqrt (totNoArrayElements);
+
+    // compute the antenna weights
+    for (uint32_t ind = 0; ind < totNoArrayElements; ind++)
+      {
+	Vector loc = m_antenna->GetAntennaLocation (ind);
+	double phase = -2 * M_PI * (sin (vAngleRadian) * cos (hAngleRadian) * loc.x
+				    + sin (vAngleRadian) * sin (hAngleRadian) * loc.y
+				    + cos (vAngleRadian) * loc.z);
+	antennaWeights.push_back (exp (std::complex<double> (0, phase)) * power);
+      }
+
+      // bId = 0; // TODO how to set the bid?
+      //TODO [fgomez] consider this beamID proposal, the beam is identified by the pair of IDs of the transmitter and receiver
+      uint32_t minId = std::min (m_mobility->GetObject<Node> ()->GetId (), otherDevice->GetNode ()->GetId ());
+      uint32_t maxId = std::max (m_mobility->GetObject<Node> ()->GetId (), otherDevice->GetNode ()->GetId ());
+      bId = GetKey(minId,maxId); //TODO this is the same Cantor function as in ThreeGppChannel::GetKey (minId, maxId), consider unifying
+
+      //update the cache with a new value
+      //TODO do we need to garbage collect the old cache value here because it was a pointer?
+      pCacheValue = Create<BFVectorCacheEntry> ();
+      pCacheValue->m_myPos = aPos;
+      pCacheValue->m_otherPos = bPos;
+      pCacheValue->m_beamId = bId;
+      pCacheValue->m_antennaWeights = antennaWeights;
+
+      m_vectorCache[beamKey] = pCacheValue;
     }
-
-  double hAngleRadian = fmod ((phiAngle + M_PI),2 * M_PI - M_PI); // the azimuth angle
-  double vAngleRadian = completeAngle.theta; // the elevation angle
-
-  // retrieve the number of antenna elements
-  uint16_t antennaNum [2];
-  antennaNum[0] = m_antenna->GetAntennaNumDim1 ();
-  antennaNum[1] = m_antenna->GetAntennaNumDim2 ();
-  uint32_t totNoArrayElements = antennaNum[0]*antennaNum[1];
-
-  // the total power is divided equally among the antenna elements
-  double power = 1 / sqrt (totNoArrayElements);
-
-  // compute the antenna weights
-  for (uint32_t ind = 0; ind < totNoArrayElements; ind++)
-    {
-      Vector loc = m_antenna->GetAntennaLocation (ind);
-      double phase = -2 * M_PI * (sin (vAngleRadian) * cos (hAngleRadian) * loc.x
-                                  + sin (vAngleRadian) * sin (hAngleRadian) * loc.y
-                                  + cos (vAngleRadian) * loc.z);
-      antennaWeights.push_back (exp (std::complex<double> (0, phase)) * power);
+  else
+    { //if we enter this segment of code pCacheValue has been pointed to a valid cache entry, which we read
+      bId = pCacheValue->m_beamId;
+      antennaWeights = pCacheValue->m_antennaWeights;
     }
 
   // configure the antenna to use the new beamforming vector
-  //AntennaArrayBasicModel::BeamId bId = 0; // TODO how to set the bid?
-  //TODO [fgomez] consider this beamID proposal, the beam is identified by the pair of IDs of the transmitter and receiver
-    uint32_t minId = std::min (m_mobility->GetObject<Node> ()->GetId (), otherDevice->GetNode ()->GetId ());
-    uint32_t maxId = std::max (m_mobility->GetObject<Node> ()->GetId (), otherDevice->GetNode ()->GetId ());
-
-  AntennaArrayBasicModel::BeamId bId = GetKey(minId,maxId); //TODO this is the same Cantor function as in ThreeGppChannel::GetKey (minId, maxId), consider unifying
-
   Ptr<AntennaArrayModel> castAntenna = DynamicCast<AntennaArrayModel>(m_antenna);
   if ( castAntenna != 0 )
     {

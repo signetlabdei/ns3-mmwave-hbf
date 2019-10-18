@@ -20,6 +20,9 @@
 #define SRC_MMWAVE_BEAMFORMING_MODEL_H_
 
 #include "ns3/object.h"
+#include "ns3/antenna-array-basic-model.h"
+#include "ns3/mobility-model.h"
+#include <map>
 
 namespace ns3 {
 
@@ -77,6 +80,14 @@ protected:
 };
 
 
+struct BFVectorCacheEntry : public SimpleRefCount<BFVectorCacheEntry>
+{
+  Vector m_myPos; //the semantic here is my position and other device position instead of tx and rx because we assume reversible channels
+  Vector m_otherPos;
+  AntennaArrayBasicModel::BeamId m_beamId;
+  AntennaArrayBasicModel::complexVector_t m_antennaWeights;
+};
+
 /**
  * This class extends the MmWaveBeamformingModel interface.
  * It implements a DFT-based beamforming algorithm.
@@ -121,7 +132,8 @@ private:
    {//TODO this is a replica of ThreeGppChannel id generation, it is not required to import modification to that function, but it should be considered
      return (((x1 + x2) * (x1 + x2 + 1)) / 2) + x2;
    }
-  Ptr<MobilityModel> m_mobility; // pointer to the MobilityModel installed in this device
+   Ptr<MobilityModel> m_mobility; // pointer to the MobilityModel installed in this device
+   std::map< uint32_t, Ptr<BFVectorCacheEntry> > m_vectorCache; // a memory to remember previous bf vectors and reuse them without recomputing
 };
 
 } // namespace mmwave

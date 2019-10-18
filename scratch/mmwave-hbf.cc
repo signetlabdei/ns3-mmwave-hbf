@@ -62,6 +62,7 @@ main (int argc, char *argv[])
 	LogComponentEnable ("MmWaveSpectrumPhy", LOG_LEVEL_INFO);
 	LogComponentEnable ("MmWaveUePhy", LOG_LEVEL_INFO);
 	LogComponentEnable ("MmWaveEnbPhy", LOG_LEVEL_INFO);
+	LogComponentEnable ("MmWaveBeamformingModel", LOG_LEVEL_DEBUG);
 	//LogComponentEnable ("MmWaveUeMac", LOG_LEVEL_LOGIC);
 	//LogComponentEnable ("UdpClient", LOG_LEVEL_INFO);
 	//LogComponentEnable ("PacketSink", LOG_LEVEL_INFO);
