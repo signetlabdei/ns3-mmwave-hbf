@@ -46,6 +46,16 @@ struct LongTerm : public SimpleRefCount<LongTerm>
 };
 
 /**
+ * Data structure that stores three uint32_t keys for a 3D map key lookup of the longerm cache.
+ * The keys correspond to transmit-beamforming ID, channel ID, and receive-beamforming ID
+ */
+struct Key3DLongTerm {
+  uint32_t a;
+  uint32_t b;
+  uint32_t c;
+}; //TODO we can make this into a template for better reuse, perhaps even find an existing stl/ns3 template that does this
+
+/**
  * \ingroup spectrum
  *
  */
@@ -174,7 +184,9 @@ private:
   Ptr<SpectrumValue> CalBeamformingGain (Ptr<SpectrumValue> txPsd, complexVector_t longTerm, Ptr<ThreeGppChannelMatrix> params, Vector txSpeed, Vector rxSpeed) const;
 
   std::map < Ptr<NetDevice>, Ptr<AntennaArrayBasicModel> > m_deviceAntennaMap; //!< map containig the <device, antenna> associations
-  mutable std::map < uint32_t, Ptr<LongTerm> > m_longTermMap; //!< map containing the long term components
+  //TODO remove this commented line if the change below is adopted, or uncommment and remove the next line if we change our mind and decide to disable the interference caching implementation
+//  mutable std::map < uint32_t, Ptr<LongTerm> > m_longTermMap; //!< map containing the long term components
+  mutable std::map < Key3DLongTerm, Ptr<LongTerm> > m_longTermMap; //!< map containing the long term components for txBeamID chanID rxBeamID triplets.
   Ptr<ChannelConditionModel> m_channelConditionModel; //!< the channel condition model
   Ptr<ThreeGppChannel> m_channelModel; //!< the model to generate the channel matrix
 };

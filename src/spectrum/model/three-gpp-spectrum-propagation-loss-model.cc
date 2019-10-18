@@ -39,6 +39,16 @@ NS_LOG_COMPONENT_DEFINE ("ThreeGppSpectrumPropagationLossModel");
 
 NS_OBJECT_ENSURE_REGISTERED (ThreeGppSpectrumPropagationLossModel);
 
+//TODO is this the best place to define this operator? it can be made "inline" in the .h file
+bool operator<(Key3DLongTerm const & lhs, Key3DLongTerm const & rhs) {
+    if (lhs.a < rhs.a) return true;
+    if (rhs.a < lhs.a) return false;
+    if (lhs.b < rhs.b) return true;
+    if (rhs.b < lhs.b) return false;
+    if (lhs.c < rhs.c) return true;
+    return false;
+};
+
 ThreeGppSpectrumPropagationLossModel::ThreeGppSpectrumPropagationLossModel ()
 {
   NS_LOG_FUNCTION (this);
@@ -237,8 +247,6 @@ ThreeGppSpectrumPropagationLossModel::GetLongTerm (Ptr<const MobilityModel> aMob
 {
   complexVector_t longTerm; // vector containing the long term component for each cluster
 
-  //TODO revise the changes in this file to support HBF interference id checks and long term caching
-
   complexVector_t aW = AntennaArrayBasicModel::GetVector (aBF);
   complexVector_t bW = AntennaArrayBasicModel::GetVector (bBF);
 
@@ -247,38 +255,44 @@ ThreeGppSpectrumPropagationLossModel::GetLongTerm (Ptr<const MobilityModel> aMob
   uint32_t maxId = std::max (aMob->GetObject<Node> ()->GetId (), bMob->GetObject<Node> ()->GetId ());
   uint32_t longTermId = ThreeGppChannel::GetKey (minId, maxId);
 
-  //TODO we can implement more ambitious caching of longTerm for both the signal and interference case if we replace two-ID keys with a hash function and hash collision protection
-  bool interference = true;
-  if ( ( AntennaArrayBasicModel::GetBeamId(aBF) == longTermId ) && ( AntennaArrayBasicModel::GetBeamId(bBF) == longTermId ) )
-    {
-      interference = false;
-    }
+  //TODO uncomment the following if we change our mind and decide to disable the interference caching implementation
+//  bool interference = true;
+//  if ( ( AntennaArrayBasicModel::GetBeamId(aBF) == longTermId ) && ( AntennaArrayBasicModel::GetBeamId(bBF) == longTermId ) )
+//    {
+//      interference = false;
+//    }
+  //TODO remove this variable and substitute it with longTermId hereafter if we change our mind and decide to disable the interference caching implementation
+  Key3DLongTerm longTerm3Key = {
+      AntennaArrayBasicModel::GetBeamId(aBF),
+      longTermId,
+      AntennaArrayBasicModel::GetBeamId(bBF)
+      };
 
   bool update = false; // indicates whether the long term has to be updated
   bool notFound = false; // indicates if the long term has not been computed yet
 
   // look for the long term in the map and check if it is valid
-  if (m_longTermMap.find (longTermId) != m_longTermMap.end ())
+  if (m_longTermMap.find (longTerm3Key) != m_longTermMap.end ())
   {
     NS_LOG_DEBUG ("found the long term component in the map");
-    longTerm = m_longTermMap.at (longTermId)->m_longTerm;
+    longTerm = m_longTermMap.at (longTerm3Key)->m_longTerm;
 
     // check if the channel matrix has been updated
     // or the tx beam has been changed
     // or the rx beam has been changed
-    if (m_longTermMap.at (longTermId)->m_channel->m_isReverse)
+    if (m_longTermMap.at (longTerm3Key)->m_channel->m_isReverse)
     {
       // the long term was computed considering device b as tx and device a as rx
-      update = (m_longTermMap.at (longTermId)->m_channel->m_generatedTime != channelMatrix->m_generatedTime
-                || m_longTermMap.at (longTermId)->m_txW != bW
-                || m_longTermMap.at (longTermId)->m_rxW != aW);
+      update = (m_longTermMap.at (longTerm3Key)->m_channel->m_generatedTime != channelMatrix->m_generatedTime
+                || m_longTermMap.at (longTerm3Key)->m_txW != bW
+                || m_longTermMap.at (longTerm3Key)->m_rxW != aW);
     }
     else
     {
       // the long term was computed considering device a as tx and device b as rx
-      update = (m_longTermMap.at (longTermId)->m_channel->m_generatedTime != channelMatrix->m_generatedTime
-                || m_longTermMap.at (longTermId)->m_txW != aW
-                || m_longTermMap.at (longTermId)->m_rxW != bW);
+      update = (m_longTermMap.at (longTerm3Key)->m_channel->m_generatedTime != channelMatrix->m_generatedTime
+                || m_longTermMap.at (longTerm3Key)->m_txW != aW
+                || m_longTermMap.at (longTerm3Key)->m_rxW != bW);
     }
   }
   else
@@ -287,14 +301,17 @@ ThreeGppSpectrumPropagationLossModel::GetLongTerm (Ptr<const MobilityModel> aMob
     notFound = true;
   }
 
-  if (update || notFound || interference)
+  //TODO swap the following commented and uncommented lines if we change our mind and decide to disable the interference caching implementation
+  if (update || notFound)
+//  if (update || notFound || interference)
   {
     NS_LOG_DEBUG ("compute the long term");
     // compute the long term component
     longTerm = CalLongTerm (channelMatrix, aW, bW);
 
-    if ( ! interference)
-      {
+    //TODO uncomment the following if we change our mind and decide to disable the interference caching implementation
+//    if ( ! interference)
+//      {
       // store the long term
       Ptr<LongTerm> longTermItem = Create<LongTerm> ();
       longTermItem->m_longTerm = longTerm;
@@ -302,8 +319,8 @@ ThreeGppSpectrumPropagationLossModel::GetLongTerm (Ptr<const MobilityModel> aMob
       longTermItem->m_txW = aW;
       longTermItem->m_rxW = bW;
 
-      m_longTermMap[longTermId] = longTermItem;
-      }
+      m_longTermMap[longTerm3Key] = longTermItem;
+//      }
   }
 
   return longTerm;
