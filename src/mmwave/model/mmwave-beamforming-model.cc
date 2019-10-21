@@ -25,6 +25,7 @@
 #include "ns3/node.h"
 #include "ns3/log.h"
 
+#include <complex>
 namespace ns3 {
 
 namespace mmwave {
@@ -110,6 +111,57 @@ MmWaveDftBeamforming::~MmWaveDftBeamforming ()
 }
 
 void
+MmWaveDftBeamforming::InPlaceMatrixFFT (complex2DVector_t matrix, bool bHorizontal)
+{
+  // matrix[v][h] is considered the v-th row and h-th column
+  uint32_t N = ( bHorizontal == true ) ? (matrix.at(0).size()) : (matrix.size());
+  uint32_t numFFTs = ( bHorizontal == true ) ? (matrix.size()) : (matrix.at(0).size());
+
+  if (N <= 1) return;
+
+  // divide
+  complex2DVector_t even;
+  complex2DVector_t odd;
+  if ( bHorizontal == true )
+    {
+      for (uint32_t row = 0; row < numFFTs; row ++ )
+	{
+	  even.push_back(complexVector_t(matrix.at(row).begin() , matrix.at(row).end()-N/2));
+	  odd.push_back(complexVector_t(matrix.at(row).begin() + N/2 , matrix.at(row).end()));
+	}
+    }
+  else
+    {
+      even = complex2DVector_t(matrix.begin() , matrix.end()-N/2);
+      odd = complex2DVector_t(matrix.begin() + N/2, matrix.end());
+    }
+
+  // conquer
+  InPlaceMatrixFFT(even,bHorizontal);
+  InPlaceMatrixFFT(odd,bHorizontal);
+
+  // combine
+  for (size_t k = 0; k < N/2; ++k)
+    {
+      for (size_t n = 0; n < numFFTs; ++n)
+	{
+	  if ( bHorizontal == true )
+	    {
+	      std::complex<double> t = std::polar(1.0, -2 * PI * k / N) * odd[n][k];
+	      matrix[n][k    ] = even[n][k] + t;
+	      matrix[n][k+N/2] = even[n][k] - t;
+	    }
+	  else
+	    {
+	      std::complex<double> t = std::polar(1.0, -2 * PI * k / N) * odd[k][n];
+	      matrix[k    ][n] = even[k][n] + t;
+	      matrix[k+N/2][n] = even[k][n] - t;
+	    }
+	}
+    }
+}
+
+void
 MmWaveDftBeamforming::SetBeamformingVectorForDevice (Ptr<NetDevice> otherDevice , uint8_t layerInd)
 {
   NS_LOG_FUNCTION (this);
@@ -135,7 +187,7 @@ MmWaveDftBeamforming::SetBeamformingVectorForDevice (Ptr<NetDevice> otherDevice 
   if ( itVectorCache != m_vectorCache.end() )
     {
       NS_LOG_DEBUG ("found a beam in the map");
-      pCacheValue = m_vectorCache.at(beamKey); // we should be able to do this without a second map-search
+      pCacheValue = itVectorCache->second; // I should be able to obtain this from itVectorCache without a second map-search, but got lazy
       update = ( aPos.x != pCacheValue->m_myPos.x ) ||
 	( aPos.y != pCacheValue->m_myPos.y ) ||
 	( aPos.z != pCacheValue->m_myPos.z ) ||
@@ -202,7 +254,8 @@ MmWaveDftBeamforming::SetBeamformingVectorForDevice (Ptr<NetDevice> otherDevice 
       pCacheValue->m_beamId = bId;
       pCacheValue->m_antennaWeights = antennaWeights;
 
-      m_vectorCache[beamKey] = pCacheValue;
+//      m_vectorCache[beamKey] = pCacheValue;
+      itVectorCache->second = pCacheValue; //a faster equivalent to the commented line above
     }
   else
     { //if we enter this segment of code pCacheValue has been pointed to a valid cache entry, which we read

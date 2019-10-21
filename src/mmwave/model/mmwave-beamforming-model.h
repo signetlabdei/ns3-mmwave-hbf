@@ -33,6 +33,9 @@ class NetDevice;
 namespace mmwave {
 
 
+typedef std::vector< std::complex<double> > complexVector_t; //!< type definition for complex vectors
+typedef std::vector<complexVector_t> complex2DVector_t; //!< type definition for complex matrices
+
 /**
  * This class handles the beamforming operations.
  * Extend this class to implement a specific beamforming algorithm.
@@ -121,6 +124,9 @@ public:
   void SetBeamformingVectorForDevice (Ptr<NetDevice> otherDevice, uint8_t layerInd = 0) override;
 
 private:
+
+  static constexpr double PI = 3.141592653589793238460;
+  static void InPlaceMatrixFFT (complex2DVector_t matrix, bool bHorizontal = false);
 
   /**
     * Calculate the channel key using the Cantor function
