@@ -24,8 +24,15 @@
 #include "ns3/net-device.h"
 #include "ns3/node.h"
 #include "ns3/log.h"
+#include <ns3/simulator.h>
+
+#include "ns3/three-gpp-spectrum-propagation-loss-model.h"
 
 #include <complex>
+
+#include <iostream>
+#include <fstream>
+
 namespace ns3 {
 
 namespace mmwave {
@@ -79,6 +86,16 @@ MmWaveBeamformingModel::SetAntenna (Ptr<AntennaArrayBasicModel> antenna)
   m_antenna = antenna;
 }
 
+
+void
+MmWaveBeamformingModel::SetSpectrumPropagationLossModel (Ptr<SpectrumPropagationLossModel> spectrumPropagationLossModel)
+{
+
+  NS_LOG_FUNCTION (this);
+
+  m_spectrumPropagationLossModel = spectrumPropagationLossModel;
+}
+
 /*----------------------------------------------------------------------------*/
 
 NS_OBJECT_ENSURE_REGISTERED (MmWaveDftBeamforming);
@@ -110,55 +127,60 @@ MmWaveDftBeamforming::~MmWaveDftBeamforming ()
 
 }
 
-void
-MmWaveDftBeamforming::InPlaceMatrixFFT (complex2DVector_t matrix, bool bHorizontal)
+AntennaArrayBasicModel::BeamformingVector
+MmWaveDftBeamforming::DoDesignBeamformingVectorForDevice (Ptr<NetDevice> otherDevice)
 {
-  // matrix[v][h] is considered the v-th row and h-th column
-  uint32_t N = ( bHorizontal == true ) ? (matrix.at(0).size()) : (matrix.size());
-  uint32_t numFFTs = ( bHorizontal == true ) ? (matrix.size()) : (matrix.at(0).size());
+  // retrieve the position of the two devices
+  Vector aPos = m_mobility->GetPosition ();
+  Vector bPos = otherDevice->GetNode ()->GetObject<MobilityModel> ()->GetPosition ();
 
-  if (N <= 1) return;
+  // compute the azimuth and the elevation angles
+  Angles completeAngle (bPos,aPos);
 
-  // divide
-  complex2DVector_t even;
-  complex2DVector_t odd;
-  if ( bHorizontal == true )
+  double posX = bPos.x - aPos.x;
+  double phiAngle = atan ((bPos.y - aPos.y) / posX);
+
+  if (posX < 0)
     {
-      for (uint32_t row = 0; row < numFFTs; row ++ )
-	{
-	  even.push_back(complexVector_t(matrix.at(row).begin() , matrix.at(row).end()-N/2));
-	  odd.push_back(complexVector_t(matrix.at(row).begin() + N/2 , matrix.at(row).end()));
-	}
+      phiAngle = phiAngle + M_PI;
     }
-  else
+  if (phiAngle < 0)
     {
-      even = complex2DVector_t(matrix.begin() , matrix.end()-N/2);
-      odd = complex2DVector_t(matrix.begin() + N/2, matrix.end());
+      phiAngle = phiAngle + 2 * M_PI;
     }
 
-  // conquer
-  InPlaceMatrixFFT(even,bHorizontal);
-  InPlaceMatrixFFT(odd,bHorizontal);
+  double hAngleRadian = fmod ((phiAngle + M_PI),2 * M_PI - M_PI); // the azimuth angle
+  double vAngleRadian = completeAngle.theta; // the elevation angle
 
-  // combine
-  for (size_t k = 0; k < N/2; ++k)
+  // retrieve the number of antenna elements
+  uint16_t antennaNum [2];
+  antennaNum[0] = m_antenna->GetAntennaNumDim1 ();
+  antennaNum[1] = m_antenna->GetAntennaNumDim2 ();
+  uint32_t totNoArrayElements = antennaNum[0]*antennaNum[1];
+
+  // the total power is divided equally among the antenna elements
+  double power = 1 / sqrt (totNoArrayElements);
+
+  AntennaArrayBasicModel::BeamformingVector newBfParam;
+
+  // compute the antenna weights
+  for (uint32_t ind = 0; ind < totNoArrayElements; ind++)
     {
-      for (size_t n = 0; n < numFFTs; ++n)
-	{
-	  if ( bHorizontal == true )
-	    {
-	      std::complex<double> t = std::polar(1.0, -2 * PI * k / N) * odd[n][k];
-	      matrix[n][k    ] = even[n][k] + t;
-	      matrix[n][k+N/2] = even[n][k] - t;
-	    }
-	  else
-	    {
-	      std::complex<double> t = std::polar(1.0, -2 * PI * k / N) * odd[k][n];
-	      matrix[k    ][n] = even[k][n] + t;
-	      matrix[k+N/2][n] = even[k][n] - t;
-	    }
-	}
+      Vector loc = m_antenna->GetAntennaLocation (ind);
+      double phase = -2 * M_PI * (sin (vAngleRadian) * cos (hAngleRadian) * loc.x
+	  + sin (vAngleRadian) * sin (hAngleRadian) * loc.y
+	  + cos (vAngleRadian) * loc.z);
+      newBfParam.first.push_back (exp (std::complex<double> (0, phase)) * power);
     }
+
+  // bId = 0; // TODO how to set the bid?
+  //TODO [fgomez] consider this beamID proposal, the beam is identified by the pair of IDs of the transmitter and receiver
+  uint32_t minId = std::min (m_mobility->GetObject<Node> ()->GetId (), otherDevice->GetNode ()->GetId ());
+  uint32_t maxId = std::max (m_mobility->GetObject<Node> ()->GetId (), otherDevice->GetNode ()->GetId ());
+  newBfParam.second = GetKey(minId,maxId); //in this model, beam ID is the pair of devices
+  //TODO this is the same Cantor function as in ThreeGppChannel::GetKey (minId, maxId), consider unifying
+
+  return( newBfParam );
 }
 
 void
@@ -187,13 +209,14 @@ MmWaveDftBeamforming::SetBeamformingVectorForDevice (Ptr<NetDevice> otherDevice 
   if ( itVectorCache != m_vectorCache.end() )
     {
       NS_LOG_DEBUG ("found a beam in the map");
-      pCacheValue = itVectorCache->second; // I should be able to obtain this from itVectorCache without a second map-search, but got lazy
+      pCacheValue = itVectorCache->second;
       update = ( aPos.x != pCacheValue->m_myPos.x ) ||
 	( aPos.y != pCacheValue->m_myPos.y ) ||
 	( aPos.z != pCacheValue->m_myPos.z ) ||
         ( bPos.x != pCacheValue->m_otherPos.x ) ||
         ( bPos.y != pCacheValue->m_otherPos.y ) ||
-        ( bPos.z != pCacheValue->m_otherPos.z );
+        ( bPos.z != pCacheValue->m_otherPos.z ) ||
+	(( Simulator::Now ().GetNanoSeconds () - pCacheValue->m_generatedTime.GetNanoSeconds () ) > 100000); //TODO use the channel update time instead of this independent update timer
     }
   else
   {
@@ -203,48 +226,10 @@ MmWaveDftBeamforming::SetBeamformingVectorForDevice (Ptr<NetDevice> otherDevice 
 
   if ( notFound || update )
     {
-    // compute the azimuth and the elevation angles
-    Angles completeAngle (bPos,aPos);
-
-    double posX = bPos.x - aPos.x;
-    double phiAngle = atan ((bPos.y - aPos.y) / posX);
-
-    if (posX < 0)
-      {
-	phiAngle = phiAngle + M_PI;
-      }
-    if (phiAngle < 0)
-      {
-	phiAngle = phiAngle + 2 * M_PI;
-      }
-
-    double hAngleRadian = fmod ((phiAngle + M_PI),2 * M_PI - M_PI); // the azimuth angle
-    double vAngleRadian = completeAngle.theta; // the elevation angle
-
-    // retrieve the number of antenna elements
-    uint16_t antennaNum [2];
-    antennaNum[0] = m_antenna->GetAntennaNumDim1 ();
-    antennaNum[1] = m_antenna->GetAntennaNumDim2 ();
-    uint32_t totNoArrayElements = antennaNum[0]*antennaNum[1];
-
-    // the total power is divided equally among the antenna elements
-    double power = 1 / sqrt (totNoArrayElements);
-
-    // compute the antenna weights
-    for (uint32_t ind = 0; ind < totNoArrayElements; ind++)
-      {
-	Vector loc = m_antenna->GetAntennaLocation (ind);
-	double phase = -2 * M_PI * (sin (vAngleRadian) * cos (hAngleRadian) * loc.x
-				    + sin (vAngleRadian) * sin (hAngleRadian) * loc.y
-				    + cos (vAngleRadian) * loc.z);
-	antennaWeights.push_back (exp (std::complex<double> (0, phase)) * power);
-      }
-
-      // bId = 0; // TODO how to set the bid?
-      //TODO [fgomez] consider this beamID proposal, the beam is identified by the pair of IDs of the transmitter and receiver
-      uint32_t minId = std::min (m_mobility->GetObject<Node> ()->GetId (), otherDevice->GetNode ()->GetId ());
-      uint32_t maxId = std::max (m_mobility->GetObject<Node> ()->GetId (), otherDevice->GetNode ()->GetId ());
-      bId = GetKey(minId,maxId); //TODO this is the same Cantor function as in ThreeGppChannel::GetKey (minId, maxId), consider unifying
+      NS_LOG_DEBUG ("Creating a new beam");
+      AntennaArrayBasicModel::BeamformingVector newBfStruct = DoDesignBeamformingVectorForDevice (otherDevice);
+      antennaWeights = newBfStruct.first;
+      bId = newBfStruct.second;
 
       //update the cache with a new value
       //TODO do we need to garbage collect the old cache value here because it was a pointer?
@@ -253,9 +238,9 @@ MmWaveDftBeamforming::SetBeamformingVectorForDevice (Ptr<NetDevice> otherDevice 
       pCacheValue->m_otherPos = bPos;
       pCacheValue->m_beamId = bId;
       pCacheValue->m_antennaWeights = antennaWeights;
+      pCacheValue->m_generatedTime = Simulator::Now ();
 
-//      m_vectorCache[beamKey] = pCacheValue;
-      itVectorCache->second = pCacheValue; //a faster equivalent to the commented line above
+      m_vectorCache[beamKey] = pCacheValue;
     }
   else
     { //if we enter this segment of code pCacheValue has been pointed to a valid cache entry, which we read
@@ -273,6 +258,240 @@ MmWaveDftBeamforming::SetBeamformingVectorForDevice (Ptr<NetDevice> otherDevice 
     {
       m_antenna->SetBeamformingVector (antennaWeights, bId, otherDevice);
     }
+}
+
+
+/*----------------------------------------------------------------------------*/
+
+NS_OBJECT_ENSURE_REGISTERED (MmWaveFFTCodebookBeamforming);
+
+TypeId
+MmWaveFFTCodebookBeamforming::GetTypeId ()
+{
+  static TypeId
+    tid =
+    TypeId ("ns3::MmWaveFFTCodebookBeamforming")
+    .SetParent<MmWaveDftBeamforming> ()
+    .AddConstructor<MmWaveFFTCodebookBeamforming> ()
+  ;
+  return tid;
+}
+
+MmWaveFFTCodebookBeamforming::MmWaveFFTCodebookBeamforming ()
+{
+  NS_LOG_FUNCTION (this);
+}
+
+MmWaveFFTCodebookBeamforming::~MmWaveFFTCodebookBeamforming ()
+{
+
+}
+
+void
+MmWaveFFTCodebookBeamforming::InPlaceArrayFFT (ComplexArray_t& x)
+{
+  //This method is a direct transposition of the fft examples provided in https://rosettacode.org/wiki/Fast_Fourier_transform#C.2B.2B
+  //The code in this section is under the GNU Free Documentation License 1.2  https://www.gnu.org/licenses/old-licenses/fdl-1.2.html
+
+  const  uint16_t N = x.size();
+  if (N <= 1) return;
+
+  // divide
+  ComplexArray_t even = x[std::slice(0, N/2, 2)];
+  ComplexArray_t  odd = x[std::slice(1, N/2, 2)];
+
+  // conquer
+  InPlaceArrayFFT(even);
+  InPlaceArrayFFT(odd);
+
+  // combine
+  for ( uint16_t k = 0; k < N/2; ++k)
+    {
+      std::complex<double> t = std::polar(1.0, -2 * PI * k / N) * odd[k];
+      x[k    ] = even[k] + t;
+      x[k+N/2] = even[k] - t;
+    }
+}
+
+void
+MmWaveFFTCodebookBeamforming::Channel4DFFT (complex2DVector_t& matrix,Ptr<NetDevice> otherDevice)
+{
+  // retrieve the number of antenna elements
+  uint16_t antennaNum [2];
+  antennaNum[0] = m_antenna->GetAntennaNumDim1 ();
+  antennaNum[1] = m_antenna->GetAntennaNumDim2 ();
+  uint32_t totNoArrayElements = antennaNum[0]*antennaNum[1];
+  NS_ASSERT_MSG (totNoArrayElements == matrix.at(0).size(), "Channel matrix size mismatch in 4D FFT method");
+  uint16_t otherAntennaNum [2];
+  otherAntennaNum[0] = sqrt(matrix.size());//TODO find a way to read dim1 and dim2 from otherDevice to support non-square arrays
+  otherAntennaNum[1] = sqrt(matrix.size());
+  //step 1; FFT of dim 1 of tx planar array
+  for ( uint16_t row = 0; row < matrix.size(); row++)
+    {
+      complexVector_t::iterator rowItemIterator1 = matrix.at(row).begin();
+      complexVector_t::iterator rowItemIterator2 = matrix.at(row).begin() + antennaNum[0];
+      for ( uint16_t colSegment = 0; colSegment < antennaNum[1]; colSegment++)
+	{
+	  complexVector_t subvector(rowItemIterator1,rowItemIterator2);//take a segment from the row we are considering |s1.s1.s1.s1|s2.s2.s2.s2|...
+	  ComplexArray_t x (subvector.data(),antennaNum[0]);//convert to valarray for convenient slicing
+	  InPlaceArrayFFT(x); //in-place FFT of the segment
+	  for ( uint16_t colItem = 0; colItem < antennaNum[0]; colItem++)//TODO can we replace this for with native stl subvector methods?
+	    {
+	      matrix.at(row).at ( colItem +  antennaNum[0]*colSegment ) = x[colItem]; // replace the segment with its FFT
+	    }
+	  rowItemIterator1=rowItemIterator2;
+	  rowItemIterator2+=+ antennaNum[0];//move iterators to next segment
+	}
+    }
+  //step 2; FFT of dim 2 of tx planar array
+    for ( uint16_t row = 0; row < matrix.size(); row++)
+      {
+	for ( uint16_t colComb = 0; colComb < antennaNum[0]; colComb++)
+	  {
+	    ComplexArray_t x (antennaNum[1]);//convert to valarray for convenient slicing
+	    //take a comb-sample from the row we are considering .c1|c2|c3|c4.c1|c2|c3|c4....
+	    for ( uint16_t colItem = 0; colItem < antennaNum[1]; colItem++)//TODO can we replace this for with native stl subvector methods?
+	      {
+		x[colItem] = matrix.at(row).at ( colComb +  antennaNum[0]*colItem );// read the segment into the subarray
+	      }
+	    InPlaceArrayFFT(x); //in-place FFT of the segment
+	    for ( uint16_t colItem = 0; colItem < antennaNum[1]; colItem++)//TODO can we replace this for with native stl subvector methods?
+	      {
+		matrix.at(row).at ( colComb +  antennaNum[0]*colItem ) = x[colItem]; // replace the segment with its FFT
+	      }
+	  }
+      }
+  //step 3; FFT of dim 1 of rx array
+    for ( uint16_t col = 0; col < matrix.at(0).size(); col++)
+      {
+	for ( uint16_t rowSegment = 0; rowSegment < otherAntennaNum[1]; rowSegment++)
+	  {
+	    ComplexArray_t x (otherAntennaNum[0]);//convert to valarray for convenient slicing
+	    for ( uint16_t rowItem = 0; rowItem < otherAntennaNum[0]; rowItem++)//TODO can we replace this for with native stl subvector methods?
+	      {
+		x[rowItem] = matrix.at(rowItem + otherAntennaNum[0] * rowSegment).at (col); // read the segment into the subarray
+	      }
+	    InPlaceArrayFFT(x); //in-place FFT of the segment
+	    for ( uint16_t rowItem = 0; rowItem < otherAntennaNum[0]; rowItem++)//TODO can we replace this for with native stl subvector methods?
+	      {
+		matrix.at(rowItem + otherAntennaNum[0] * rowSegment).at (col) = x[rowItem]; // replace the segment with its FFT
+	      }
+	  }
+      }
+  //step 4; FFT of dim 2 of rx array
+    for ( uint16_t col = 0; col < matrix.at(0).size(); col++)
+      {
+	for ( uint16_t rowComb = 0; rowComb < otherAntennaNum[0]; rowComb++)
+	  {
+	    ComplexArray_t x (otherAntennaNum[1]);//convert to valarray for convenient slicing
+	    //take a comb-sample from the row we are considering .c1|c2|c3|c4.c1|c2|c3|c4....
+	    for ( uint16_t rowItem = 0; rowItem < otherAntennaNum[1]; rowItem++)//TODO can we replace this for with native stl subvector methods?
+	      {
+		x[rowItem] = matrix.at ( rowComb +  otherAntennaNum[0]*rowItem ).at(col); // read the segment into the subarray
+	      }
+	    InPlaceArrayFFT(x); //in-place FFT of the segment
+	    for ( uint16_t rowItem = 0; rowItem < otherAntennaNum[1]; rowItem++)//TODO can we replace this for with native stl subvector methods?
+	      {
+		matrix.at ( rowComb +  otherAntennaNum[0]*rowItem ).at(col) = x[rowItem] ; // replace the segment with its FFT
+	      }
+	  }
+      }
+}
+
+
+AntennaArrayBasicModel::BeamformingVector
+MmWaveFFTCodebookBeamforming::DoDesignBeamformingVectorForDevice (Ptr<NetDevice> otherDevice)
+{
+
+  Ptr<ThreeGppSpectrumPropagationLossModel> casted3GPPchan = DynamicCast<ThreeGppSpectrumPropagationLossModel>( m_spectrumPropagationLossModel );
+
+  NS_ASSERT_MSG ( casted3GPPchan != 0, "The spectrum propagation loss model in the channel does not support this BF model");
+  //TODO it is theoretically possible to build a 2D channel info using angular samplign with a series of calls to the antenna array radiation patten, but we will not implement this at this time
+  complex2DVector_t channelInfo = casted3GPPchan->GetFrequencyFlatChannelMatrixAtDeltaFrequency(m_mobility,otherDevice->GetNode ()->GetObject<MobilityModel> (),0);//TODO put here the deltaFc corresponding to the subcarrier number of the narrowband reference signal in NR
+  complex2DVector_t channelInfo_back = channelInfo;
+  Channel4DFFT( channelInfo,otherDevice);//in place 4 FFTs for all four dimensions of tx and rx array
+  //combined, the two FFT above transofor channelInfo axes from [rxArrayElem,txArrayElem] into [rxRefAngle,txRefAngle]
+  //here, the refAngles correspond to static beams, with anglular values asin( (0:Nant-1 /Nant) - Nant/2 )
+
+  uint16_t bestColumn;
+  uint16_t bestRow;
+  uint16_t totNoArrayElements = channelInfo.at(0).size();
+  double bestGain = 0;
+
+  std::stringstream name;
+  std::ofstream myfile;
+  std::stringstream name2;
+  std::ofstream myfile2;
+//  //uncomment these to write to file some channel matrixes and test the FFT using matlab
+//  if ( Simulator::Now ().GetNanoSeconds () == 0 ){
+//      name<<"fftMatrix"<<m_mobility->GetObject<Node> ()->GetId ()<<"-"<<otherDevice->GetNode ()->GetId ()<<"-"<<Simulator::Now ().GetNanoSeconds ()<<".csv";
+//      name2<<"chanMatrix"<<m_mobility->GetObject<Node> ()->GetId ()<<"-"<<otherDevice->GetNode ()->GetId ()<<"-"<<Simulator::Now ().GetNanoSeconds ()<<".csv";
+//      myfile.open (name.str());
+//      myfile2.open (name2.str());
+//  }
+
+  for ( uint16_t rxInd=0; rxInd<channelInfo.size(); rxInd++)
+    {
+      for ( uint16_t txInd=0; txInd<totNoArrayElements; txInd++)
+	{
+	  double testGain = norm( channelInfo.at(rxInd).at(txInd) ) / totNoArrayElements / channelInfo.size() ;
+//	  if ( Simulator::Now ().GetNanoSeconds () == 0 ){
+//	      NS_LOG_DEBUG("In channel matrix for device tx "<< m_mobility->GetObject<Node> ()->GetId () <<
+//	     	  		       " pointing at device "<< otherDevice->GetNode ()->GetId ()  <<
+//	     	  		       " channel matrix entiry ("<< rxInd <<","<< txInd <<
+//	     	  		       ") coef "<< channelInfo.at(rxInd).at(txInd) << " gain "<< testGain <<" best current "<< bestGain);
+//	      myfile <<channelInfo.at(rxInd).at(txInd).real()<< "," <<channelInfo.at(rxInd).at(txInd).imag()<<",";
+//	      myfile2 <<channelInfo_back.at(rxInd).at(txInd).real()<< ","<<channelInfo_back.at(rxInd).at(txInd).imag()<<",";
+//	  }
+	  if ( testGain > bestGain)
+	    {
+	      bestColumn = txInd;
+	      bestRow    = rxInd;//this is not used by me, this is the BF vector I assume otherDevice will use if they apply the same bf as me, with transposed matrix
+	      bestGain   = testGain;
+	    }
+	}
+
+//      if ( Simulator::Now ().GetNanoSeconds () == 0 ){
+//	  myfile << "\n";
+//	  myfile2 << "\n";
+//      }
+    }
+
+//  if ( Simulator::Now ().GetNanoSeconds () == 0 ){
+//      myfile.close();
+//      myfile2.close();
+//  }
+
+  AntennaArrayBasicModel::BeamformingVector newBfParam;
+  double power = 1 / sqrt (totNoArrayElements);
+
+  uint16_t antennaNum [2];
+  antennaNum[0] = m_antenna->GetAntennaNumDim1 ();
+  antennaNum[1] = m_antenna->GetAntennaNumDim2 ();
+
+  NS_ASSERT_MSG ( totNoArrayElements == antennaNum[0] * antennaNum[1] , "Channel matrix size mismatch in 4D FFT method");
+  // compute the antenna weights
+  uint16_t best1= bestColumn % antennaNum[0];
+  uint16_t best2= bestColumn / antennaNum[0];
+  for (uint16_t ind2 = 0; ind2 < antennaNum[1] ; ind2++)
+    {
+      for (uint16_t ind1 = 0; ind1 < antennaNum[0] ; ind1++)
+	{//this is a conj of the FFT vector, i.e. an IFFT
+	  double phase = - 2 * M_PI * ( ind1 * best1 / (double ) antennaNum[0] + ind2 * best2 / (double ) antennaNum[1]);
+	  newBfParam.first.push_back (exp (std::complex<double> (0, phase)) * power);
+	  //	  NS_LOG_DEBUG(""<<exp (std::complex<double> (0, phase)) * power);
+	}
+    }
+
+  newBfParam.second = bestColumn; // in this model, beam ID is the look up index of the codebook table
+
+  NS_LOG_DEBUG("Created a 4D FFT Beamforming Vector for device tx "<< m_mobility->GetObject<Node> ()->GetId () <<
+	       " pointing at device "<< otherDevice->GetNode ()->GetId ()  <<
+	       " using 4DFFT indexes "<< bestRow <<" and "<< bestColumn <<
+	       " txFFT indices "<< best1 <<" and "<< best2<<
+	       " gain "<< bestGain);
+
+  return( newBfParam );
 }
 
 } // namespace mmwave

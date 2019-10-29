@@ -55,6 +55,9 @@ struct Key3DLongTerm {
   uint32_t c;
 }; //TODO we can make this into a template for better reuse, perhaps even find an existing stl/ns3 template that does this
 
+typedef std::vector< std::complex<double> > complexVector_t; //!< type definition for complex vectors
+typedef std::vector<complexVector_t> complex2DVector_t; //!< type definition for complex matrices
+
 /**
  * \ingroup spectrum
  *
@@ -120,6 +123,19 @@ public:
    * \return the propagation scenario
    */
   std::string GetScenario () const;
+
+  /**
+     * Returns the channel matrix in one specific subcarrier of the OFDM channel.
+     * The primary use-case of this function is evaluating  primary and secondary
+     * reference signals, which are narrowband, using a codebook of different
+     * beamforming vectors, in order to select the strongest beam from a table.
+     * \param tx mobility model
+     * \param rx mobility model
+     * \param deltaFc frequency difference between the channel center frequency and the frequency of the narrowband reference tone
+     */
+  complex2DVector_t GetFrequencyFlatChannelMatrixAtDeltaFrequency ( Ptr<const MobilityModel> a,
+								    Ptr<const MobilityModel> b,
+								    double deltaFc = 0);
 
   /**
    * Computes the received PSD

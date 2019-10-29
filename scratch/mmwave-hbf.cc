@@ -67,6 +67,7 @@ main (int argc, char *argv[])
 	//LogComponentEnable ("UdpClient", LOG_LEVEL_INFO);
 	//LogComponentEnable ("PacketSink", LOG_LEVEL_INFO);
 	LogComponentEnable ("ThreeGppSpectrumPropagationLossModel", LOG_LEVEL_INFO);
+	LogComponentEnable ("ThreeGppChannel", LOG_LEVEL_DEBUG);
 	//LogComponentEnable("PropagationLossModel",LOG_LEVEL_ALL);
 //	LogComponentEnable ("MmwaveHbfSpectrumChannel", LOG_LEVEL_INFO);
 

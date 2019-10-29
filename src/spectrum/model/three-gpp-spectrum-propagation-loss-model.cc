@@ -228,7 +228,7 @@ ThreeGppSpectrumPropagationLossModel::CalBeamformingGain (Ptr<SpectrumValue> txP
       std::complex<double> subsbandGain (0.0,0.0);
       if ((*vit) != 0.00)
         {
-          double fsb = (*sbit).fc;
+          double fsb = (*sbit).fc; //TODO it seems that the iterator (*sbit) is never changed, this may be a bug resulting in the fc of subcarrier 0 used for the doppler of all bands
           for (uint8_t cIndex = 0; cIndex < numCluster; cIndex++)
             {
               double delay = -2 * M_PI * fsb * (params->m_delay.at (cIndex));
@@ -237,7 +237,7 @@ ThreeGppSpectrumPropagationLossModel::CalBeamformingGain (Ptr<SpectrumValue> txP
           *vit = (*vit) * (norm (subsbandGain));
         }
       vit++;
-      iSubband++;
+      iSubband++;//TODO it seems iSubband does nothing whereas the subband iterator *sbit has not been incremented in this loop
     }
   return tempPsd;
 }
@@ -326,10 +326,120 @@ ThreeGppSpectrumPropagationLossModel::GetLongTerm (Ptr<const MobilityModel> aMob
   return longTerm;
 }
 
+complex2DVector_t
+ThreeGppSpectrumPropagationLossModel::GetFrequencyFlatChannelMatrixAtDeltaFrequency ( Ptr<const MobilityModel> a,
+										      Ptr<const MobilityModel> b,
+										      double deltaFc)
+{
+  //TODO this function shares a lot of code with calcLongTerm and calcBFGain, try to reuse more code
+  //TODO we should be able to cache this too
+
+  // retrieve the tx and rx devices
+  Ptr<NetDevice> txDevice = a->GetObject<Node> ()->GetDevice (0);
+  Ptr<NetDevice> rxDevice = b->GetObject<Node> ()->GetDevice (0);
+
+  NS_ASSERT_MSG (a->GetDistanceFrom (b) != 0, "The position of tx and rx devices cannot be the same");
+
+  // retrieve the channel condition
+  Ptr<ChannelCondition> condition = m_channelConditionModel->GetChannelCondition (a, b);
+
+  // compute the channel matrix between a and b
+  bool los = (condition->GetLosCondition () == ChannelCondition::LosConditionValue::LOS);
+  bool o2i = false; // TODO include the o2i condition in the channel condition model
+
+  // retrieve the antenna of the tx device
+  NS_ASSERT_MSG (m_deviceAntennaMap.find (txDevice) != m_deviceAntennaMap.end (), "Antenna not found for device " << txDevice);
+  Ptr<AntennaArrayBasicModel> txAntennaArray = m_deviceAntennaMap.at (txDevice);
+  NS_LOG_DEBUG ("tx dev " << txDevice << " antenna " << txAntennaArray);
+
+  // retrieve the antenna of the rx device
+  NS_ASSERT_MSG (m_deviceAntennaMap.find (txDevice) != m_deviceAntennaMap.end (), "Antenna not found for device " << rxDevice);
+  Ptr<AntennaArrayBasicModel> rxAntennaArray = m_deviceAntennaMap.at (rxDevice);
+  NS_LOG_DEBUG ("rx dev " << rxDevice << " antenna " << rxAntennaArray);
+
+  Ptr<ThreeGppChannelMatrix> channelMatrix = m_channelModel->GetChannel (a, b, txAntennaArray, rxAntennaArray, los, o2i);
+
+  //channel[rx][tx][cluster]
+  uint8_t numCluster = channelMatrix->m_channel.at (0).at (0).size ();
+
+  uint16_t numTxAntenna = txAntennaArray->GetAntennaNumDim1 () * txAntennaArray->GetAntennaNumDim2 ();
+  uint16_t numRxAntenna = rxAntennaArray->GetAntennaNumDim1 () * rxAntennaArray->GetAntennaNumDim2 ();
+  if ( channelMatrix->m_isReverse )
+    {
+      NS_ASSERT_MSG (channelMatrix->m_channel.size() == numTxAntenna,"matrix dimensions mismatch tx array");
+      NS_ASSERT_MSG (channelMatrix->m_channel.at(0).size() == numRxAntenna,"matrix dimensions mismatch rx array");
+    }
+  else
+    {
+      NS_ASSERT_MSG (channelMatrix->m_channel.size() == numRxAntenna,"matrix dimensions mismatch tx array");
+      NS_ASSERT_MSG (channelMatrix->m_channel.at(0).size() == numTxAntenna,"matrix dimensions mismatch rx array");
+    }
+
+  //precompute delay and doppler to accelerate next loop
+  complexVector_t doppler;
+  complexVector_t delay_doppler;
+  double slotTime = Simulator::Now ().GetSeconds ();
+  double fsb = deltaFc + GetFrequency (); //we assume the reference signal is Deltafc distant from the center frequency of the channel model
+  for (uint8_t cIndex = 0; cIndex < numCluster; cIndex++)
+    {
+      //cluster angle angle[direction][n],where, direction = 0(aoa), 1(zoa).
+      // TODO should I include the "alfa" term for the Doppler of delayed paths?
+      double temp_doppler = 2 * M_PI * ((sin (channelMatrix->m_angle.at (ThreeGppChannel::ZOA_INDEX).at (cIndex) * M_PI / 180) * cos (channelMatrix->m_angle.at (ThreeGppChannel::AOA_INDEX).at (cIndex) * M_PI / 180) * b->GetVelocity ().x
+					+ sin (channelMatrix->m_angle.at (ThreeGppChannel::ZOA_INDEX).at (cIndex) * M_PI / 180) * sin (channelMatrix->m_angle.at (ThreeGppChannel::AOA_INDEX).at (cIndex) * M_PI / 180) * b->GetVelocity ().y
+					+ cos (channelMatrix->m_angle.at (ThreeGppChannel::ZOA_INDEX).at (cIndex) * M_PI / 180) * b->GetVelocity ().z)
+					+ (sin (channelMatrix->m_angle.at (ThreeGppChannel::ZOD_INDEX).at (cIndex) * M_PI / 180) * cos (channelMatrix->m_angle.at (ThreeGppChannel::AOD_INDEX).at (cIndex) * M_PI / 180) * a->GetVelocity ().x
+					+ sin (channelMatrix->m_angle.at (ThreeGppChannel::ZOD_INDEX).at (cIndex) * M_PI / 180) * sin (channelMatrix->m_angle.at (ThreeGppChannel::AOD_INDEX).at (cIndex) * M_PI / 180) * a->GetVelocity ().y
+					+ cos (channelMatrix->m_angle.at (ThreeGppChannel::ZOD_INDEX).at (cIndex) * M_PI / 180) * a->GetVelocity ().z))
+					* slotTime * GetFrequency () / 3e8;
+
+      doppler.push_back ( exp ( std::complex<double> (0, temp_doppler ) ) );
+
+      double delay = -2 * M_PI * fsb * (channelMatrix->m_delay.at (cIndex));
+      delay_doppler.push_back ( exp (std::complex<double> (0, delay ) ) );
+    }
+
+  complex2DVector_t resultMatrix; //this starts with empty matrix
+  for (uint16_t rxIndex = 0; rxIndex < numRxAntenna; rxIndex++)
+    {
+      complexVector_t resultRow;//this starts adding an empty row to the matrix
+      for (uint16_t txIndex = 0; txIndex < numTxAntenna; txIndex++)
+	{
+	  std::complex<double> resultElement (0,0);//this adds a zero element to the new row of the matrix
+	  for (uint8_t cIndex = 0; cIndex < numCluster; cIndex++)
+	    {
+	      if ( channelMatrix->m_isReverse )
+		{//we read from the ChannelMatrix in reverse but store in the current order, effectively transposing the result
+
+		  resultElement +=  channelMatrix->m_channel.at (txIndex).at (rxIndex).at (cIndex) * doppler.at (cIndex) * delay_doppler.at(cIndex);
+//		  NS_LOG_DEBUG ("REVERSE Computing step ["<< rxIndex <<","<< txIndex <<","<< (int )cIndex <<
+//				"] Array size = ["<<  channelMatrix->m_channel.at(0).size() <<","<< channelMatrix->m_channel.size() <<","<< channelMatrix->m_channel.at(0).at(0).size() <<
+//				"] loop limits ["<< numRxAntenna <<","<< numTxAntenna<<","<<(int )numCluster<<
+//				"] gain "<< channelMatrix->m_channel.at (txIndex).at (rxIndex).at (cIndex) <<
+//				" doppler "<< doppler.at (cIndex)<<
+//				" delay doppler "<< delay_doppler.at(cIndex));
+		}
+	      else
+		{
+		   resultElement +=  channelMatrix->m_channel.at (rxIndex).at (txIndex).at (cIndex) * doppler.at (cIndex) * delay_doppler.at(cIndex);
+//		   NS_LOG_DEBUG ("Computing reverse step ["<< rxIndex <<","<< txIndex <<","<< (int )cIndex <<
+//				 "] Array size = ["<<  channelMatrix->m_channel.size() <<","<< channelMatrix->m_channel.at(0).size() <<","<< channelMatrix->m_channel.at(0).at(0).size() <<
+//				 "] loop limits "<< numRxAntenna <<","<< numTxAntenna<<","<<(int )numCluster<<
+//				 "]  gain "<< channelMatrix->m_channel.at (rxIndex).at (txIndex).at (cIndex) <<
+//				" doppler "<< doppler.at (cIndex)<<
+//				" delay doppler "<< delay_doppler.at(cIndex));
+		}
+	    }
+	  resultRow.push_back(resultElement);
+	}
+      resultMatrix.push_back (resultRow);
+    }
+  return (resultMatrix);
+}
+
 Ptr<SpectrumValue>
-ThreeGppSpectrumPropagationLossModel::DoCalcRxPowerSpectralDensity (Ptr<const SpectrumValue> txPsd,
-                                                 Ptr<const MobilityModel> a,
-                                                 Ptr<const MobilityModel> b) const
+ThreeGppSpectrumPropagationLossModel::DoCalcRxPowerSpectralDensity ( Ptr<const SpectrumValue> txPsd,
+								     Ptr<const MobilityModel> a,
+								     Ptr<const MobilityModel> b) const
 {
 
   // we made this function do nothing in order to relocate the actual BF vector calculation

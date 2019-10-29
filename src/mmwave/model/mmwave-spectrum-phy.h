@@ -123,6 +123,7 @@ public:
   void SetMobility (Ptr<MobilityModel> m);
   Ptr<MobilityModel> GetMobility ();
   void SetChannel (Ptr<SpectrumChannel> c);
+  Ptr<SpectrumChannel> GetChannel ();
   Ptr<const SpectrumModel> GetRxSpectrumModel () const;
 
   Ptr<AntennaModel> GetRxAntenna ();

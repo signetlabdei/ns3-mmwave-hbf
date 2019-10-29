@@ -22,7 +22,9 @@
 #include "ns3/object.h"
 #include "ns3/antenna-array-basic-model.h"
 #include "ns3/mobility-model.h"
+#include "ns3/spectrum-propagation-loss-model.h"
 #include <map>
+#include <valarray>
 
 namespace ns3 {
 
@@ -60,26 +62,34 @@ public:
   static TypeId GetTypeId (void);
 
   /**
-   * Returns the antenna object
-   * \return the antenna object
-   */
-  Ptr<AntennaArrayBasicModel> GetAntenna (void) const;
+    * Returns the antenna object
+    * \return the antenna object
+    */
+   Ptr<AntennaArrayBasicModel> GetAntenna (void) const;
 
-  /**
-   * Set the antenna array object.
-   * \param antenna the antenna object
-   */
-  void SetAntenna (Ptr<AntennaArrayBasicModel> antenna);
+   /**
+      * Set the antenna array object.
+      * \param antenna the antenna object
+      */
+     void SetAntenna (Ptr<AntennaArrayBasicModel> antenna);
 
-  /**
-   * Computes the beamforming vector to communicate with the target device
-   * and sets the antenna.
-   * \param the target device
-   */
-  virtual void SetBeamformingVectorForDevice (Ptr<NetDevice> device, uint8_t layerInd = 0) = 0;
+   /**
+      * Sets the spectrum propagation loss model that may be used to read channel values
+      * (WARNING: reading the channel directly from the model rather than from device status implies assuming perfect CSI for beamforming)
+      * \param spectrumPropagationLossModel the spectrum propagation loss model
+      */
+     void SetSpectrumPropagationLossModel (Ptr<SpectrumPropagationLossModel> spectrumPropagationLossModel);
+
+     /**
+      * Assigns the beamforming vector to communicate with the target device
+      * and sets the antenna.
+      * \param the target device
+      */
+     virtual void SetBeamformingVectorForDevice (Ptr<NetDevice> device, uint8_t layerInd = 0) = 0;
 
 protected:
   Ptr<AntennaArrayBasicModel> m_antenna; // pointer to the antenna array instance
+  Ptr<SpectrumPropagationLossModel> m_spectrumPropagationLossModel; // pointer to the antenna array instance
 };
 
 
@@ -89,6 +99,7 @@ struct BFVectorCacheEntry : public SimpleRefCount<BFVectorCacheEntry>
   Vector m_otherPos;
   AntennaArrayBasicModel::BeamId m_beamId;
   AntennaArrayBasicModel::complexVector_t m_antennaWeights;
+  Time m_generatedTime;
 };
 
 /**
@@ -121,14 +132,18 @@ public:
    * algorithm.
    * \param the target device
    */
-  void SetBeamformingVectorForDevice (Ptr<NetDevice> otherDevice, uint8_t layerInd = 0) override;
-
-private:
-
-  static constexpr double PI = 3.141592653589793238460;
-  static void InPlaceMatrixFFT (complex2DVector_t matrix, bool bHorizontal = false);
+  virtual void SetBeamformingVectorForDevice (Ptr<NetDevice> otherDevice, uint8_t layerInd = 0) override;
 
   /**
+   * Computes the beamforming vector to communicate with the target device
+   * using the angle from the position information
+   * \param the target device
+   */
+  virtual AntennaArrayBasicModel::BeamformingVector DoDesignBeamformingVectorForDevice (Ptr<NetDevice> otherDevice);
+
+protected:
+
+   /**
     * Calculate the channel key using the Cantor function
     * \param x1 first value
     * \param x2 second value
@@ -140,6 +155,55 @@ private:
    }
    Ptr<MobilityModel> m_mobility; // pointer to the MobilityModel installed in this device
    std::map< uint32_t, Ptr<BFVectorCacheEntry> > m_vectorCache; // a memory to remember previous bf vectors and reuse them without recomputing
+};
+
+
+typedef std::valarray<std::complex<double>> ComplexArray_t;
+/**
+ * This class extends the MmWaveBeamformingModel interface.
+ * It implements a FFT-codebook beamforming algorithm.
+ */
+class MmWaveFFTCodebookBeamforming : public MmWaveDftBeamforming
+{
+public:
+  /**
+   * Constructor
+   */
+  MmWaveFFTCodebookBeamforming ();
+
+  /**
+   * Destructor
+   */
+  virtual ~MmWaveFFTCodebookBeamforming ();
+
+  /**
+   * Returns the object type id
+   * \return the type id
+   */
+  static TypeId GetTypeId (void);
+
+  /**
+   * Computes the beamforming vector to communicate with the target device
+   * and sets the antenna.
+   * The beamforming vector is computed using a FFT-codebook
+   * \param the target device
+   */
+//  void SetBeamformingVectorForDevice (Ptr<NetDevice> otherDevice, uint8_t layerInd = 0);//we do not need to override this function, only the call to the next one
+
+
+  /**
+   * Computes the beamforming vector to communicate with the target device
+   * using using a FFT-codebook and assuming perfect CSI (reads channel matrix from propagation loss model)
+   * \param the target device
+   */
+  AntennaArrayBasicModel::BeamformingVector DoDesignBeamformingVectorForDevice (Ptr<NetDevice> otherDevice) override;
+
+
+private:
+
+  static constexpr double PI = 3.141592653589793238460;
+  void InPlaceArrayFFT (ComplexArray_t& x);
+  void Channel4DFFT (complex2DVector_t& matrix,Ptr<NetDevice> otherDevice);
 };
 
 } // namespace mmwave

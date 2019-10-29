@@ -603,14 +603,14 @@ ThreeGppChannel::ChannelMatrixNeedsUpdate (Ptr<ThreeGppChannelMatrix> channelMat
   // if the los condition is different the channel has to be updated
   if (channelMatrix->m_los != los)
   {
-    NS_LOG_DEBUG ("old los condition " << channelMatrix->m_los << " new los condition " << los);
+    NS_LOG_DEBUG ("Update triggered: Old los condition " << channelMatrix->m_los << " new los condition " << los);
     update = true;
   }
 
   // if the coherence time is over the channel has to be updated
   if (m_updatePeriod.GetNanoSeconds () != 0.0 && Simulator::Now().GetNanoSeconds () - channelMatrix->m_generatedTime.GetNanoSeconds () > m_updatePeriod.GetNanoSeconds ())
   {
-    NS_LOG_DEBUG ("Generation time " << channelMatrix->m_generatedTime.GetNanoSeconds () << " now " << Simulator::Now ().GetNanoSeconds ());
+    NS_LOG_DEBUG ("Update triggered: Generation time " << channelMatrix->m_generatedTime.GetNanoSeconds () << " now " << Simulator::Now ().GetNanoSeconds ());
     update = true;
   }
 

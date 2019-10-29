@@ -224,6 +224,12 @@ MmWaveSpectrumPhy::SetChannel (Ptr<SpectrumChannel> c)
   m_channel = c;
 }
 
+Ptr<SpectrumChannel>
+MmWaveSpectrumPhy::GetChannel ()
+{
+  return m_channel;
+}
+
 Ptr<const SpectrumModel>
 MmWaveSpectrumPhy::GetRxSpectrumModel () const
 {
