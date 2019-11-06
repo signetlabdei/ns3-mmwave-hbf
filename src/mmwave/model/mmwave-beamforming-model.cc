@@ -291,7 +291,7 @@ void
 MmWaveFFTCodebookBeamforming::InPlaceArrayFFT (ComplexArray_t& x)
 {
   //This method is a direct transposition of the fft examples provided in https://rosettacode.org/wiki/Fast_Fourier_transform#C.2B.2B
-  //The code in this section is under the GNU Free Documentation License 1.2  https://www.gnu.org/licenses/old-licenses/fdl-1.2.html
+  //The code in this method implementation is under the GNU Free Documentation License 1.2  https://www.gnu.org/licenses/old-licenses/fdl-1.2.html
 
   const  uint16_t N = x.size();
   if (N <= 1) return;
@@ -311,6 +311,45 @@ MmWaveFFTCodebookBeamforming::InPlaceArrayFFT (ComplexArray_t& x)
       x[k    ] = even[k] + t;
       x[k+N/2] = even[k] - t;
     }
+}
+
+complex2DVector_t
+MmWaveFFTCodebookBeamforming::MMSECholesky (complex2DVector_t matrixH)
+{
+  //This method obtains the cholesky decomposition of the positive definite hermitian matrix M=(H'H+I),
+  //where we have left the input matrixH in the format H
+  //This method is a C++ adaptation of the cholesky decompositoin examples provided in https://rosettacode.org/wiki/Cholesky_decomposition#C
+  //The code in this section is NOT a direct copy of the site
+
+  complex2DVector_t Llower;
+  uint16_t Msize = matrixH.at(0).size();
+  for ( uint16_t krow = 0 ; krow < Msize ; krow ++)
+    {//initialize the result matrix
+      complexVector_t newLRow(Msize,0.0);
+      Llower.push_back(newLRow);
+    }
+
+  for ( uint16_t kcol = 0 ; kcol < Msize ; kcol ++)
+    {
+      for ( uint16_t kdiag = 0 ; kdiag < (kcol + 1) ; kdiag ++) //equality reached in loop end
+        {
+	  //first we build the necessary coefficient of Hermitian matrix M(kcol,kdiag) = H'H+I
+	  std::complex<double> sum = ( kcol == kdiag )? 1 : 0;
+	  for ( uint16_t sumiter = 0 ; sumiter <  matrixH.size() ; sumiter ++)
+	    {
+	      sum += std::conj( matrixH.at(sumiter).at(kcol) ) * matrixH.at(sumiter).at(kdiag) ;
+	    }
+	  //second we apply the negative sumatorium of the normal choleski algorithm in the accumulator variable 'sum'
+	  for ( uint16_t ksum = 0 ; ksum <  kdiag ; ksum ++) //equality not reached in loop end
+	    {
+	      sum -= Llower.at(kcol).at(ksum) * std::conj( Llower.at(kdiag).at(ksum) );
+	    }
+	  //finally we update the matrix
+	  Llower.at(kcol).at(kdiag) = ( kcol == kdiag )? sqrt( sum ) : ( sum / Llower.at(kdiag).at(kdiag) );
+        }
+    }
+
+  return( Llower );
 }
 
 void
@@ -408,21 +447,21 @@ MmWaveFFTCodebookBeamforming::DoDesignBeamformingVectorForDevice (Ptr<NetDevice>
   NS_ASSERT_MSG ( casted3GPPchan != 0, "The spectrum propagation loss model in the channel does not support this BF model");
   //TODO it is theoretically possible to build a 2D channel info using angular samplign with a series of calls to the antenna array radiation patten, but we will not implement this at this time
   complex2DVector_t channelInfo = casted3GPPchan->GetFrequencyFlatChannelMatrixAtDeltaFrequency(m_mobility,otherDevice->GetNode ()->GetObject<MobilityModel> (),0);//TODO put here the deltaFc corresponding to the subcarrier number of the narrowband reference signal in NR
-  complex2DVector_t channelInfo_back = channelInfo;
+//  complex2DVector_t channelInfo_back = channelInfo;
   Channel4DFFT( channelInfo,otherDevice);//in place 4 FFTs for all four dimensions of tx and rx array
-  //combined, the two FFT above transofor channelInfo axes from [rxArrayElem,txArrayElem] into [rxRefAngle,txRefAngle]
-  //here, the refAngles correspond to static beams, with anglular values asin( (0:Nant-1 /Nant) - Nant/2 )
+  //combined, the four FFTs above transoform channelInfo axes from [rxArrayElem,txArrayElem] into [rxRefAngle,txRefAngle]
+  //in an ULA the refAngles correspond to static beams, with angular values asin( (0:Nant-1 /Nant) - Nant/2 )
 
   uint16_t bestColumn;
   uint16_t bestRow;
   uint16_t totNoArrayElements = channelInfo.at(0).size();
   double bestGain = 0;
 
-  std::stringstream name;
-  std::ofstream myfile;
-  std::stringstream name2;
-  std::ofstream myfile2;
 //  //uncomment these to write to file some channel matrixes and test the FFT using matlab
+//    std::stringstream name;
+//    std::ofstream myfile;
+//    std::stringstream name2;
+//    std::ofstream myfile2;
 //  if ( Simulator::Now ().GetNanoSeconds () == 0 ){
 //      name<<"fftMatrix"<<m_mobility->GetObject<Node> ()->GetId ()<<"-"<<otherDevice->GetNode ()->GetId ()<<"-"<<Simulator::Now ().GetNanoSeconds ()<<".csv";
 //      name2<<"chanMatrix"<<m_mobility->GetObject<Node> ()->GetId ()<<"-"<<otherDevice->GetNode ()->GetId ()<<"-"<<Simulator::Now ().GetNanoSeconds ()<<".csv";
