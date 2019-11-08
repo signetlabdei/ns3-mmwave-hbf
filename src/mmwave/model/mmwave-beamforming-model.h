@@ -99,7 +99,7 @@ struct BFVectorCacheEntry : public SimpleRefCount<BFVectorCacheEntry>
   Vector m_otherPos;
   AntennaArrayBasicModel::BeamId m_beamId;
   AntennaArrayBasicModel::complexVector_t m_antennaWeights;
-  Time m_generatedTime;
+  virtual ~BFVectorCacheEntry() {} ;//this makes the struct polymorphic, so it can be extended by new beamforming classes that need to store more info in cache
 };
 
 /**
@@ -141,6 +141,13 @@ public:
    */
   virtual AntennaArrayBasicModel::BeamformingVector DoDesignBeamformingVectorForDevice (Ptr<NetDevice> otherDevice);
 
+  /**
+     * Checks the expiration of a BF vector cache entry. Overriding this function can let subclasses of this class modify the cache  behavior
+     * \param the target device
+     * \param the target cache entry
+     */
+  virtual bool CheckBfCacheExpiration(Ptr<NetDevice> otherDevice, Ptr<BFVectorCacheEntry> pCacheValue);
+
 protected:
 
    /**
@@ -159,6 +166,19 @@ protected:
 
 
 typedef std::valarray<std::complex<double>> ComplexArray_t;
+
+struct CodebookBFVectorCacheEntry : public BFVectorCacheEntry
+{
+//  Vector m_myPos; //the semantic here is my position and other device position instead of tx and rx because we assume reversible channels
+//  Vector m_otherPos;
+//  AntennaArrayBasicModel::BeamId m_beamId;
+//  AntennaArrayBasicModel::complexVector_t m_antennaWeights;
+  Time m_generatedTime;
+  uint16_t txBeamInd ;
+  uint16_t rxBeamInd ;
+  complex2DVector_t m_equivalentChanCoefs; // remember the equivalent channel for all tested pais of tx-rx bf vectors.
+};
+
 /**
  * This class extends the MmWaveBeamformingModel interface.
  * It implements a FFT-codebook beamforming algorithm.
@@ -198,12 +218,20 @@ public:
    */
   AntennaArrayBasicModel::BeamformingVector DoDesignBeamformingVectorForDevice (Ptr<NetDevice> otherDevice) override;
 
+  /**
+      * Checks the expiration of a BF vector cache entry. Overriding this function can let subclasses of this class modify the cache  behavior
+      * \param the target device
+      * \param the target cache entry
+      */
+   virtual bool CheckBfCacheExpiration(Ptr<NetDevice> otherDevice, Ptr<BFVectorCacheEntry> pCacheValue) override;
+
 
 private:
 
   static constexpr double PI = 3.141592653589793238460;
   void InPlaceArrayFFT (ComplexArray_t& x);
-  complex2DVector_t MMSECholesky (complex2DVector_t matrixH);
+  complex2DVector_t MmseCholesky (complex2DVector_t matrixH);
+  complexVector_t MmseSolve (complex2DVector_t matrixH, complexVector_t y);
   void Channel4DFFT (complex2DVector_t& matrix,Ptr<NetDevice> otherDevice);
 };
 
