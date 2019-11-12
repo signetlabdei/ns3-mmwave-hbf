@@ -169,10 +169,6 @@ typedef std::valarray<std::complex<double>> ComplexArray_t;
 
 struct CodebookBFVectorCacheEntry : public BFVectorCacheEntry
 {
-//  Vector m_myPos; //the semantic here is my position and other device position instead of tx and rx because we assume reversible channels
-//  Vector m_otherPos;
-//  AntennaArrayBasicModel::BeamId m_beamId;
-//  AntennaArrayBasicModel::complexVector_t m_antennaWeights;
   Time m_generatedTime;
   uint16_t txBeamInd ;
   uint16_t rxBeamInd ;
@@ -230,9 +226,73 @@ private:
 
   static constexpr double PI = 3.141592653589793238460;
   void InPlaceArrayFFT (ComplexArray_t& x);
+  void Channel4DFFT (complex2DVector_t& matrix,Ptr<NetDevice> otherDevice);
+};
+
+
+struct MMSEBFVectorCacheEntry : public SimpleRefCount<MMSEBFVectorCacheEntry>
+{
+  Time m_generatedTime;
+  //user pair tuple for all txs
+  //bf vectors collection
+};
+
+/**
+ * This class extends the MmWaveFFTCodebookBeamforming interface.
+ * It implements a MMSE digital stage based on FFTCodebook analog beams.
+ */
+class MmWaveMMSEBeamforming : public MmWaveFFTCodebookBeamforming
+{
+public:
+  /**
+   * Constructor
+   */
+  MmWaveMMSEBeamforming ();
+
+  /**
+   * Destructor
+   */
+  virtual ~MmWaveMMSEBeamforming ();
+
+  /**
+   * Returns the object type id
+   * \return the type id
+   */
+  static TypeId GetTypeId (void);
+
+  /**
+   * Computes the beamforming vector to communicate with the target device
+   * and sets the antenna.
+   * The beamforming vector is computed using a FFT-codebook
+   * \param the target device
+   */
+//  void SetBeamformingVectorForDevice (Ptr<NetDevice> otherDevice, uint8_t layerInd = 0);//we do not need to override this function, only the call to the next one
+
+
+  /**
+   * Computes the beamforming vector to communicate with the target device
+   * using using a FFT-codebook and assuming perfect CSI (reads channel matrix from propagation loss model)
+   * \param the target device
+   */
+//  AntennaArrayBasicModel::BeamformingVector DoDesignBeamformingVectorForDevice (Ptr<NetDevice> otherDevice) override;
+
+  /**
+      * Checks the expiration of a BF vector cache entry. Overriding this function can let subclasses of this class modify the cache  behavior
+      * \param the target device
+      * \param the target cache entry
+      */
+//   virtual bool CheckBfCacheExpiration(Ptr<NetDevice> otherDevice, Ptr<BFVectorCacheEntry> pCacheValue) override;
+
+  /**
+      * Sets the MMSE bf vectors for a bundle of slots
+      * \param the target device
+      * \param the target cache entry
+      */
+  void SetBeamformingVectorForSlotBundle( std::vector< Ptr<NetDevice> > vOtherDevs , std::vector<uint16_t> vLayerInds);
+private:
+
   complex2DVector_t MmseCholesky (complex2DVector_t matrixH);
   complexVector_t MmseSolve (complex2DVector_t matrixH, complexVector_t y);
-  void Channel4DFFT (complex2DVector_t& matrix,Ptr<NetDevice> otherDevice);
 };
 
 } // namespace mmwave

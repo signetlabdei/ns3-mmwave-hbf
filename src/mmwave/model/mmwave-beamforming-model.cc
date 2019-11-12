@@ -323,89 +323,6 @@ MmWaveFFTCodebookBeamforming::InPlaceArrayFFT (ComplexArray_t& x)
     }
 }
 
-complex2DVector_t
-MmWaveFFTCodebookBeamforming::MmseCholesky (complex2DVector_t matrixH)
-{
-  //This method obtains the cholesky decomposition of the positive definite hermitian matrix M=(H'H+I),
-  //where we have left the input matrixH in the format H
-  //This method is a C++ adaptation of the cholesky decompositoin examples provided in https://rosettacode.org/wiki/Cholesky_decomposition#C
-  //The code in this section is NOT a direct copy of the site
-
-  complex2DVector_t Llower;
-  uint16_t Msize = matrixH.at(0).size();
-  for ( uint16_t krow = 0 ; krow < Msize ; krow ++)
-    {//initialize the result matrix
-      complexVector_t newLRow(Msize,0.0);
-      Llower.push_back(newLRow);
-    }
-
-  for ( uint16_t kcol = 0 ; kcol < Msize ; kcol ++)
-    {
-      for ( uint16_t kdiag = 0 ; kdiag < (kcol + 1) ; kdiag ++) //equality reached in loop end
-        {
-	  //first we build the necessary coefficient of Hermitian matrix M(kcol,kdiag) = H'H+I
-	  std::complex<double> sum = ( kcol == kdiag )? 1 : 0;
-	  for ( uint16_t sumiter = 0 ; sumiter <  matrixH.size() ; sumiter ++)
-	    {
-	      sum += std::conj( matrixH.at(sumiter).at(kcol) ) * matrixH.at(sumiter).at(kdiag) ;
-	    }
-	  //second we apply the negative sumatorium of the normal Cholesky algorithm in the accumulator variable 'sum'
-	  for ( uint16_t ksum = 0 ; ksum <  kdiag ; ksum ++) //equality not reached in loop end
-	    {
-	      sum -= Llower.at(kcol).at(ksum) * std::conj( Llower.at(kdiag).at(ksum) );
-	    }
-	  //finally we update the matrix
-	  Llower.at(kcol).at(kdiag) = ( kcol == kdiag )? sqrt( sum ) : ( sum / Llower.at(kdiag).at(kdiag) );
-        }
-    }
-
-  return( Llower );
-}
-
-complexVector_t
-MmWaveFFTCodebookBeamforming::MmseSolve (complex2DVector_t matrixH, complexVector_t v)
-{
-  //Cholesky linear solver for x of linear system (H'*H+I)x=H'v, returning x=(H'*H+I)^-1H'v
-  //note: a linear solver is N times faster than a matrix inversion,in fact
-  //      the Cholesky matrix inversion algorithm consists in N linear solvers
-
-  complexVector_t aux1;//aux1=H'v
-  for (uint16_t col = 0; col < matrixH.at(0).size() ; col ++)
-    {
-      std::complex<double> sum=0;
-      for (uint16_t row = 0; row < matrixH.size() ; row ++)//col-row indexes inverted here for Hermitian matrix
-	{
-	  sum += std::conj( matrixH.at(row).at(col) ) * v.at(row);
-	}
-      aux1.push_back(sum);
-    }
-  complex2DVector_t matrixL=MmseCholesky(matrixH);//define M = H'H+I, factorization M=L*L' with lower-triangular L
-
-  complexVector_t aux2;// define L'x=aux2, solve L*aux2 = aux1,
-  for (uint16_t row = 0; row < matrixL.size() ; row ++)
-    {
-      std::complex<double> sum=aux1.at(row);
-      for (uint16_t col = 0; col < row ; col ++)
-	{
-	  sum -= aux2.at(col)*matrixL.at(row).at(col);
-	}
-      aux2.push_back( sum /  matrixL.at(row).at(row) );
-    }
-
-  complexVector_t x ( matrixL.size() , 0.0 );// solve L'*x=aux2. We preallocate initialized with zeros because we start writing at the end of the vector
-  for (uint16_t revRow = 0; revRow < matrixL.size(); revRow ++ )
-    {
-      uint16_t row = matrixL.size() -1 - revRow;//we start by the LAST coefficient because L' is upper triangular
-      std::complex<double> sum = aux2.at(row);
-      for (uint16_t col = row + 1 ; col < matrixL.size() ; col ++)
-	{
-	  sum -= x.at(col) * std::conj(matrixL.at(col).at(row));//col-row indexes inverted for Hermitian matrix L'
-	}
-      x[row] = ( sum /  matrixL.at(row).at(row) );
-    }
-
-  return( x );
-}
 
 void
 MmWaveFFTCodebookBeamforming::Channel4DFFT (complex2DVector_t& matrix,Ptr<NetDevice> otherDevice)
@@ -510,10 +427,7 @@ MmWaveFFTCodebookBeamforming::DoDesignBeamformingVectorForDevice (Ptr<NetDevice>
   NS_ASSERT_MSG ( casted3GPPchan != 0, "The spectrum propagation loss model in the channel does not support this BF model");
   //TODO it is theoretically possible to build a 2D channel info using angular samplign with a series of calls to the antenna array radiation patten, but we will not implement this at this time
   complex2DVector_t channelInfo = casted3GPPchan->GetFrequencyFlatChannelMatrixAtDeltaFrequency(m_mobility,otherDevice->GetNode ()->GetObject<MobilityModel> (),0);//TODO put here the deltaFc corresponding to the subcarrier number of the narrowband reference signal in NR
-  complex2DVector_t channelInfo_back = channelInfo;
-  complex2DVector_t channelInfo_chol = MmseCholesky(channelInfo);
-  complexVector_t vTestMmse ( channelInfo_back.size() , 1.0 );//all-ones vector of size NumRxAntenna
-  complexVector_t xMmse = MmseSolve(channelInfo_back,vTestMmse);//all-ones vector of size NumRxAntenna
+//  complex2DVector_t channelInfo_back = channelInfo;
   Channel4DFFT( channelInfo,otherDevice);//in place 4 FFTs for all four dimensions of tx and rx array
   //combined, the four FFTs above transoform channelInfo axes from [rxArrayElem,txArrayElem] into [rxRefAngle,txRefAngle]
   //in an ULA the refAngles correspond to static beams, with angular values asin( (0:Nant-1 /Nant) - Nant/2 )
@@ -523,39 +437,31 @@ MmWaveFFTCodebookBeamforming::DoDesignBeamformingVectorForDevice (Ptr<NetDevice>
   uint16_t totNoArrayElements = channelInfo.at(0).size();
   double bestGain = 0;
 
-  //uncomment these to write to file some channel matrixes and test the FFT and choleski factorization using matlab
-    std::stringstream name;
-    std::ofstream myfile;
-    std::stringstream name2;
-    std::ofstream myfile2;
-    std::stringstream name3;
-    std::ofstream myfile3;
-    std::stringstream name4;
-    std::ofstream myfile4;
-  if ( Simulator::Now ().GetNanoSeconds () == 0 ){
-      name<<"fftMatrix"<<m_mobility->GetObject<Node> ()->GetId ()<<"-"<<otherDevice->GetNode ()->GetId ()<<"-"<<Simulator::Now ().GetNanoSeconds ()<<".csv";
-      name2<<"chanMatrix"<<m_mobility->GetObject<Node> ()->GetId ()<<"-"<<otherDevice->GetNode ()->GetId ()<<"-"<<Simulator::Now ().GetNanoSeconds ()<<".csv";
-      name3<<"cholMatrix"<<m_mobility->GetObject<Node> ()->GetId ()<<"-"<<otherDevice->GetNode ()->GetId ()<<"-"<<Simulator::Now ().GetNanoSeconds ()<<".csv";
-      name4<<"mmseVector"<<m_mobility->GetObject<Node> ()->GetId ()<<"-"<<otherDevice->GetNode ()->GetId ()<<"-"<<Simulator::Now ().GetNanoSeconds ()<<".csv";
-      myfile.open (name.str());
-      myfile2.open (name2.str());
-      myfile3.open (name3.str());
-      myfile4.open (name4.str());
-  }
+//  //uncomment these to write to file some channel matrixes and test the FFT and choleski factorization using matlab
+//    std::stringstream name;
+//    std::ofstream myfile;
+//    std::stringstream name2;
+//    std::ofstream myfile2;
+//  if ( Simulator::Now ().GetNanoSeconds () == 0 ){
+//      name<<"fftMatrix"<<m_mobility->GetObject<Node> ()->GetId ()<<"-"<<otherDevice->GetNode ()->GetId ()<<"-"<<Simulator::Now ().GetNanoSeconds ()<<".csv";
+//      name2<<"chanMatrix"<<m_mobility->GetObject<Node> ()->GetId ()<<"-"<<otherDevice->GetNode ()->GetId ()<<"-"<<Simulator::Now ().GetNanoSeconds ()<<".csv";
+//      myfile.open (name.str());
+//      myfile2.open (name2.str());
+//  }
 
   for ( uint16_t rxInd=0; rxInd<channelInfo.size(); rxInd++)
     {
       for ( uint16_t txInd=0; txInd<totNoArrayElements; txInd++)
 	{
 	  double testGain = norm( channelInfo.at(rxInd).at(txInd) ) ;
-	  if ( Simulator::Now ().GetNanoSeconds () == 0 ){
-	      NS_LOG_DEBUG("In channel matrix for device tx "<< m_mobility->GetObject<Node> ()->GetId () <<
-	     	  		       " pointing at device "<< otherDevice->GetNode ()->GetId ()  <<
-	     	  		       " channel matrix entiry ("<< rxInd <<","<< txInd <<
-	     	  		       ") coef "<< channelInfo.at(rxInd).at(txInd) << " gain "<< testGain <<" best current "<< bestGain);
-	      myfile <<channelInfo.at(rxInd).at(txInd).real()<< "," <<channelInfo.at(rxInd).at(txInd).imag()<<",";
-	      myfile2 <<channelInfo_back.at(rxInd).at(txInd).real()<< ","<<channelInfo_back.at(rxInd).at(txInd).imag()<<",";
-	  }
+//	  if ( Simulator::Now ().GetNanoSeconds () == 0 ){
+//	      NS_LOG_DEBUG("In channel matrix for device tx "<< m_mobility->GetObject<Node> ()->GetId () <<
+//	     	  		       " pointing at device "<< otherDevice->GetNode ()->GetId ()  <<
+//	     	  		       " channel matrix entiry ("<< rxInd <<","<< txInd <<
+//	     	  		       ") coef "<< channelInfo.at(rxInd).at(txInd) << " gain "<< testGain <<" best current "<< bestGain);
+//	      myfile <<channelInfo.at(rxInd).at(txInd).real()<< "," <<channelInfo.at(rxInd).at(txInd).imag()<<",";
+//	      myfile2 <<channelInfo_back.at(rxInd).at(txInd).real()<< ","<<channelInfo_back.at(rxInd).at(txInd).imag()<<",";
+//	  }
 	  if ( testGain > bestGain)
 	    {
 	      bestColumn = txInd;
@@ -564,29 +470,17 @@ MmWaveFFTCodebookBeamforming::DoDesignBeamformingVectorForDevice (Ptr<NetDevice>
 	    }
 	}
 
-      if ( Simulator::Now ().GetNanoSeconds () == 0 ){
-	  myfile << "\n";
-	  myfile2 << "\n";
-      }
+//      if ( Simulator::Now ().GetNanoSeconds () == 0 ){
+//	  myfile << "\n";
+//	  myfile2 << "\n";
+//      }
     }
 
-  if ( Simulator::Now ().GetNanoSeconds () == 0 ){
-
-      for ( uint16_t rxInd=0; rxInd<totNoArrayElements; rxInd++)
-	{
-	  for ( uint16_t txInd=0; txInd<totNoArrayElements; txInd++)
-	    {
-	      myfile3 <<channelInfo_chol.at(rxInd).at(txInd).real()<< ","<<channelInfo_chol.at(rxInd).at(txInd).imag()<<",";
-	    }
-	  myfile3 << "\n";
-	  myfile4 <<xMmse.at(rxInd).real()<< ","<<xMmse.at(rxInd).imag()<<"\n";
-	}
-
-      myfile.close();
-      myfile2.close();
-      myfile3.close();
-      myfile4.close();
-  }
+//  if ( Simulator::Now ().GetNanoSeconds () == 0 ){
+//
+//      myfile.close();
+//      myfile2.close();
+//  }
 
   AntennaArrayBasicModel::BeamformingVector newBfParam;
   double power = 1 / sqrt (totNoArrayElements);
@@ -638,6 +532,158 @@ MmWaveFFTCodebookBeamforming::DoDesignBeamformingVectorForDevice (Ptr<NetDevice>
 
 
   return( newBfParam );
+}
+
+
+
+/*----------------------------------------------------------------------------*/
+
+complex2DVector_t
+MmWaveMMSEBeamforming::MmseCholesky (complex2DVector_t matrixH)
+{
+  //This method obtains the cholesky decomposition of the positive definite hermitian matrix M=(H'H+I),
+  //where we have left the input matrixH in the format H
+  //This method is a C++ adaptation of the cholesky decompositoin examples provided in https://rosettacode.org/wiki/Cholesky_decomposition#C
+  //The code in this section is NOT a direct copy of the site
+
+  complex2DVector_t Llower;
+  uint16_t Msize = matrixH.at(0).size();
+  for ( uint16_t krow = 0 ; krow < Msize ; krow ++)
+    {//initialize the result matrix
+      complexVector_t newLRow(Msize,0.0);
+      Llower.push_back(newLRow);
+    }
+
+  for ( uint16_t kcol = 0 ; kcol < Msize ; kcol ++)
+    {
+      for ( uint16_t kdiag = 0 ; kdiag < (kcol + 1) ; kdiag ++) //equality reached in loop end
+        {
+	  //first we build the necessary coefficient of Hermitian matrix M(kcol,kdiag) = H'H+I
+	  std::complex<double> sum = ( kcol == kdiag )? 1 : 0;
+	  for ( uint16_t sumiter = 0 ; sumiter <  matrixH.size() ; sumiter ++)
+	    {
+	      sum += std::conj( matrixH.at(sumiter).at(kcol) ) * matrixH.at(sumiter).at(kdiag) ;
+	    }
+	  //second we apply the negative sumatorium of the normal Cholesky algorithm in the accumulator variable 'sum'
+	  for ( uint16_t ksum = 0 ; ksum <  kdiag ; ksum ++) //equality not reached in loop end
+	    {
+	      sum -= Llower.at(kcol).at(ksum) * std::conj( Llower.at(kdiag).at(ksum) );
+	    }
+	  //finally we update the matrix
+	  Llower.at(kcol).at(kdiag) = ( kcol == kdiag )? sqrt( sum ) : ( sum / Llower.at(kdiag).at(kdiag) );
+        }
+    }
+
+  return( Llower );
+}
+
+complexVector_t
+MmWaveMMSEBeamforming::MmseSolve (complex2DVector_t matrixH, complexVector_t v)
+{
+  //Cholesky linear solver for x of linear system (H'*H+I)x=H'v, returning x=(H'*H+I)^-1H'v
+  //note: a linear solver is N times faster than a matrix inversion,in fact
+  //      the Cholesky matrix inversion algorithm consists in N linear solvers
+
+  complexVector_t aux1;//aux1=H'v
+  for (uint16_t col = 0; col < matrixH.at(0).size() ; col ++)
+    {
+      std::complex<double> sum=0;
+      for (uint16_t row = 0; row < matrixH.size() ; row ++)//col-row indexes inverted here for Hermitian matrix
+	{
+	  sum += std::conj( matrixH.at(row).at(col) ) * v.at(row);
+	}
+      aux1.push_back(sum);
+    }
+  complex2DVector_t matrixL=MmseCholesky(matrixH);//define M = H'H+I, factorization M=L*L' with lower-triangular L
+
+  complexVector_t aux2;// define L'x=aux2, solve L*aux2 = aux1,
+  for (uint16_t row = 0; row < matrixL.size() ; row ++)
+    {
+      std::complex<double> sum=aux1.at(row);
+      for (uint16_t col = 0; col < row ; col ++)
+	{
+	  sum -= aux2.at(col)*matrixL.at(row).at(col);
+	}
+      aux2.push_back( sum /  matrixL.at(row).at(row) );
+    }
+
+  complexVector_t x ( matrixL.size() , 0.0 );// solve L'*x=aux2. We preallocate initialized with zeros because we start writing at the end of the vector
+  for (uint16_t revRow = 0; revRow < matrixL.size(); revRow ++ )
+    {
+      uint16_t row = matrixL.size() -1 - revRow;//we start by the LAST coefficient because L' is upper triangular
+      std::complex<double> sum = aux2.at(row);
+      for (uint16_t col = row + 1 ; col < matrixL.size() ; col ++)
+	{
+	  sum -= x.at(col) * std::conj(matrixL.at(col).at(row));//col-row indexes inverted for Hermitian matrix L'
+	}
+      x[row] = ( sum /  matrixL.at(row).at(row) );
+    }
+
+  return( x );
+}
+
+
+void
+MmWaveMMSEBeamforming::SetBeamformingVectorForSlotBundle(std::vector< Ptr<NetDevice> > vOtherDevs , std::vector<uint16_t> vLayerInds)
+{
+  std::vector< Ptr<CodebookBFVectorCacheEntry>> bfCachesInSlot;
+    for (std::vector< Ptr<NetDevice> >::iterator itDev = vOtherDevs.begin() ; itDev != vOtherDevs.end() ; itDev++ )
+      {//retrieve the analog BF cache items, while making sure that the analog BF part is up to date
+	bool update = false;
+	bool notFound = false;
+	uint32_t beamKey = GetKey(m_mobility->GetObject<Node> ()->GetId (), (*itDev )->GetNode ()->GetId ());
+	std::map< uint32_t, Ptr<BFVectorCacheEntry> >::iterator itVectorCache = m_vectorCache.find(beamKey);
+	Ptr<CodebookBFVectorCacheEntry> bCacheEntry;
+	if ( itVectorCache != m_vectorCache.end() )
+	  {
+	    bCacheEntry = DynamicCast<CodebookBFVectorCacheEntry>(itVectorCache->second);
+	    update = CheckBfCacheExpiration( (*itDev ),  bCacheEntry);
+	  }
+	else
+	  {
+	    notFound = true;
+	  }
+	if ( notFound | update ){
+	    DoDesignBeamformingVectorForDevice ( (*itDev ) ); //we do not use the output value directly in this call
+	    bCacheEntry=DynamicCast<CodebookBFVectorCacheEntry>( m_vectorCache[beamKey] );
+	}
+	bfCachesInSlot.push_back( bCacheEntry );
+      }
+
+  complex2DVector_t equivalentH;
+  for (std::vector< Ptr<CodebookBFVectorCacheEntry>>::iterator itBf = bfCachesInSlot.begin() ; itBf != bfCachesInSlot.end() ; itBf++ )
+    {
+      complexVector_t rowEquivalentH;
+      for (std::vector< Ptr<CodebookBFVectorCacheEntry>>::iterator itBf2 = bfCachesInSlot.begin() ; itBf2 != bfCachesInSlot.end() ; itBf2++ )
+        {
+	  //TODO multiply by pathloss here
+	  rowEquivalentH.push_back( (*itBf2)->m_equivalentChanCoefs.at( (*itBf2)->rxBeamInd ).at( (*itBf)->txBeamInd ) );//w[it2,i]H[it2,i]v[it2,i] where i=this node
+        }
+      equivalentH.push_back( rowEquivalentH );
+    }
+  // configure the antenna to use the new beamforming vector
+  Ptr<AntennaArrayModel> castAntenna = DynamicCast<AntennaArrayModel>(m_antenna);
+  std::vector< Ptr<NetDevice> >::iterator itDev = vOtherDevs.begin();
+  std::vector< uint16_t >::iterator itLId = vLayerInds.begin();
+
+  for (std::vector< Ptr<CodebookBFVectorCacheEntry>>::iterator itBf = bfCachesInSlot.begin() ; itBf != bfCachesInSlot.end() ; itBf++ )
+    {
+      AntennaArrayBasicModel::BeamId bId = 0;//TODO design a beam id value convention for this beamforming technique, possibly based on the cache key value
+      AntennaArrayBasicModel::complexVector_t mmseAntennaWeights =  MmseSolve( equivalentH , (*itBf)->m_antennaWeights );
+
+      if ( castAntenna != 0 )
+	{
+	  castAntenna->SetBeamformingVectorMultilayers (mmseAntennaWeights, bId, (*itDev), (*itLId));
+	}
+      else
+	{
+	  m_antenna->SetBeamformingVector (mmseAntennaWeights, bId, (*itDev));
+	}
+      itDev++;
+      itLId++;
+    }
+
+  //TODO store the MMSE vectors in a separate cache, not the per-user analog beam cache
 }
 
 } // namespace mmwave
