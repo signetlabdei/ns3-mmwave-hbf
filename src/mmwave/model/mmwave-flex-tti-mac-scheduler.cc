@@ -674,37 +674,14 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
                                        << " UL frame " << (unsigned)ulSfn.m_frameNum << " subframe " << (unsigned)ulSfn.m_sfNum);
 
   // add slot for DL control
-  SlotAllocInfo dlCtrlSlot (0, SlotAllocInfo::DL_slotAllocInfo, SlotAllocInfo::CTRL, SlotAllocInfo::DIGITAL, 0, 0);
+  SlotAllocInfo dlCtrlSlot (0, SlotAllocInfo::DL_slotAllocInfo, SlotAllocInfo::CTRL, SlotAllocInfo::DIGITAL, 0);
   dlCtrlSlot.m_dci.m_numSym = 1;
   dlCtrlSlot.m_dci.m_symStart = 0;
-  dlCtrlSlot.m_dci.m_layerInd = 0;
   ret.m_sfAllocInfo.m_slotAllocInfo.push_back (dlCtrlSlot);
   int resvCtrl = m_phyMacConfig->GetDlCtrlSymbols () + m_phyMacConfig->GetUlCtrlSymbols ();
-  int symAvail = m_phyMacConfig->GetNumEnbLayers () * ( m_phyMacConfig->GetSymbolsPerSubframe () - resvCtrl );
-
-  //these cursors track the "free region" on each HBF layer
-  std::vector<uint32_t> symAvailLayer, nextSymAvailLayer, lastSymAvailLayer, numDlUeLayer, numUlUeLayer;
-  uint32_t maxNextSymAvailLayer=m_phyMacConfig->GetDlCtrlSymbols ();
-  uint32_t minLastSymAvailLayer=m_phyMacConfig->GetSymbolsPerSubframe ()-m_phyMacConfig->GetUlCtrlSymbols ();
-  std::map<uint16_t,uint8_t> ueToLayerMapDl, ueToLayerMapUl;
-  std::map<uint16_t,uint8_t>::iterator itUeToLayerMap;
-  uint8_t layerIdx = 0;
-
-  uint8_t tempDlslotIdx = 1;
-  uint8_t tempUlSlotIdx = 0; //we count the UL slots with this temporary variable
-  std::vector<std::deque <SlotAllocInfo> > tempDlslotAllocInfo, tempUlslotAllocInfo; //we insert all UL slots after all DL slotsç
-  for (uint8_t i=0; i<m_phyMacConfig->GetNumEnbLayers (); i++)
-    {
-      symAvailLayer.push_back (m_phyMacConfig->GetSymbolsPerSubframe () - resvCtrl);
-      nextSymAvailLayer.push_back (m_phyMacConfig->GetDlCtrlSymbols ());
-      lastSymAvailLayer.push_back (m_phyMacConfig->GetSymbolsPerSubframe ()-m_phyMacConfig->GetUlCtrlSymbols ());
-      numDlUeLayer.push_back (0); //does not count Rtx
-      numUlUeLayer.push_back (0); //does not count Rtx
-      tempDlslotAllocInfo.push_back (std::deque<SlotAllocInfo>());
-      tempUlslotAllocInfo.push_back (std::deque<SlotAllocInfo>());
-    }
-
-  //uint8_t symIdx = m_phyMacConfig->GetDlCtrlSymbols ();      // symbols reserved for control at beginning of subframe
+  int symAvail = m_phyMacConfig->GetSymbolsPerSubframe () - resvCtrl;
+  uint8_t slotIdx = 1;
+  uint8_t symIdx = m_phyMacConfig->GetDlCtrlSymbols ();      // symbols reserved for control at beginning of subframe
 
   // process received CQIs
   RefreshDlCqiMaps ();
@@ -859,46 +836,19 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
                       continue;
               }*/
 
-              // search the layer allocation map or assign layer
-              itUeToLayerMap = ueToLayerMapDl.find (rnti);
-              if ( itUeToLayerMap == ueToLayerMapDl.end () )
-        	      { //assign a layer (criterion may be changed)
-                  layerIdx = 0; //default behavior
-                  uint32_t val = m_phyMacConfig->GetSymbolsPerSubframe ();
-                  for ( uint8_t lay = 0 ; lay < lastSymAvailLayer.size (); lay++ )
-                    {
-                      //TODO study other layer assignment rules
-                      //TODO put layer-assign in a function with selection-function as argument
-                      //lower pointer, there are symbs available, and it does not exceed the highest possible DL/UL barrier
-                      if (val > nextSymAvailLayer[lay] && symAvailLayer[lay] >= dciInfoReTx.m_numSym && (nextSymAvailLayer[lay] + dciInfoReTx.m_numSym) < minLastSymAvailLayer)
-                        {
-                          layerIdx = lay;
-                          val = nextSymAvailLayer[lay];
-                        }
-                    }
-                }
-              else
-        	      { //found
-                  layerIdx = itUeToLayerMap->second;
-                }
-
               // allocate retx if enough symbols are available
-              if ( symAvailLayer[layerIdx] >= dciInfoReTx.m_numSym && (nextSymAvailLayer[layerIdx] + dciInfoReTx.m_numSym) < minLastSymAvailLayer )
+              if (symAvail >= dciInfoReTx.m_numSym)
                 {
                   symAvail -= dciInfoReTx.m_numSym;
-                  symAvailLayer[layerIdx] -= dciInfoReTx.m_numSym;
-                  dciInfoReTx.m_layerInd = layerIdx;
-                  dciInfoReTx.m_symStart = nextSymAvailLayer[layerIdx];
-                  nextSymAvailLayer[layerIdx] += dciInfoReTx.m_numSym;
-                  NS_ASSERT (nextSymAvailLayer[layerIdx] <= m_phyMacConfig->GetSymbolsPerSubframe () - m_phyMacConfig->GetUlCtrlSymbols ());
+                  dciInfoReTx.m_symStart = symIdx;
+                  symIdx += dciInfoReTx.m_numSym;
+                  NS_ASSERT (symIdx <= m_phyMacConfig->GetSymbolsPerSubframe () - m_phyMacConfig->GetUlCtrlSymbols ());
                   dciInfoReTx.m_rv++;
                   dciInfoReTx.m_ndi = 0;
                   itHarq->second.at (harqId) = dciInfoReTx;
                   itStat->second.at (harqId) = itStat->second.at (harqId) + 1;
-                  //                  SlotAllocInfo slotInfo (slotIdx++, SlotAllocInfo::DL_slotAllocInfo, SlotAllocInfo::CTRL_DATA, SlotAllocInfo::DIGITAL, itUeInfo->first, layerIdx);
-                  SlotAllocInfo slotInfo (tempDlslotIdx++, SlotAllocInfo::DL_slotAllocInfo, SlotAllocInfo::CTRL_DATA, SlotAllocInfo::DIGITAL, itUeInfo->first, layerIdx);
+                  SlotAllocInfo slotInfo (slotIdx++, SlotAllocInfo::DL_slotAllocInfo, SlotAllocInfo::CTRL_DATA, SlotAllocInfo::DIGITAL, itUeInfo->first);
                   slotInfo.m_dci = dciInfoReTx;
-                  slotInfo.m_rnti = dciInfoReTx.m_rnti;
                   NS_LOG_DEBUG ("UE" << dciInfoReTx.m_rnti << " gets DL slots " << (unsigned)dciInfoReTx.m_symStart << "-" << (unsigned)(dciInfoReTx.m_symStart + dciInfoReTx.m_numSym - 1) <<
                                 " tbs " << dciInfoReTx.m_tbSize << " harqId " << (unsigned)dciInfoReTx.m_harqProcess << " harqId " << (unsigned)dciInfoReTx.m_harqProcess <<
                                 " rv " << (unsigned)dciInfoReTx.m_rv << " in frame " << ret.m_sfnSf.m_frameNum << " subframe " << (unsigned)ret.m_sfnSf.m_sfNum << " RETX");
@@ -911,32 +861,19 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
                     {
                       slotInfo.m_rlcPduInfo.push_back ((*itRlcList).second.at (dciInfoReTx.m_harqProcess).at (k));
                     }
-
-                  //                  ret.m_sfAllocInfo.m_slotAllocInfo.push_back (slotInfo);
-                  tempDlslotAllocInfo[layerIdx].push_back (slotInfo); //
+                  ret.m_sfAllocInfo.m_slotAllocInfo.push_back (slotInfo);
                   ret.m_sfAllocInfo.m_numSymAlloc += dciInfoReTx.m_numSym;
                   if (itUeInfo == ueInfo.end ())
                     {
                       itUeInfo = ueInfo.insert (std::pair<uint16_t, struct UeSchedInfo> (rnti, UeSchedInfo () )).first;
                     }
                   itUeInfo->second.m_dlSymbolsRetx = dciInfoReTx.m_numSym;
-                  if (itUeToLayerMap==ueToLayerMapDl.end ()) {
-                      ueToLayerMapDl.insert (std::pair<uint32_t, uint8_t> (rnti, layerIdx));
-                      itUeInfo->second.m_dlHbfLayer=layerIdx;
-                    }
                 }
               else
                 {
                   NS_LOG_INFO ("No resource for this retx -> buffer it");
                   dlInfoListUntxed.push_back (m_dlHarqInfoList.at (i));
                 }
-            }
-        }
-      for (uint8_t lay = 0; lay < nextSymAvailLayer.size (); lay++)
-	      {
-          if (maxNextSymAvailLayer < nextSymAvailLayer[lay])
-            { //find where the latest DL HARQ symbol is
-              maxNextSymAvailLayer = nextSymAvailLayer[lay];
             }
         }
 
@@ -987,69 +924,28 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
                   continue;
                 }
 
-              // search the layer allocation map or assign layer
-              itUeToLayerMap = ueToLayerMapUl.find (rnti);
-              if (itUeToLayerMap == ueToLayerMapUl.end ())
-                { //assign a layer (criterion may be changed)
-                  uint32_t val = 0;
-                  layerIdx = 0;
-                  for (uint8_t lay = 0; lay < lastSymAvailLayer.size (); lay++)
-                    {
-                      //TODO study other layer assignment rules
-                      //TODO put layer-assign in a function with selection-function as argument
-                      //lower pointer, there are symbs available, and it does not exceed the highest possible DL/UL barrier
-                      if (val < lastSymAvailLayer[lay] &&
-                          symAvailLayer[lay] >= dciInfoReTx.m_numSym &&
-                          (lastSymAvailLayer[lay] - dciInfoReTx.m_numSym) > maxNextSymAvailLayer)
-                        {
-                          layerIdx = lay;
-                          val = lastSymAvailLayer[lay];
-                        }
-                    }
-                  //TODO this disables HBF in UL. comment out when startRx bug is fixed
-                  //layerIdx = 0;
-                }
-              else
-                { //found
-                  layerIdx = itUeToLayerMap->second;
-                }
-
-              if (symAvailLayer[layerIdx] >= dciInfoReTx.m_numSym && (lastSymAvailLayer[layerIdx] - dciInfoReTx.m_numSym) > maxNextSymAvailLayer)
+              if (symAvail >= dciInfoReTx.m_numSym)
                 {
                   symAvail -= dciInfoReTx.m_numSym;
-                  symAvailLayer[layerIdx] -= dciInfoReTx.m_numSym;
-                  dciInfoReTx.m_layerInd = layerIdx;
-                  dciInfoReTx.m_symStart = (lastSymAvailLayer[layerIdx] - dciInfoReTx.m_numSym);
-                  lastSymAvailLayer[layerIdx] -= dciInfoReTx.m_numSym;
-                  NS_ASSERT (lastSymAvailLayer[layerIdx] >= 0);
+                  dciInfoReTx.m_symStart = symIdx;
+                  symIdx += dciInfoReTx.m_numSym;
+                  NS_ASSERT (symIdx <= m_phyMacConfig->GetSymbolsPerSubframe () - m_phyMacConfig->GetUlCtrlSymbols ());
                   dciInfoReTx.m_rv++;
                   dciInfoReTx.m_ndi = 0;
                   itStat->second.at (harqId) = itStat->second.at (harqId) + 1;
                   itHarq->second.at (harqId) = dciInfoReTx;
-                  SlotAllocInfo slotInfo (tempUlSlotIdx++, SlotAllocInfo::UL_slotAllocInfo, SlotAllocInfo::CTRL_DATA, SlotAllocInfo::DIGITAL, rnti, layerIdx);
+                  SlotAllocInfo slotInfo (slotIdx++, SlotAllocInfo::UL_slotAllocInfo, SlotAllocInfo::CTRL_DATA, SlotAllocInfo::DIGITAL, rnti);
                   slotInfo.m_dci = dciInfoReTx;
-                  slotInfo.m_rnti = dciInfoReTx.m_rnti;
-                  NS_LOG_DEBUG ("UE"
-                                << dciInfoReTx.m_rnti << " gets UL slots "
-                                << (unsigned) dciInfoReTx.m_symStart << "-"
-                                << (unsigned) (dciInfoReTx.m_symStart + dciInfoReTx.m_numSym - 1)
-                                << " tbs " << dciInfoReTx.m_tbSize << " harqId "
-                                << (unsigned) dciInfoReTx.m_harqProcess << " rv "
-                                << (unsigned) dciInfoReTx.m_rv << " in frame " << ulSfn.m_frameNum
-                                << " subframe " << (unsigned) ulSfn.m_sfNum << " RETX");
-                  //                  ret.m_sfAllocInfo.m_slotAllocInfo.push_back (slotInfo);
-                  tempUlslotAllocInfo[layerIdx].push_front (slotInfo); //remember we fill from
+                  NS_LOG_DEBUG ("UE" << dciInfoReTx.m_rnti << " gets UL slots " << (unsigned)dciInfoReTx.m_symStart << "-" << (unsigned)(dciInfoReTx.m_symStart + dciInfoReTx.m_numSym - 1) <<
+                                " tbs " << dciInfoReTx.m_tbSize << " harqId " << (unsigned)dciInfoReTx.m_harqProcess << " rv " << (unsigned)dciInfoReTx.m_rv << " in frame " << ulSfn.m_frameNum << " subframe " << (unsigned)ulSfn.m_sfNum <<
+                                " RETX");
+                  ret.m_sfAllocInfo.m_slotAllocInfo.push_back (slotInfo);
                   ret.m_sfAllocInfo.m_numSymAlloc += dciInfoReTx.m_numSym;
                   if (itUeInfo == ueInfo.end ())
                     {
-                      itUeInfo = ueInfo.insert (std::pair<uint16_t, struct UeSchedInfo> (rnti, UeSchedInfo ())).first;
+                      itUeInfo = ueInfo.insert (std::pair<uint16_t, struct UeSchedInfo> (rnti, UeSchedInfo () )).first;
                     }
                   itUeInfo->second.m_ulSymbolsRetx = dciInfoReTx.m_numSym;
-                  if (itUeToLayerMap == ueToLayerMapUl.end ())
-                    {
-                      ueToLayerMapUl.insert (std::pair<uint32_t, uint8_t> (rnti, layerIdx));
-                      itUeInfo->second.m_ulHbfLayer = layerIdx;
-                    }
                 }
               else
                 {
@@ -1060,13 +956,6 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
 
       m_ulHarqInfoList.clear ();
       m_ulHarqInfoList = ulInfoListUntxed;
-      for (uint8_t lay = 0; lay < lastSymAvailLayer.size (); lay++)
-        {
-          if (minLastSymAvailLayer > lastSymAvailLayer[lay])
-            { //find where the earliest UL HARQ symbol is
-              minLastSymAvailLayer = lastSymAvailLayer[lay];
-            }
-        }
     }
 
   // ********************* END OF HARQ SECTION, START OF NEW DATA SCHEDULING ********************* //
@@ -1082,7 +971,9 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
           //			continue;
           //		}
 
-          if ( (((*itRlcBuf).m_rlcTransmissionQueueSize > 0) || ((*itRlcBuf).m_rlcRetransmissionQueueSize > 0) || ((*itRlcBuf).m_rlcStatusPduSize > 0)) )
+          if ( (((*itRlcBuf).m_rlcTransmissionQueueSize > 0)
+                || ((*itRlcBuf).m_rlcRetransmissionQueueSize > 0)
+                || ((*itRlcBuf).m_rlcStatusPduSize > 0)) )
             {
               NS_LOG_INFO (this << " User " << itRlcBuf->m_rnti << " LC " << (uint16_t)itRlcBuf->m_logicalChannelIdentity << " is active, status  " << (*itRlcBuf).m_rlcStatusPduSize << " retx " << (*itRlcBuf).m_rlcRetransmissionQueueSize << " tx " << (*itRlcBuf).m_rlcTransmissionQueueSize);
               std::map <uint16_t,uint8_t>::iterator itCqi = m_wbCqiRxed.find (itRlcBuf->m_rnti);
@@ -1158,18 +1049,17 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
     }
 
   // get info on active UL flows
-  if (symAvail > 0 && !m_dlOnly) // remaining symbols in future UL subframe after HARQ retx sched
+  if (symAvail > 0 && !m_dlOnly)        // remaining symbols in future UL subframe after HARQ retx sched
     {
-      std::map<uint16_t, uint32_t>::iterator ceBsrIt;
+      std::map <uint16_t,uint32_t>::iterator ceBsrIt;
       for (ceBsrIt = m_ceBsrRxed.begin (); ceBsrIt != m_ceBsrRxed.end (); ceBsrIt++)
         {
-          if (ceBsrIt->second > 0) // UL buffer size > 0
+          if (ceBsrIt->second > 0)                // UL buffer size > 0
             {
-              std::map<uint16_t, struct UlCqiMapElem>::iterator itCqi =
-                  m_ueUlCqi.find (ceBsrIt->first);
+              std::map <uint16_t, struct UlCqiMapElem>::iterator itCqi = m_ueUlCqi.find (ceBsrIt->first);
               int cqi = 0;
               int mcs = 0;
-              if (itCqi == m_ueUlCqi.end ()) // no cqi info for this UE
+              if (itCqi == m_ueUlCqi.end ())                   // no cqi info for this UE
                 {
                   NS_LOG_INFO (this << " UE " << ceBsrIt->first << " does not have UL-CQI");
                   cqi = 1;
@@ -1178,26 +1068,25 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
               else
                 {
                   cqi = 0;
-                  SpectrumValue specVals (
-                      MmWaveSpectrumValueHelper::GetSpectrumModel (m_phyMacConfig));
+                  SpectrumValue specVals (MmWaveSpectrumValueHelper::GetSpectrumModel (m_phyMacConfig));
                   Values::iterator specIt = specVals.ValuesBegin ();
                   for (unsigned ichunk = 0; ichunk < m_phyMacConfig->GetTotalNumChunk (); ichunk++)
                     {
                       //double sinrLin = std::pow (10, itCqi->second.m_ueUlCqi.at (ichunk) / 10);
-                      //						double se1 = log2 ( 1 + (std::pow (10, sinrLin / 10 )  /
-                      //								( (-std::log (5.0 * m_berDl )) / 1.5) ));
-                      //						cqi += m_amc->GetCqiFromSpectralEfficiency (se1);
+//						double se1 = log2 ( 1 + (std::pow (10, sinrLin / 10 )  /
+//								( (-std::log (5.0 * m_berDl )) / 1.5) ));
+//						cqi += m_amc->GetCqiFromSpectralEfficiency (se1);
                       NS_ASSERT (specIt != specVals.ValuesEnd ());
-                      *specIt = itCqi->second.m_ueUlCqi.at (ichunk); //sinrLin;
+                      *specIt = itCqi->second.m_ueUlCqi.at (ichunk);                           //sinrLin;
                       specIt++;
                     }
 
                   cqi = m_amc->CreateCqiFeedbackWbTdma (specVals, itCqi->second.m_numSym, itCqi->second.m_tbSize, mcs);
-                  //					for (unsigned i = 0; i < chunkCqi.size(); i++)
-                  //					{
-                  //						cqi += chunkCqi[i];
-                  //					}
-                  //					cqi = cqi / m_phyMacConfig->GetTotalNumChunk ();
+//					for (unsigned i = 0; i < chunkCqi.size(); i++)
+//					{
+//						cqi += chunkCqi[i];
+//					}
+//					cqi = cqi / m_phyMacConfig->GetTotalNumChunk ();
 
                   // take the lowest CQI value (worst chunk)
                   //				double minSinr = itCqi->second.at (0);
@@ -1216,19 +1105,16 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
                   //				double se = log2 ( 1 + (std::pow (10, minSinr / 10 )  /
                   //						( (-std::log (5.0 * 0.00005 )) / 1.5) ));
                   //				cqi = m_amc->GetCqiFromSpectralEfficiency (se);
-                  if (cqi == 0 && !m_fixedMcsUl) // out of range (SINR too low)
+                  if (cqi == 0 && !m_fixedMcsUl)                       // out of range (SINR too low)
                     {
                       NS_LOG_INFO ("*** RNTI " << ceBsrIt->first << " UL-CQI out of range, skipping allocation in UL");
-                      break; // do not allocate UE in uplink
+                      break;                            // do not allocate UE in uplink
                     }
                 }
               itUeInfo = ueInfo.find (ceBsrIt->first);
               if (itUeInfo == ueInfo.end ())
                 {
-                  itUeInfo = ueInfo
-                                 .insert (std::pair<uint16_t, struct UeSchedInfo> (ceBsrIt->first,
-                                                                                   UeSchedInfo ()))
-                                 .first;
+                  itUeInfo = ueInfo.insert (std::pair<uint16_t, struct UeSchedInfo> (ceBsrIt->first, UeSchedInfo () )).first;
                   nFlowsUl++;
                 }
               else if (itUeInfo->second.m_maxUlBufSize == 0)
@@ -1241,539 +1127,291 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
                 }
               else
                 {
-                  itUeInfo->second.m_ulMcs = mcs; //m_amc->GetMcsFromCqi (cqi);  // get MCS
+                  itUeInfo->second.m_ulMcs = mcs;                      //m_amc->GetMcsFromCqi (cqi);  // get MCS
                 }
               itUeInfo->second.m_maxUlBufSize = ceBsrIt->second + m_rlcHdrSize + m_macHdrSize + 8;
             }
         }
     }
 
-  if (ueInfo.size () > 0)
+  int nFlowsTot = nFlowsDl + nFlowsUl;
+  if (ueInfo.size () == 0)
     {
-      // compute requested num slots and TB size based on MCS and DL buffer size
-      // final allocated slots may be less
-      int totDlSymReq = 0;
-      int totUlSymReq = 0;
-      for (itUeInfo = ueInfo.begin (); itUeInfo != ueInfo.end (); itUeInfo++)
-        {
-          unsigned dlTbSize = 0;
-          unsigned ulTbSize = 0;
-          if (itUeInfo->second.m_maxDlBufSize > 0)
-            {
-              itUeInfo->second.m_maxDlSymbols = CalcMinTbSizeNumSym (itUeInfo->second.m_dlMcs, itUeInfo->second.m_maxDlBufSize, dlTbSize);
-              itUeInfo->second.m_maxDlBufSize = dlTbSize;
-              if (m_fixedTti)
-                {
-                  itUeInfo->second.m_maxDlSymbols = ceil ((double)itUeInfo->second.m_maxDlSymbols / (double)m_symPerSlot) * m_symPerSlot;                  // round up to nearest sym per TTI
-                }
-              totDlSymReq += itUeInfo->second.m_maxDlSymbols;
-            }
-          if (itUeInfo->second.m_maxUlBufSize > 0)
-            {
-              itUeInfo->second.m_maxUlSymbols = CalcMinTbSizeNumSym (itUeInfo->second.m_ulMcs, itUeInfo->second.m_maxUlBufSize + 10, ulTbSize);
-              itUeInfo->second.m_maxUlBufSize = ulTbSize;
-              if (m_fixedTti)
-                {
-                  itUeInfo->second.m_maxUlSymbols = ceil ((double)itUeInfo->second.m_maxUlSymbols / (double)m_symPerSlot) * m_symPerSlot;                  // round up to nearest sym per TTI
-                }
-              totUlSymReq += itUeInfo->second.m_maxUlSymbols;
-            }
-        }
+      // add slot for UL control
+      SlotAllocInfo ulCtrlSlot (0xFF, SlotAllocInfo::UL_slotAllocInfo, SlotAllocInfo::CTRL, SlotAllocInfo::DIGITAL, 0);
+      ulCtrlSlot.m_dci.m_numSym = 1;
+      ulCtrlSlot.m_dci.m_symStart = m_phyMacConfig->GetSymbolsPerSubframe () - 1;
+      ret.m_sfAllocInfo.m_slotAllocInfo.push_back (ulCtrlSlot);
+      m_macSchedSapUser->SchedConfigInd (ret);
+      return;
+    }
 
-      //ASSIGN UES TO LAYERS
-
-      //Divide the HBF frame in DL and UL contiguous regions with fairness and taking into account the existing HARQ allocations
-      int midDlSymReq = totDlSymReq;
-      std::vector<int> totDlSymReqLayer;
-      for (uint8_t lay = 0; lay < nextSymAvailLayer.size (); lay++)
+  // compute requested num slots and TB size based on MCS and DL buffer size
+  // final allocated slots may be less
+  int totDlSymReq = 0;
+  int totUlSymReq = 0;
+  for (itUeInfo = ueInfo.begin (); itUeInfo != ueInfo.end (); itUeInfo++)
+    {
+      unsigned dlTbSize = 0;
+      unsigned ulTbSize = 0;
+      if (itUeInfo->second.m_maxDlBufSize > 0)
         {
-          if (midDlSymReq > (int) maxNextSymAvailLayer - (int) nextSymAvailLayer[lay])
+          itUeInfo->second.m_maxDlSymbols = CalcMinTbSizeNumSym (itUeInfo->second.m_dlMcs, itUeInfo->second.m_maxDlBufSize, dlTbSize);
+          itUeInfo->second.m_maxDlBufSize = dlTbSize;
+          if (m_fixedTti)
             {
-              midDlSymReq -= maxNextSymAvailLayer - nextSymAvailLayer[lay];
+              itUeInfo->second.m_maxDlSymbols = ceil ((double)itUeInfo->second.m_maxDlSymbols / (double)m_symPerSlot) * m_symPerSlot;                  // round up to nearest sym per TTI
             }
-          else
-            {
-              midDlSymReq = 0;
-            }
-          totDlSymReqLayer.push_back (0);
+          totDlSymReq += itUeInfo->second.m_maxDlSymbols;
         }
-      int midUlSymReq = totUlSymReq;
-      std::vector<int> totUlSymReqLayer;
-      for (uint8_t lay = 0; lay < lastSymAvailLayer.size (); lay++)
+      if (itUeInfo->second.m_maxUlBufSize > 0)
         {
-          if (midUlSymReq > (int) (lastSymAvailLayer[lay] - (int) minLastSymAvailLayer))
+          itUeInfo->second.m_maxUlSymbols = CalcMinTbSizeNumSym (itUeInfo->second.m_ulMcs, itUeInfo->second.m_maxUlBufSize + 10, ulTbSize);
+          itUeInfo->second.m_maxUlBufSize = ulTbSize;
+          if (m_fixedTti)
             {
-              midUlSymReq -= lastSymAvailLayer[lay] - minLastSymAvailLayer;
+              itUeInfo->second.m_maxUlSymbols = ceil ((double)itUeInfo->second.m_maxUlSymbols / (double)m_symPerSlot) * m_symPerSlot;                  // round up to nearest sym per TTI
             }
-          else
-            {
-              midUlSymReq = 0;
-            }
-          totUlSymReqLayer.push_back (0);
+          totUlSymReq += itUeInfo->second.m_maxUlSymbols;
         }
+    }
 
-      uint32_t dlUlBarrier = minLastSymAvailLayer;
-      if ( midDlSymReq ==0 )
-	{
-	  dlUlBarrier = maxNextSymAvailLayer;
-	}
-      else if ( midUlSymReq >0 )
-	{
-	  dlUlBarrier = maxNextSymAvailLayer + ceil ( ((double) minLastSymAvailLayer - (double) maxNextSymAvailLayer) * ( (double) midDlSymReq) / ( (double) midDlSymReq + (double)midUlSymReq) );
-	}
-      std::vector<int> nFlowDlLayer,nFlowUlLayer; // number of UE with fresh info, u
-      for (itUeInfo = ueInfo.begin (); itUeInfo != ueInfo.end (); itUeInfo++)
-        {
-          if (itUeInfo->second.m_maxDlSymbols > 0)
-            { //if this user wants DL allocation
-              itUeToLayerMap = ueToLayerMapDl.find (itUeInfo->first); // key is the rnti
-              if (itUeToLayerMap == ueToLayerMapDl.end ())
-                {
-                  layerIdx = 0; //default behavior
-                  //TODO study other layer assignment rules
-                  //TODO put layer-assign in a function with selection-function as argument
-                  double bestSymPerUE = 0.0;
-                  for (uint8_t lay = 0; lay < nextSymAvailLayer.size (); lay++)
-                    {
-                      if (bestSymPerUE < ((double) dlUlBarrier - (double) nextSymAvailLayer[lay]) /
-                                             (double) (1 + numDlUeLayer[lay]))
-                        {
-                          layerIdx = lay;
-                          bestSymPerUE = ((double) dlUlBarrier - (double) nextSymAvailLayer[lay]) /
-                                         (double) (1 + numDlUeLayer[lay]);
-                        }
-                    }
-                  ueToLayerMapDl.insert (
-                      std::pair<uint32_t, uint8_t> (itUeInfo->first, layerIdx)); // key is the rnti
-                }
-              else
-                {
-                  layerIdx = itUeToLayerMap->second;
-                }
-              numDlUeLayer[layerIdx]++;//we did not do this for HARQ hence we do it here always if there are NEW Dl symbols, also in the case that the "find" returned a match above
-              itUeInfo->second.m_dlHbfLayer = layerIdx;
-              totDlSymReqLayer[layerIdx] += itUeInfo->second.m_maxDlSymbols;
-            }
-          if (itUeInfo->second.m_maxUlSymbols > 0)
-            { //if this user wants UL allocation
-              itUeToLayerMap = ueToLayerMapUl.find (itUeInfo->first); // key is the rnti
-              if (itUeToLayerMap == ueToLayerMapUl.end ())
-                {
-                  layerIdx = 0; //default behavior
-                  //TODO study other layer assignment rules
-                  //TODO put layer-assign in a function with selection-function as argument
-                  double bestSymPerUE = 0.0;
-                  for (uint8_t lay = 0; lay < lastSymAvailLayer.size (); lay++)
-                    {
-                      if (bestSymPerUE < ((double) lastSymAvailLayer[lay] - (double) dlUlBarrier) /
-                                             (double) (1 + numUlUeLayer[lay]))
-                        {
-                          layerIdx = lay;
-                          bestSymPerUE = ((double) lastSymAvailLayer[lay] - (double) dlUlBarrier) /
-                                         (double) (1 + numUlUeLayer[lay]);
-                        }
-                    }
-                  //TODO this disables HBF in UL. comment out when startRx bug is fixed
-                  //layerIdx = 0;
-                  ueToLayerMapUl.insert (
-                      std::pair<uint32_t, uint8_t> (itUeInfo->first, layerIdx)); // key is the rnti
-                }
-              else
-                {
-                  layerIdx = itUeToLayerMap->second;
-                }
-              numUlUeLayer[layerIdx]++;//we did not do this for HARQ hence we do it here always if there are NEW Dl symbols, also in the case that the "find" returned a match above
-              itUeInfo->second.m_ulHbfLayer = layerIdx;
-              totUlSymReqLayer[layerIdx] += itUeInfo->second.m_maxUlSymbols;
-            }
-        }
-
-      //Run a RR allocator on each Layer separately for the each DL UL portions
-
-      //recover the last UE that was served
-      std::map<uint16_t, struct UeSchedInfo>::iterator itUeInfoStart;
-      if (m_nextRnti != 0) // start with RNTI at which the scheduler left off
-        {
-          itUeInfoStart = ueInfo.find (m_nextRnti);
-          if (itUeInfoStart == ueInfo.end ())
-            {
-              itUeInfoStart = ueInfo.begin ();
-            }
-        }
-      else // start with first active RNTI
+  std::map <uint16_t, struct UeSchedInfo>::iterator itUeInfoStart;
+  if (m_nextRnti != 0)          // start with RNTI at which the scheduler left off
+    {
+      itUeInfoStart = ueInfo.find (m_nextRnti);
+      if (itUeInfoStart == ueInfo.end ())
         {
           itUeInfoStart = ueInfo.begin ();
         }
+    }
+  else          // start with first active RNTI
+    {
+      itUeInfoStart = ueInfo.begin ();
+    }
+  itUeInfo = itUeInfoStart;
 
-      for (uint8_t layerIdx = 0; layerIdx < lastSymAvailLayer.size (); layerIdx++)
+  // divide OFDM symbols evenly between active UEs, which are then evenly divided between DL and UL flows
+  if (nFlowsTot > 0)
+    {
+      int remSym = totDlSymReq + totUlSymReq;
+      if (remSym > symAvail)
         {
-          //DL allocation part
-          if (totDlSymReqLayer[layerIdx] > 0)
-            {
-              itUeInfo = itUeInfoStart; // pick up the RR from the last user served
-              //search for the first user in the list that has DL data and belongs to this layer
-              while (itUeInfo->second.m_dlHbfLayer != layerIdx ||
-                     itUeInfo->second.m_maxDlSymbols == 0)
-                {
-                  itUeInfo++;
-                  if (itUeInfo == ueInfo.end ())
-                    { // loop around to first RNTI in map
-                      itUeInfo = ueInfo.begin ();
-                    }
-                  if (itUeInfo == itUeInfoStart)
-                    { // break when looped back to initial RNTI or no symbols remain
-                      break;
-                    }
-                }
-              if (itUeInfo == itUeInfoStart && itUeInfo->second.m_dlHbfLayer != layerIdx)
-                {
-                  NS_LOG_UNCOND ("Skipping DL RR allocation in layer "
-                                 << layerIdx << ". Required count is " << totDlSymReqLayer[layerIdx]
-                                 << " symbols but no UE Info found in the list");
-                  continue;
-                } //this skips DL allocation if this layer is used only for UL. This is detected when we end the while search above with the break
+          remSym = symAvail;
+        }
 
-              // divide OFDM symbols evenly between active UEs, which are then evenly divided between DL and UL flows
-              int remSym = totDlSymReqLayer[layerIdx];
-              if (remSym > (int) (dlUlBarrier - nextSymAvailLayer[layerIdx]))
+      int nSymPerFlow0 = remSym / nFlowsTot;            // initial average symbols per non-retx flow
+      if (nSymPerFlow0 == 0)            // minimum of 1
+        {
+          nSymPerFlow0 = 1;
+        }
+      if (m_fixedTti)
+        {
+          nSymPerFlow0 = ceil ((double)nSymPerFlow0 / (double)m_symPerSlot) * m_symPerSlot;              // round up to nearest sym per TTI
+        }
+      bool allocated = true;           // someone got allocated
+      while (remSym > 0 && allocated)
+        {
+          allocated = false;                // additional symbols allocated to this RNTI in this iteration
+          int nRemSymPerFlow = remSym / nFlowsTot;
+          if (nRemSymPerFlow == 0)
+            {
+              nRemSymPerFlow = 1;
+            }
+          if (m_fixedTti)
+            {
+              nRemSymPerFlow = ceil ((double)nRemSymPerFlow / (double)m_symPerSlot) * m_symPerSlot;                  // round up to nearest sym per TTI
+            }
+          while (remSym > 0)
+            {
+              int addSym = 0;
+              // deficit = difference between requested and allocated symbols
+              int deficit = itUeInfo->second.m_maxDlSymbols - itUeInfo->second.m_dlSymbols;
+              NS_ASSERT (deficit >= 0);
+              if (m_fixedTti)
                 {
-                  remSym = (dlUlBarrier - nextSymAvailLayer[layerIdx]);
-                  NS_ASSERT (remSym >= 0);
+                  deficit = ceil ((double)deficit / (double)m_symPerSlot) * m_symPerSlot;                      // round up to nearest sym per TTI
                 }
-              NS_ASSERT (numDlUeLayer[layerIdx] > 0 );
-              int nSymPerFlow0 = remSym / numDlUeLayer[layerIdx]; // initial average symbols per non-retx flow
-              if (nSymPerFlow0 == 0) // minimum of 1
+              if (deficit > 0 && ((itUeInfo->second.m_dlSymbols + itUeInfo->second.m_dlSymbolsRetx) <= nSymPerFlow0))
                 {
-                  nSymPerFlow0 = 1;
+                  if (deficit < nRemSymPerFlow)
+                    {
+                      if (deficit > remSym)
+                        {
+                          addSym = remSym;
+                        }
+                      else
+                        {
+                          addSym = deficit;
+                          // add remaining symbols to average
+                          nFlowsTot--;
+                          int extra = (nRemSymPerFlow - addSym) / nFlowsTot;
+                          nSymPerFlow0 += extra;                                // add extra to average symbols
+                          nRemSymPerFlow += extra;                                // add extra to average symbols
+                        }
+                    }
+                  else
+                    {
+                      if (nRemSymPerFlow > remSym)
+                        {
+                          addSym = remSym;
+                        }
+                      else
+                        {
+                          addSym = nRemSymPerFlow;
+                        }
+                    }
+                  allocated = true;
+                }
+              itUeInfo->second.m_dlSymbols += addSym;
+              remSym -= addSym;
+              NS_ASSERT (remSym >= 0);
+
+              addSym = 0;
+              // deficit = difference between requested and allocated symbols
+              deficit = itUeInfo->second.m_maxUlSymbols - itUeInfo->second.m_ulSymbols;
+              NS_ASSERT (deficit >= 0);
+              if (m_fixedTti)
+                {
+                  deficit = ceil ((double)deficit / (double)m_symPerSlot) * m_symPerSlot;                      // round up to nearest sym per TTI
                 }
               if (m_fixedTti)
                 {
-                  nSymPerFlow0 = ceil ((double) nSymPerFlow0 / (double) m_symPerSlot) *
-                                 m_symPerSlot; // round up to nearest sym per TTI
+                  nRemSymPerFlow = ceil ((double)nRemSymPerFlow / (double)m_symPerSlot) * m_symPerSlot;                      // round up to nearest sym per TTI
                 }
-
-              bool allocated = true; // someone got allocated
-              int numRemDlUe = numDlUeLayer[layerIdx];
-              while (remSym > 0 && allocated)
+              if (remSym > 0 && deficit > 0 && ((itUeInfo->second.m_ulSymbols + itUeInfo->second.m_ulSymbolsRetx) <= nSymPerFlow0))
                 {
-                  allocated = false; // additional symbols allocated to this RNTI in this iteration
-                  int nRemSymPerFlow = remSym / numRemDlUe;
-                  if (nRemSymPerFlow == 0)
+                  if (deficit < nRemSymPerFlow)
                     {
-                      nRemSymPerFlow = 1;
-                    }
-                  if (m_fixedTti)
-                    {
-                      nRemSymPerFlow = ceil ((double) nRemSymPerFlow / (double) m_symPerSlot) *
-                                       m_symPerSlot; // round up to nearest sym per TTI
-                    }
-                  while (remSym > 0)
-                    {
-                      int addSym = 0;
-                      // deficit = difference between requested and allocated symbols
-                      int deficit = itUeInfo->second.m_maxDlSymbols - itUeInfo->second.m_dlSymbols;
-                      NS_ASSERT (deficit >= 0);
-                      if (m_fixedTti)
+                      // add remaining symbols to average
+                      if (deficit > remSym)
                         {
-                          deficit = ceil ((double) deficit / (double) m_symPerSlot) *
-                                    m_symPerSlot; // round up to nearest sym per TTI
+                          addSym = remSym;
                         }
-                      if (deficit > 0 && ((itUeInfo->second.m_dlSymbols +
-                                           itUeInfo->second.m_dlSymbolsRetx) <= nSymPerFlow0))
+                      else
                         {
-                          if (deficit < nRemSymPerFlow)
-                            {
-                              if (deficit > remSym)
-                                {
-                                  addSym = remSym;
-                                }
-                              else
-                                {
-                                  addSym = deficit;
-                                  // add remaining symbols to average
-                                  numRemDlUe--;
-                                  int extra = (nRemSymPerFlow - addSym) / numRemDlUe;
-                                  nSymPerFlow0 += extra; // add extra to average symbols
-                                  nRemSymPerFlow += extra; // add extra to average symbols
-                                }
-                            }
-                          else
-                            {
-                              if (nRemSymPerFlow > remSym)
-                                {
-                                  addSym = remSym;
-                                }
-                              else
-                                {
-                                  addSym = nRemSymPerFlow;
-                                }
-                            }
-                          allocated = true;
+                          addSym = deficit;
+                          // add remaining symbols to average
+                          nFlowsTot--;
+                          int extra = (nRemSymPerFlow - addSym) / nFlowsTot;
+                          nSymPerFlow0 += extra;                                // add extra to average symbols
+                          nRemSymPerFlow += extra;                                // add extra to average symbols
                         }
-                      itUeInfo->second.m_dlSymbols += addSym;
-                      remSym -= addSym;
-                      NS_ASSERT (remSym >= 0);
+                    }
+                  else
+                    {
+                      if (nRemSymPerFlow > remSym)
+                        {
+                          addSym = remSym;
+                        }
+                      else
+                        {
+                          addSym = nRemSymPerFlow;
+                        }
+                      allocated = true;
+                    }
+                }
+              itUeInfo->second.m_ulSymbols += addSym;
+              remSym -= addSym;
+              NS_ASSERT (remSym >= 0);
 
-                      itUeInfo++; //move to next UE (and possibly schedule)
-                      if (itUeInfo == ueInfo.end ())
-                        { // loop around to first RNTI in map
-                          itUeInfo = ueInfo.begin ();
-                        }
-                      while (itUeInfo->second.m_dlHbfLayer != layerIdx ||
-                             itUeInfo->second.m_maxDlSymbols == 0)
-                        {
-                          itUeInfo++;
-                          if (itUeInfo == ueInfo.end ())
-                            { // loop around to first RNTI in map
-                              itUeInfo = ueInfo.begin ();
-                            }
-                          if (itUeInfo == itUeInfoStart)
-                            { // break local search when looped back to initial RNTI or no symbols remain
-                              break;
-                            }
-                        }
-                      if (itUeInfo == itUeInfoStart)
-                        { // break RR loop when looped back to initial RNTI or no symbols remain
-                          break;
-                        }
-                    }
+              itUeInfo++;
+              if (itUeInfo == ueInfo.end ())
+                {                 // loop around to first RNTI in map
+                  itUeInfo = ueInfo.begin ();
+                }
+              if (itUeInfo == itUeInfoStart)
+                {                 // break when looped back to initial RNTI or no symbols remain
+                  break;
                 }
             }
         }
+    }
 
-      for (uint8_t layerIdx = 0; layerIdx < lastSymAvailLayer.size (); layerIdx++)
+  m_nextRnti = itUeInfo->first;
+
+  // create DCI elements and assign symbol indices
+  // such that all DL slots are contiguous (at beginning of subframe)
+  // and all UL slots are contiguous (at end of subframe)
+  itUeInfo = itUeInfoStart;
+
+  //ulSymIdx -= totUlSymActual; // symbols reserved for control at end of subframe before UL ctrl
+  NS_ASSERT (symIdx > 0);
+  do
+    {
+      UeSchedInfo &ueSchedInfo = itUeInfo->second;
+      if (ueSchedInfo.m_dlSymbols > 0)
         {
-          //UL allocation part
-          if (totUlSymReqLayer[layerIdx] > 0)
-            {
-              itUeInfo = itUeInfoStart; // pick up the RR from the last user served
-              //search for the first user in the list that has DL data and belongs to this layer
-              while (itUeInfo->second.m_ulHbfLayer != layerIdx || itUeInfo->second.m_maxUlSymbols == 0)
-                {
-                  itUeInfo++;
-                  if (itUeInfo == ueInfo.end ())
-                    { // loop around to first RNTI in map
-                      itUeInfo = ueInfo.begin ();
-                    }
-                  if (itUeInfo == itUeInfoStart)
-                    { // break when looped back to initial RNTI or no symbols remain
-                      break;
-                    }
-                }
-              if (itUeInfo == itUeInfoStart && itUeInfo->second.m_ulHbfLayer != layerIdx)
-                {
-                  NS_LOG_UNCOND ("Skipping UL RR allocation in layer "
-                                 << layerIdx << ". Required count is " << totUlSymReqLayer[layerIdx]
-                                 << " symbols but no UE Info found in the list");
-                  continue;
-                } //this skips UL allocation if this layer is used only for DL. This is detected when we end the while search above with the break
-
-
-              // divide OFDM symbols evenly between active UEs, which are then evenly divided between DL and UL flows
-              uint32_t remSym = totUlSymReqLayer[layerIdx];
-              if (remSym > (lastSymAvailLayer[layerIdx] - dlUlBarrier))
-                {
-                  remSym = (lastSymAvailLayer[layerIdx] - dlUlBarrier);
-                }
-              int nSymPerFlow0 =
-                  remSym / numUlUeLayer[layerIdx]; // initial average symbols per non-retx flow
-              if (nSymPerFlow0 == 0) // minimum of 1
-                {
-                  nSymPerFlow0 = 1;
-                }
-              if (m_fixedTti)
-                {
-                  nSymPerFlow0 = ceil ((double) nSymPerFlow0 / (double) m_symPerSlot) * m_symPerSlot; // round up to nearest sym per TTI
-                }
-              bool allocated = true; // someone got allocated
-              int numRemUlUe = numUlUeLayer[layerIdx];
-              while (remSym > 0 && allocated)
-                {
-                  allocated = false; // additional symbols allocated to this RNTI in this iteration
-                  int nRemSymPerFlow = remSym / numRemUlUe;
-                  if (nRemSymPerFlow == 0)
-                    {
-                      nRemSymPerFlow = 1;
-                    }
-                  if (m_fixedTti)
-                    {
-                      nRemSymPerFlow = ceil ((double) nRemSymPerFlow / (double) m_symPerSlot) * m_symPerSlot; // round up to nearest sym per TTI
-                    }
-                  while (remSym > 0)
-                    {
-                      int addSym = 0;
-                      // deficit = difference between requested and allocated symbols
-                      int deficit = itUeInfo->second.m_maxUlSymbols - itUeInfo->second.m_ulSymbols;
-                      NS_ASSERT (deficit >= 0);
-                      if (m_fixedTti)
-                        {
-                          deficit = ceil ((double) deficit / (double) m_symPerSlot) * m_symPerSlot; // round up to nearest sym per TTI
-                        }
-                      if (m_fixedTti)
-                        {
-                          nRemSymPerFlow = ceil ((double) nRemSymPerFlow / (double) m_symPerSlot) * m_symPerSlot; // round up to nearest sym per TTI
-                        }
-                      if (remSym > 0 && deficit > 0 &&
-                          ((itUeInfo->second.m_ulSymbols + itUeInfo->second.m_ulSymbolsRetx) <= nSymPerFlow0))
-                        {
-                          if (deficit < nRemSymPerFlow)
-                            {
-                              // add remaining symbols to average
-                              if (deficit > (int) remSym)
-                                {
-                                  addSym = remSym;
-                                }
-                              else
-                                {
-                                  addSym = deficit;
-                                  // add remaining symbols to average
-                                  numRemUlUe--;
-                                  int extra = (nRemSymPerFlow - addSym) / numRemUlUe;
-                                  nSymPerFlow0 += extra; // add extra to average symbols
-                                  nRemSymPerFlow += extra; // add extra to average symbols
-                                }
-                            }
-                          else
-                            {
-                              if (nRemSymPerFlow > (int) remSym)
-                                {
-                                  addSym = remSym;
-                                }
-                              else
-                                {
-                                  addSym = nRemSymPerFlow;
-                                }
-                            }
-                          allocated = true;
-                        }
-                      itUeInfo->second.m_ulSymbols += addSym;
-                      remSym -= addSym;
-                      NS_ASSERT (remSym >= 0);
-
-                      itUeInfo++; //move to next UE (and possibly schedule)
-                      if (itUeInfo == ueInfo.end ())
-                        { // loop around to first RNTI in map
-                          itUeInfo = ueInfo.begin ();
-                        }
-                      while (itUeInfo->second.m_ulHbfLayer != layerIdx || itUeInfo->second.m_maxUlSymbols == 0)
-                        {
-                          itUeInfo++;
-                          if (itUeInfo == ueInfo.end ())
-                            { // loop around to first RNTI in map
-                              itUeInfo = ueInfo.begin ();
-                            }
-                          if (itUeInfo == itUeInfoStart)
-                            { // break local search when looped back to initial RNTI or no symbols remain
-                              break;
-                            }
-                        }
-                      if (itUeInfo == itUeInfoStart)
-                        { // break RR loop when looped back to initial RNTI or no symbols remain
-                          break;
-                        }
-                    }
-                }
-            }
-          //remember next UE in list to be served
-          if (layerIdx == 0)
-            {
-              m_nextRnti = itUeInfo->first; //this must be improved
-            }
-        }
-
-      // create DCI elements and assign symbol indices
-      // such that all DL slots are contiguous (at beginning of subframe)
-      // and all UL slots are contiguous (at end of subframe)
-      itUeInfo = itUeInfoStart;
-
-      //ulSymIdx -= totUlSymActual; // symbols reserved for control at end of subframe before UL ctrl
-
-      for (uint8_t layerIdx = 0; layerIdx < lastSymAvailLayer.size (); layerIdx++)
-        {
-          NS_ASSERT (nextSymAvailLayer[layerIdx] > 0);
-          NS_ASSERT (lastSymAvailLayer[layerIdx] <= m_phyMacConfig->GetSymbolsPerSubframe () - m_phyMacConfig->GetUlCtrlSymbols ());
-        }
-      do
-        {
-          UeSchedInfo &ueSchedInfo = itUeInfo->second;
-          if (ueSchedInfo.m_dlSymbols > 0)
-            {
-              DciInfoElementTdma dci;
-              dci.m_rnti = itUeInfo->first;
-              dci.m_format = 0;
-              dci.m_layerInd = ueSchedInfo.m_dlHbfLayer;
-              dci.m_symStart = nextSymAvailLayer[ueSchedInfo.m_dlHbfLayer];
-              dci.m_numSym = ueSchedInfo.m_dlSymbols;
-              nextSymAvailLayer[ueSchedInfo.m_dlHbfLayer] += ueSchedInfo.m_dlSymbols;
-              dci.m_ndi = 1;
-              dci.m_mcs = ueSchedInfo.m_dlMcs;
-              dci.m_tbSize = m_amc->GetTbSizeFromMcsSymbols (dci.m_mcs, dci.m_numSym) / 8;
-              /*while (dci.m_tbSize > m_phyMacConfig->GetMaxTbSize () && dci.m_mcs > 0)
+          DciInfoElementTdma dci;
+          dci.m_rnti = itUeInfo->first;
+          dci.m_format = 0;
+          dci.m_symStart = symIdx;
+          dci.m_numSym = ueSchedInfo.m_dlSymbols;
+          symIdx += ueSchedInfo.m_dlSymbols;
+          dci.m_ndi = 1;
+          dci.m_mcs = ueSchedInfo.m_dlMcs;
+          dci.m_tbSize = m_amc->GetTbSizeFromMcsSymbols (dci.m_mcs, dci.m_numSym) / 8;
+          /*while (dci.m_tbSize > m_phyMacConfig->GetMaxTbSize () && dci.m_mcs > 0)
           {
                   dci.m_mcs--;
                   dci.m_tbSize = m_amc->GetTbSizeFromMcsSymbols (dci.m_mcs, dci.m_numSym) / 8;
           }*/
-              NS_ASSERT (nextSymAvailLayer[ueSchedInfo.m_dlHbfLayer] <= dlUlBarrier);
-              NS_ASSERT (dci.m_layerInd == ueToLayerMapDl.find (dci.m_rnti)->second);
-              dci.m_rv = 0;
-              dci.m_harqProcess = UpdateDlHarqProcessId (itUeInfo->first);
-              NS_ASSERT (dci.m_harqProcess < m_phyMacConfig->GetNumHarqProcess ());
-              NS_LOG_DEBUG ("UE" << itUeInfo->first << " DL harqId " << (unsigned) dci.m_harqProcess << " HARQ process assigned");
-              SlotAllocInfo slotInfo (tempDlslotIdx++, SlotAllocInfo::DL_slotAllocInfo, SlotAllocInfo::CTRL_DATA, SlotAllocInfo::DIGITAL, itUeInfo->first, ueSchedInfo.m_dlHbfLayer);
-              slotInfo.m_dci = dci;
-              NS_LOG_DEBUG ("UE" << dci.m_rnti << " gets DL slots " << (unsigned) dci.m_symStart
-                                 << "-" << (unsigned) (dci.m_symStart + dci.m_numSym - 1) << " tbs "
-                                 << dci.m_tbSize << " mcs " << (unsigned) dci.m_mcs << " harqId "
-                                 << (unsigned) dci.m_harqProcess << " rv " << (unsigned) dci.m_rv
-                                 << " in frame " << ret.m_sfnSf.m_frameNum << " subframe "
-                                 << (unsigned) ret.m_sfnSf.m_sfNum);
+          NS_ASSERT (symIdx <= m_phyMacConfig->GetSymbolsPerSubframe () - m_phyMacConfig->GetUlCtrlSymbols ());
+          dci.m_rv = 0;
+          dci.m_harqProcess = UpdateDlHarqProcessId (itUeInfo->first);
+          NS_ASSERT (dci.m_harqProcess < m_phyMacConfig->GetNumHarqProcess ());
+          NS_LOG_DEBUG ("UE" << itUeInfo->first << " DL harqId " << (unsigned)dci.m_harqProcess << " HARQ process assigned");
+          SlotAllocInfo slotInfo (slotIdx++, SlotAllocInfo::DL_slotAllocInfo, SlotAllocInfo::CTRL_DATA, SlotAllocInfo::DIGITAL, itUeInfo->first);
+          slotInfo.m_dci = dci;
+          NS_LOG_DEBUG ("UE" << dci.m_rnti << " gets DL slots " << (unsigned)dci.m_symStart << "-" << (unsigned)(dci.m_symStart + dci.m_numSym - 1) <<
+                        " tbs " << dci.m_tbSize << " mcs " << (unsigned)dci.m_mcs << " harqId " << (unsigned)dci.m_harqProcess << " rv " << (unsigned)dci.m_rv << " in frame " << ret.m_sfnSf.m_frameNum << " subframe " << (unsigned)ret.m_sfnSf.m_sfNum);
 
-              if (m_harqOn == true)
-                { // store DCI for HARQ buffer
-                  std::map<uint16_t, DlHarqProcessesDciInfoList_t>::iterator itDciInfo = m_dlHarqProcessesDciInfoMap.find (dci.m_rnti);
-                  if (itDciInfo == m_dlHarqProcessesDciInfoMap.end ())
-                    {
-                      NS_FATAL_ERROR ("Unable to find RNTI entry in DCI HARQ buffer for RNTI " << dci.m_rnti);
-                    }
-                  (*itDciInfo).second.at (dci.m_harqProcess) = dci;
-                  // refresh timer
-                  std::map<uint16_t, DlHarqProcessesTimer_t>::iterator itHarqTimer = m_dlHarqProcessesTimer.find (dci.m_rnti);
-                  if (itHarqTimer == m_dlHarqProcessesTimer.end ())
-                    {
-                      NS_FATAL_ERROR ("Unable to find HARQ timer for RNTI " << (uint16_t) dci.m_rnti);
-                    }
-                  (*itHarqTimer).second.at (dci.m_harqProcess) = 0;
-                }
-
-              // distribute bytes between active RLC queues
-              unsigned numLc = ueSchedInfo.m_rlcPduInfo.size ();
-              unsigned bytesRem = dci.m_tbSize;
-              unsigned numFulfilled = 0;
-              uint16_t avgPduSize = bytesRem / numLc;
-              // first for loop computes extra to add to average if some flows are less than average
-              for (unsigned i = 0; i < ueSchedInfo.m_rlcPduInfo.size (); i++)
+          if (m_harqOn == true)
+            {                   // store DCI for HARQ buffer
+              std::map <uint16_t, DlHarqProcessesDciInfoList_t>::iterator itDciInfo = m_dlHarqProcessesDciInfoMap.find (dci.m_rnti);
+              if (itDciInfo == m_dlHarqProcessesDciInfoMap.end ())
                 {
-                  if (ueSchedInfo.m_rlcPduInfo[i].m_size < avgPduSize)
-                    {
-                      bytesRem -= ueSchedInfo.m_rlcPduInfo[i].m_size;
-                      numFulfilled++;
-                    }
+                  NS_FATAL_ERROR ("Unable to find RNTI entry in DCI HARQ buffer for RNTI " << dci.m_rnti);
                 }
-
-              if (numFulfilled < ueSchedInfo.m_rlcPduInfo.size ())
+              (*itDciInfo).second.at (dci.m_harqProcess) = dci;
+              // refresh timer
+              std::map <uint16_t, DlHarqProcessesTimer_t>::iterator itHarqTimer =  m_dlHarqProcessesTimer.find (dci.m_rnti);
+              if (itHarqTimer == m_dlHarqProcessesTimer.end ())
                 {
-                  avgPduSize = bytesRem / (ueSchedInfo.m_rlcPduInfo.size () - numFulfilled);
+                  NS_FATAL_ERROR ("Unable to find HARQ timer for RNTI " << (uint16_t)dci.m_rnti);
                 }
+              (*itHarqTimer).second.at (dci.m_harqProcess) = 0;
+            }
 
-              for (unsigned i = 0; i < ueSchedInfo.m_rlcPduInfo.size (); i++)
+          // distribute bytes between active RLC queues
+          unsigned numLc = ueSchedInfo.m_rlcPduInfo.size ();
+          unsigned bytesRem = dci.m_tbSize;
+          unsigned numFulfilled = 0;
+          uint16_t avgPduSize = bytesRem / numLc;
+          // first for loop computes extra to add to average if some flows are less than average
+          for (unsigned i = 0; i < ueSchedInfo.m_rlcPduInfo.size (); i++)
+            {
+              if (ueSchedInfo.m_rlcPduInfo[i].m_size < avgPduSize)
                 {
-                  if (ueSchedInfo.m_rlcPduInfo[i].m_size > avgPduSize)
-                    {
-                      ueSchedInfo.m_rlcPduInfo[i].m_size = avgPduSize;
-                    }
-                  // else tbSize equals RLC queue size
-                  NS_ASSERT (ueSchedInfo.m_rlcPduInfo[i].m_size > 0);
-                  /*for (itRlcBuf = m_rlcBufferReq.begin (); itRlcBuf != m_rlcBufferReq.end (); itRlcBuf++)
+                  bytesRem -= ueSchedInfo.m_rlcPduInfo[i].m_size;
+                  numFulfilled++;
+                }
+            }
+
+          if (numFulfilled < ueSchedInfo.m_rlcPduInfo.size ())
+            {
+              avgPduSize = bytesRem / (ueSchedInfo.m_rlcPduInfo.size () - numFulfilled);
+            }
+
+          for (unsigned i = 0; i < ueSchedInfo.m_rlcPduInfo.size (); i++)
+            {
+              if (ueSchedInfo.m_rlcPduInfo[i].m_size > avgPduSize)
+                {
+                  ueSchedInfo.m_rlcPduInfo[i].m_size = avgPduSize;
+                }
+              // else tbSize equals RLC queue size
+              NS_ASSERT (ueSchedInfo.m_rlcPduInfo[i].m_size > 0);
+              /*for (itRlcBuf = m_rlcBufferReq.begin (); itRlcBuf != m_rlcBufferReq.end (); itRlcBuf++)
               {
                       if(itRlcBuf->m_rnti == itUeInfo->first)
                       {
@@ -1783,302 +1421,124 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
                               }
                       }
               }*/
-                  // update RLC buffer info with expected queue size after scheduling
-                  UpdateDlRlcBufferInfo (itUeInfo->first, ueSchedInfo.m_rlcPduInfo[i].m_lcid,
-                                         ueSchedInfo.m_rlcPduInfo[i].m_size - m_subHdrSize);
-                  //schedInfo.m_rlcPduList[schedInfo.m_rlcPduList.size ()-1].push_back (itRlcInfo->second[i]);
-                  slotInfo.m_rlcPduInfo.push_back (ueSchedInfo.m_rlcPduInfo[i]);
-                  if (m_harqOn == true)
+              // update RLC buffer info with expected queue size after scheduling
+              UpdateDlRlcBufferInfo (itUeInfo->first, ueSchedInfo.m_rlcPduInfo[i].m_lcid, ueSchedInfo.m_rlcPduInfo[i].m_size - m_subHdrSize);
+              //schedInfo.m_rlcPduList[schedInfo.m_rlcPduList.size ()-1].push_back (itRlcInfo->second[i]);
+              slotInfo.m_rlcPduInfo.push_back (ueSchedInfo.m_rlcPduInfo[i]);
+              if (m_harqOn == true)
+                {
+                  // store RLC PDU list for HARQ
+                  std::map <uint16_t, DlHarqRlcPduList_t>::iterator itRlcPdu =  m_dlHarqProcessesRlcPduMap.find (dci.m_rnti);
+                  if (itRlcPdu == m_dlHarqProcessesRlcPduMap.end ())
                     {
-                      // store RLC PDU list for HARQ
-                      std::map<uint16_t, DlHarqRlcPduList_t>::iterator itRlcPdu =
-                          m_dlHarqProcessesRlcPduMap.find (dci.m_rnti);
-                      if (itRlcPdu == m_dlHarqProcessesRlcPduMap.end ())
-                        {
-                          NS_FATAL_ERROR ("Unable to find RlcPdcList in HARQ buffer for RNTI "
-                                          << dci.m_rnti);
-                        }
-                      (*itRlcPdu)
-                          .second.at (dci.m_harqProcess)
-                          .push_back (ueSchedInfo.m_rlcPduInfo[i]);
+                      NS_FATAL_ERROR ("Unable to find RlcPdcList in HARQ buffer for RNTI " << dci.m_rnti);
                     }
+                  (*itRlcPdu).second.at (dci.m_harqProcess).push_back (ueSchedInfo.m_rlcPduInfo[i]);
                 }
-              // reorder/reindex slots to maintain DL before UL slot order
-              //          bool reordered = false;
-              //          std::deque <SlotAllocInfo>::iterator itSlot = ret.m_sfAllocInfo.m_slotAllocInfo.begin ();
-              //          for (unsigned islot = 0; islot < ret.m_sfAllocInfo.m_slotAllocInfo.size (); islot++)
-              //            {
-              //              if (ret.m_sfAllocInfo.m_slotAllocInfo [islot].m_tddMode == SlotAllocInfo::UL_slotAllocInfo)
-              //                {
-              //                  slotInfo.m_slotIdx = ret.m_sfAllocInfo.m_slotAllocInfo [islot].m_slotIdx;
-              //                  slotInfo.m_dci.m_symStart = ret.m_sfAllocInfo.m_slotAllocInfo [islot].m_dci.m_symStart;
-              //                  ret.m_sfAllocInfo.m_slotAllocInfo.insert (itSlot, slotInfo);
-              //                  for (unsigned jslot = islot + 1; jslot < ret.m_sfAllocInfo.m_slotAllocInfo.size (); jslot++)
-              //                    {
-              //                      ret.m_sfAllocInfo.m_slotAllocInfo[jslot].m_slotIdx++;                             // increase indices of UL slots
-              //                      ret.m_sfAllocInfo.m_slotAllocInfo[jslot].m_dci.m_symStart =
-              //                        ret.m_sfAllocInfo.m_slotAllocInfo[jslot - 1].m_dci.m_symStart +
-              //                        ret.m_sfAllocInfo.m_slotAllocInfo[jslot - 1].m_dci.m_numSym;
-              //                    }
-              //                  reordered = true;
-              //                  break;
-              //                }
-              //              itSlot++;
-              //            }
-              //          if (!reordered)
-              //            {
-
-              //reordering is performed later using a temp variable
-              tempDlslotAllocInfo[ueSchedInfo.m_dlHbfLayer].push_back (slotInfo);
-              //            }
-              ret.m_sfAllocInfo.m_numSymAlloc += dci.m_numSym;
             }
-
-          // UL DCI applies to subframe i+Tsched
-          if (ueSchedInfo.m_ulSymbols > 0)
+          // reorder/reindex slots to maintain DL before UL slot order
+          bool reordered = false;
+          std::deque <SlotAllocInfo>::iterator itSlot = ret.m_sfAllocInfo.m_slotAllocInfo.begin ();
+          for (unsigned islot = 0; islot < ret.m_sfAllocInfo.m_slotAllocInfo.size (); islot++)
             {
-              DciInfoElementTdma dci;
-              dci.m_rnti = itUeInfo->first;
-              dci.m_format = 1;
-              dci.m_layerInd = ueSchedInfo.m_ulHbfLayer;
-              dci.m_symStart = lastSymAvailLayer[ueSchedInfo.m_ulHbfLayer] - ueSchedInfo.m_ulSymbols;
-              dci.m_numSym = ueSchedInfo.m_ulSymbols;
-              lastSymAvailLayer[ueSchedInfo.m_ulHbfLayer] -= ueSchedInfo.m_ulSymbols;
-              NS_ASSERT (lastSymAvailLayer[ueSchedInfo.m_ulHbfLayer] >= dlUlBarrier);
-              NS_ASSERT (dci.m_layerInd == ueToLayerMapUl.find (dci.m_rnti)->second);
-              dci.m_mcs = ueSchedInfo.m_ulMcs;
-              dci.m_ndi = 1;
-              dci.m_tbSize = m_amc->GetTbSizeFromMcsSymbols (dci.m_mcs, dci.m_numSym) / 8;
-              /*	while (dci.m_tbSize > m_phyMacConfig->GetMaxTbSize () && dci.m_mcs > 0)
+              if (ret.m_sfAllocInfo.m_slotAllocInfo [islot].m_tddMode == SlotAllocInfo::UL_slotAllocInfo)
+                {
+                  slotInfo.m_slotIdx = ret.m_sfAllocInfo.m_slotAllocInfo [islot].m_slotIdx;
+                  slotInfo.m_dci.m_symStart = ret.m_sfAllocInfo.m_slotAllocInfo [islot].m_dci.m_symStart;
+                  ret.m_sfAllocInfo.m_slotAllocInfo.insert (itSlot, slotInfo);
+                  for (unsigned jslot = islot + 1; jslot < ret.m_sfAllocInfo.m_slotAllocInfo.size (); jslot++)
+                    {
+                      ret.m_sfAllocInfo.m_slotAllocInfo[jslot].m_slotIdx++;                             // increase indices of UL slots
+                      ret.m_sfAllocInfo.m_slotAllocInfo[jslot].m_dci.m_symStart =
+                        ret.m_sfAllocInfo.m_slotAllocInfo[jslot - 1].m_dci.m_symStart +
+                        ret.m_sfAllocInfo.m_slotAllocInfo[jslot - 1].m_dci.m_numSym;
+                    }
+                  reordered = true;
+                  break;
+                }
+              itSlot++;
+            }
+          if (!reordered)
+            {
+              ret.m_sfAllocInfo.m_slotAllocInfo.push_back (slotInfo);
+            }
+          ret.m_sfAllocInfo.m_numSymAlloc += dci.m_numSym;
+        }
+
+      // UL DCI applies to subframe i+Tsched
+      if (ueSchedInfo.m_ulSymbols > 0)
+        {
+          DciInfoElementTdma dci;
+          dci.m_rnti = itUeInfo->first;
+          dci.m_format = 1;
+          NS_ASSERT (symIdx <= m_phyMacConfig->GetSymbolsPerSubframe () - m_phyMacConfig->GetUlCtrlSymbols ());
+          dci.m_numSym = ueSchedInfo.m_ulSymbols;
+          dci.m_symStart = symIdx;
+          symIdx += ueSchedInfo.m_ulSymbols;
+          dci.m_mcs = ueSchedInfo.m_ulMcs;
+          dci.m_ndi = 1;
+          dci.m_tbSize = m_amc->GetTbSizeFromMcsSymbols (dci.m_mcs, dci.m_numSym) / 8;
+          /*	while (dci.m_tbSize > m_phyMacConfig->GetMaxTbSize () && dci.m_mcs > 0)
                   {
                           dci.m_mcs--;
                           dci.m_tbSize = m_amc->GetTbSizeFromMcsSymbols (dci.m_mcs, dci.m_numSym) / 8;
                   }*/
-              dci.m_harqProcess = UpdateUlHarqProcessId (itUeInfo->first);
-              NS_LOG_DEBUG ("UE" << itUeInfo->first << " UL harqId " << (unsigned) dci.m_harqProcess << " HARQ process assigned");
-              NS_ASSERT (dci.m_harqProcess < m_phyMacConfig->GetNumHarqProcess ());
-              SlotAllocInfo slotInfo (tempUlSlotIdx++, SlotAllocInfo::UL_slotAllocInfo, SlotAllocInfo::CTRL_DATA, SlotAllocInfo::DIGITAL, itUeInfo->first, ueSchedInfo.m_ulHbfLayer);
-              slotInfo.m_dci = dci;
-              NS_LOG_DEBUG ("UE" << dci.m_rnti << " gets UL slots " << (unsigned) dci.m_symStart
-                                 << "-" << (unsigned) (dci.m_symStart + dci.m_numSym - 1) << " tbs "
-                                 << dci.m_tbSize << " mcs " << (unsigned) dci.m_mcs << " harqId "
-                                 << (unsigned) dci.m_harqProcess << " rv " << (unsigned) dci.m_rv
-                                 << " in frame " << ulSfn.m_frameNum << " subframe "
-                                 << (unsigned) ulSfn.m_sfNum);
-              UpdateUlRlcBufferInfo (itUeInfo->first, dci.m_tbSize - m_subHdrSize);
-              //          ret.m_sfAllocInfo.m_slotAllocInfo.push_back (slotInfo);                // add to front
-              tempUlslotAllocInfo[ueSchedInfo.m_ulHbfLayer].push_front (slotInfo); //remember we fill from end backward
-              ret.m_sfAllocInfo.m_numSymAlloc += dci.m_numSym;
-              std::vector<uint16_t> ueChunkMap;
-              for (unsigned i = 0; i < m_phyMacConfig->GetTotalNumChunk (); i++)
-                {
-                  ueChunkMap.push_back (dci.m_rnti);
-                }
-              SfnSf slotSfn = ret.m_sfAllocInfo.m_sfnSf;
-              slotSfn.m_slotNum =
-                  dci.m_symStart; // use the start symbol index of the slot because the absolute UL slot index depends on the future DL allocation
-              // insert into allocation map to recall previous allocations upon receiving UL-CQI
-              m_ulAllocationMap.insert (std::pair<uint32_t, struct AllocMapElem> (
-                  slotSfn.Encode (), AllocMapElem (ueChunkMap, dci.m_numSym, dci.m_tbSize)));
-
-              if (m_harqOn == true)
-                {
-                  uint8_t harqId = dci.m_harqProcess;
-                  std::map<uint16_t, UlHarqProcessesDciInfoList_t>::iterator itHarqTbInfo =
-                      m_ulHarqProcessesDciInfoMap.find (dci.m_rnti);
-                  if (itHarqTbInfo == m_ulHarqProcessesDciInfoMap.end ())
-                    {
-                      NS_FATAL_ERROR ("Unable to find RNTI entry in UL DCI HARQ buffer for RNTI "
-                                      << dci.m_rnti);
-                    }
-                  (*itHarqTbInfo).second.at (harqId) = dci;
-                  // Update HARQ process status (RV 0)
-                  std::map<uint16_t, UlHarqProcessesStatus_t>::iterator itStat =
-                      m_ulHarqProcessesStatus.find (dci.m_rnti);
-                  NS_ASSERT (itStat->second[dci.m_harqProcess] > 0);
-                  // refresh timer
-                  std::map<uint16_t, UlHarqProcessesTimer_t>::iterator itHarqTimer =
-                      m_ulHarqProcessesTimer.find (dci.m_rnti);
-                  if (itHarqTimer == m_ulHarqProcessesTimer.end ())
-                    {
-                      NS_FATAL_ERROR ("Unable to find HARQ timer for RNTI "
-                                      << (uint16_t) dci.m_rnti);
-                    }
-                  (*itHarqTimer).second.at (dci.m_harqProcess) = 0;
-                }
+          dci.m_harqProcess = UpdateUlHarqProcessId (itUeInfo->first);
+          NS_LOG_DEBUG ("UE" << itUeInfo->first << " UL harqId " << (unsigned)dci.m_harqProcess << " HARQ process assigned");
+          NS_ASSERT (dci.m_harqProcess < m_phyMacConfig->GetNumHarqProcess ());
+          SlotAllocInfo slotInfo (slotIdx++, SlotAllocInfo::UL_slotAllocInfo, SlotAllocInfo::CTRL_DATA, SlotAllocInfo::DIGITAL, itUeInfo->first);
+          slotInfo.m_dci = dci;
+          NS_LOG_DEBUG ("UE" << dci.m_rnti << " gets UL slots " << (unsigned)dci.m_symStart << "-" << (unsigned)(dci.m_symStart + dci.m_numSym - 1) <<
+                        " tbs " << dci.m_tbSize << " mcs " << (unsigned)dci.m_mcs << " harqId " << (unsigned)dci.m_harqProcess << " rv " << (unsigned)dci.m_rv << " in frame " << ulSfn.m_frameNum << " subframe " << (unsigned)ulSfn.m_sfNum);
+          UpdateUlRlcBufferInfo (itUeInfo->first, dci.m_tbSize - m_subHdrSize);
+          ret.m_sfAllocInfo.m_slotAllocInfo.push_back (slotInfo);                // add to front
+          ret.m_sfAllocInfo.m_numSymAlloc += dci.m_numSym;
+          std::vector<uint16_t> ueChunkMap;
+          for (unsigned i = 0; i < m_phyMacConfig->GetTotalNumChunk (); i++)
+            {
+              ueChunkMap.push_back (dci.m_rnti);
             }
-          itUeInfo++;
-          if (itUeInfo == ueInfo.end ())
-            { // loop around to first RNTI in map
-              itUeInfo = ueInfo.begin ();
+          SfnSf slotSfn = ret.m_sfAllocInfo.m_sfnSf;
+          slotSfn.m_slotNum = dci.m_symStart;                // use the start symbol index of the slot because the absolute UL slot index depends on the future DL allocation
+          // insert into allocation map to recall previous allocations upon receiving UL-CQI
+          m_ulAllocationMap.insert ( std::pair<uint32_t, struct AllocMapElem> (slotSfn.Encode (), AllocMapElem (ueChunkMap, dci.m_numSym, dci.m_tbSize)) );
+
+          if (m_harqOn == true)
+            {
+              uint8_t harqId = dci.m_harqProcess;
+              std::map <uint16_t, UlHarqProcessesDciInfoList_t>::iterator itHarqTbInfo = m_ulHarqProcessesDciInfoMap.find (dci.m_rnti);
+              if (itHarqTbInfo == m_ulHarqProcessesDciInfoMap.end ())
+                {
+                  NS_FATAL_ERROR ("Unable to find RNTI entry in UL DCI HARQ buffer for RNTI " << dci.m_rnti);
+                }
+              (*itHarqTbInfo).second.at (harqId) = dci;
+              // Update HARQ process status (RV 0)
+              std::map <uint16_t, UlHarqProcessesStatus_t>::iterator itStat = m_ulHarqProcessesStatus.find (dci.m_rnti);
+              NS_ASSERT (itStat->second[dci.m_harqProcess] > 0);
+              // refresh timer
+              std::map <uint16_t, UlHarqProcessesTimer_t>::iterator itHarqTimer =  m_ulHarqProcessesTimer.find (dci.m_rnti);
+              if (itHarqTimer == m_ulHarqProcessesTimer.end ())
+                {
+                  NS_FATAL_ERROR ("Unable to find HARQ timer for RNTI " << (uint16_t)dci.m_rnti);
+                }
+              (*itHarqTimer).second.at (dci.m_harqProcess) = 0;
             }
         }
-      while (itUeInfo != itUeInfoStart); // break when looped back to initial RNTI
-    }
-
-  NS_LOG_UNCOND ("Fr "<< (int)ret.m_sfnSf.m_frameNum<<" Sf "<<(int)ret.m_sfnSf.m_sfNum <<" DL slot no. "<< 0 << " DL CTRL sym range "<<(int) ret.m_sfAllocInfo.m_slotAllocInfo[0].m_dci.m_symStart << " to "<<(int) ret.m_sfAllocInfo.m_slotAllocInfo[0].m_dci.m_numSym+(int) ret.m_sfAllocInfo.m_slotAllocInfo[0].m_dci.m_symStart-1 << " of " << m_phyMacConfig->GetSymbolsPerSubframe () <<" layerIdx " << (int) ret.m_sfAllocInfo.m_slotAllocInfo[0].m_dci.m_layerInd <<" of "<< (int) ret.m_sfAllocInfo.m_numAllocLayers);
-
-
-//  //change the Ul slots from end-of-frame justification scratch to begin-of-UL-section-of-frame justification
-//  for (uint8_t lay = 0; lay < m_phyMacConfig->GetNumEnbLayers (); lay++)
-//     {
-//       for (std::deque<SlotAllocInfo>::iterator slot = tempUlslotAllocInfo[lay].begin (); slot < tempUlslotAllocInfo[lay].end (); slot ++)
-//	 {
-//	   slot->m_dci.m_symStart-= (lastSymAvailLayer[lay] - maxNextSymAvailLayer -2);
-//	 }
-//     }
-
-  //pass the temporary SlotAllocInfo 2d lists to a single deque as expected by the PHY
-  uint8_t finalSlotIdx = 1; //ctrl already inserted
-  std::vector<std::deque<SlotAllocInfo>::iterator> itSlotDl, itSlotUl; //we insert all UL slots after all DL slots
-
-  //add the fresh slots to the lists that
-  for (uint8_t lay = 0; lay < m_phyMacConfig->GetNumEnbLayers (); lay++)
-    {
-      itSlotDl.push_back (tempDlslotAllocInfo[lay].begin ());
-      itSlotUl.push_back (tempUlslotAllocInfo[lay].begin ());
-      if (lay > 0 && (tempDlslotAllocInfo[lay].size () > 0 || tempUlslotAllocInfo[lay].size () > 0))
-        {
-          ret.m_sfAllocInfo.m_numAllocLayers++;
+      itUeInfo++;
+      if (itUeInfo == ueInfo.end ())
+        {         // loop around to first RNTI in map
+          itUeInfo = ueInfo.begin ();
         }
     }
-
-  bool done = false;
-  while (!done)
-    {
-      layerIdx = 0;
-      uint32_t val = m_phyMacConfig->GetSymbolsPerSubframe ();
-      done = true; // if we do not find anything, skip
-      for (uint8_t lay = 0; lay < ret.m_sfAllocInfo.m_numAllocLayers; lay++)
-        {
-          if (itSlotDl[lay] != tempDlslotAllocInfo[lay].end ())
-            {
-              if (itSlotDl[lay]->m_dci.m_symStart < val)
-                {
-                  layerIdx = lay;
-                  val = itSlotDl[lay]->m_dci.m_symStart;
-                  done = false;
-                }
-            }
-        }
-      if (done)
-        {
-          break;
-        }
-      itSlotDl[layerIdx]->m_slotIdx = finalSlotIdx++;
-      ret.m_sfAllocInfo.m_slotAllocInfo.push_back (*(itSlotDl[layerIdx]));
-      NS_LOG_UNCOND ("Fr " << (int) ret.m_sfnSf.m_frameNum << " Sf " << (int) ret.m_sfnSf.m_sfNum
-                           << " DL slot no. " << (int) finalSlotIdx - 1 << " to UE "
-                           << itSlotDl[layerIdx]->m_dci.m_rnti << " sym range "
-                           << (int) itSlotDl[layerIdx]->m_dci.m_symStart << " to "
-                           << (int) itSlotDl[layerIdx]->m_dci.m_numSym +
-                                  itSlotDl[layerIdx]->m_dci.m_symStart - 1
-                           << " of " << m_phyMacConfig->GetSymbolsPerSubframe () << " layerIdx "
-                           << (int) itSlotDl[layerIdx]->m_dci.m_layerInd << " of "
-                           << (int) ret.m_sfAllocInfo.m_numAllocLayers
-			   << " mcs " << (int ) itSlotDl[layerIdx]->m_dci.m_mcs);
-      itSlotDl[layerIdx]++;
-
-      if (itSlotDl[layerIdx] == tempDlslotAllocInfo[layerIdx].end ())
-        {
-          done = true;
-          for (uint8_t lay = 0; lay < m_phyMacConfig->GetNumEnbLayers (); lay++)
-            {
-              if (itSlotDl[lay] != tempDlslotAllocInfo[lay].end ())
-                {
-                  done = false;
-                  break;
-                }
-            }
-        }
-    }
-
-  done = false;
-  while (!done)
-    {
-      layerIdx = 0;
-      uint32_t val = m_phyMacConfig->GetSymbolsPerSubframe ();
-      done = true; // if we do not find anything, skip
-      for (uint8_t lay = 0; lay < m_phyMacConfig->GetNumEnbLayers (); lay++)
-        {
-          if (itSlotUl[lay] != tempUlslotAllocInfo[lay].end ())
-            {
-              if (itSlotUl[lay]->m_dci.m_symStart < val)
-                {
-                  layerIdx = lay;
-                  val = itSlotUl[lay]->m_dci.m_symStart;
-                  done = false;
-                }
-            }
-        }
-      if (done)
-        {
-          break;
-        }
-      itSlotUl[layerIdx]->m_slotIdx = finalSlotIdx++;
-      ret.m_sfAllocInfo.m_slotAllocInfo.push_back (*(itSlotUl[layerIdx]));
-      NS_LOG_UNCOND ("Fr " << (int) ret.m_sfnSf.m_frameNum << " Sf " << (int) ret.m_sfnSf.m_sfNum
-                           << " UL slot no. " << (int) finalSlotIdx - 1 << " to UE "
-                           << itSlotUl[layerIdx]->m_dci.m_rnti << " sym range "
-                           << (int) itSlotUl[layerIdx]->m_dci.m_symStart << " to "
-                           << (int) itSlotUl[layerIdx]->m_dci.m_numSym +
-                                  itSlotUl[layerIdx]->m_dci.m_symStart - 1
-                           << " of " << m_phyMacConfig->GetSymbolsPerSubframe () << " layerIdx "
-                           << (int) itSlotUl[layerIdx]->m_dci.m_layerInd << " of "
-                           << (int) ret.m_sfAllocInfo.m_numAllocLayers
-			   << " mcs " << (int ) itSlotDl[layerIdx]->m_dci.m_mcs);
-
-//      NS_LOG_UNCOND("I try to shift this <-- by "<< lastSymAvailLayer[layerIdx] - maxNextSymAvailLayer -2 << " slots");
-//      itSlotUl[layerIdx]->m_dci.m_symStart-= (lastSymAvailLayer[layerIdx] - maxNextSymAvailLayer -2);
-//
-//      NS_LOG_UNCOND ("Fr " << (int) ret.m_sfnSf.m_frameNum << " Sf " << (int) ret.m_sfnSf.m_sfNum
-//                           << " UL slot no. " << (int) finalSlotIdx - 1 << " to UE "
-//                           << itSlotUl[layerIdx]->m_dci.m_rnti << " sym range "
-//                           << (int) itSlotUl[layerIdx]->m_dci.m_symStart << " to "
-//                           << (int) itSlotUl[layerIdx]->m_dci.m_numSym +
-//                                  itSlotUl[layerIdx]->m_dci.m_symStart - 1
-//                           << " of " << m_phyMacConfig->GetSymbolsPerSubframe () << " layerIdx "
-//                           << (int) itSlotUl[layerIdx]->m_dci.m_layerInd << " of "
-//                           << (int) ret.m_sfAllocInfo.m_numAllocLayers
-//			   << " mcs " << (int ) itSlotDl[layerIdx]->m_dci.m_mcs);
-
-      itSlotUl[layerIdx]++;
-      if (itSlotUl[layerIdx] == tempUlslotAllocInfo[layerIdx].end ())
-        {
-          done = true;
-          for (uint8_t lay = 0; lay < m_phyMacConfig->GetNumEnbLayers (); lay++)
-            {
-              if (itSlotUl[lay] != tempUlslotAllocInfo[lay].end ())
-                {
-                  done = false;
-                  break;
-                }
-            }
-        }
-    }
-
-  //		do
-  //		{
-  //			std::cout << '\n' << "Press a key to continue...";
-  //		} while (std::cin.get() != '\n');
+  while (itUeInfo != itUeInfoStart);       // break when looped back to initial RNTI
 
   // add slot for UL control
-  SlotAllocInfo ulCtrlSlot (finalSlotIdx, SlotAllocInfo::UL_slotAllocInfo, SlotAllocInfo::CTRL, SlotAllocInfo::DIGITAL, 0, 0);
+  SlotAllocInfo ulCtrlSlot (0xFF, SlotAllocInfo::UL_slotAllocInfo, SlotAllocInfo::CTRL, SlotAllocInfo::DIGITAL, 0);
   ulCtrlSlot.m_dci.m_numSym = 1;
   ulCtrlSlot.m_dci.m_symStart = m_phyMacConfig->GetSymbolsPerSubframe () - 1;
-  ulCtrlSlot.m_dci.m_layerInd = 0;
-  tempUlslotAllocInfo[layerIdx].push_back (ulCtrlSlot);
   ret.m_sfAllocInfo.m_slotAllocInfo.push_back (ulCtrlSlot);
 
-  //	finalSlotIdx=ret.m_sfAllocInfo.m_slotAllocInfo.size()-1;
-  NS_LOG_UNCOND ("Fr "<< (int)ret.m_sfnSf.m_frameNum<<" Sf "<<(int)ret.m_sfnSf.m_sfNum <<" UL slot no. "<< (int) finalSlotIdx << " UL CTRL sym range "<<(int) ret.m_sfAllocInfo.m_slotAllocInfo[finalSlotIdx].m_dci.m_symStart << " to "<<(int) ret.m_sfAllocInfo.m_slotAllocInfo[finalSlotIdx].m_dci.m_numSym+(int) ret.m_sfAllocInfo.m_slotAllocInfo[finalSlotIdx].m_dci.m_symStart-1 << " of " << m_phyMacConfig->GetSymbolsPerSubframe () <<" layerIdx " << (int) ret.m_sfAllocInfo.m_slotAllocInfo[finalSlotIdx].m_dci.m_layerInd <<" of "<< (int) ret.m_sfAllocInfo.m_numAllocLayers);
-  //  for (std::deque <SlotAllocInfo>::iterator itSlot = tempUlslotAllocInfo.begin (); itSlot != tempUlslotAllocInfo.end() ; itSlot++){
-  //	  itSlot->m_slotIdx=tempDlslotIdx++;
-  //	  ret.m_sfAllocInfo.m_slotAllocInfo.push_back(*itSlot);
-  //  }
-
   m_macSchedSapUser->SchedConfigInd (ret);
-
   return;
 }
 

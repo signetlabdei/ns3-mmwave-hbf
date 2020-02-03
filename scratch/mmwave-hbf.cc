@@ -140,7 +140,8 @@ main (int argc, char *argv[])
 
 
 	Ptr<MmWaveHelper> mmwaveHelper = CreateObject<MmWaveHelper> ();
-	mmwaveHelper->SetSchedulerType ("ns3::MmWaveAsyncHbfMacScheduler");
+	mmwaveHelper->SetSchedulerType ("ns3::MmWaveFlexTtiMacScheduler");
+//	mmwaveHelper->SetSchedulerType ("ns3::MmWaveAsyncHbfMacScheduler");
 
 	mmwaveHelper->SetPathlossModelType ("ns3::ThreeGppUmaPropagationLossModel");
 	mmwaveHelper->SetChannelConditionModelType ("ns3::ThreeGppUmaChannelConditionModel");
