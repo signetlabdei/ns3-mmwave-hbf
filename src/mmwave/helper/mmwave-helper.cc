@@ -134,7 +134,7 @@ MmWaveHelper::GetTypeId (void)
                    "The type of scheduler to be used for MmWave eNBs. "
                    "The allowed values for this attributes are the type names "
                    "of any class inheriting from ns3::MmWaveMacScheduler.",
-                   StringValue ("ns3::MmWaveFlexTtiMacScheduler"),
+                   StringValue ("ns3::MmWaveAsyncHbfMacScheduler"),
                    MakeStringAccessor (&MmWaveHelper::SetSchedulerType,
                                        &MmWaveHelper::GetSchedulerType),
                    MakeStringChecker ())

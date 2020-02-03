@@ -54,13 +54,14 @@ def build(bld):
         'model/mmwave-component-carrier-ue.cc',
         'model/mmwave-component-carrier-enb.cc',
         'model/mmwave-no-op-component-carrier-manager.cc',
-        'model/mmwave-beamforming-model.cc'
+        'model/mmwave-beamforming-model.cc',
         #'model/mmwave-enb-cmac-sap.cc',
         #'model/mmwave-enb-rrc.cc',
         #'model/mmwave-mac-sap.cc',
         #'model/mmwave-rrc-sap.cc',
         #'model/mmwave-rlc.cc',
         #'model/mmwave-rlc-sap.cc'
+        'model/mmwave-async-hbf-mac-scheduler.cc'
         ]
 
     module_test = bld.create_ns3_module_test_library('mmwave')
@@ -119,13 +120,14 @@ def build(bld):
         'model/mmwave-component-carrier-ue.h',
         'model/mmwave-component-carrier-enb.h',
         'model/mmwave-no-op-component-carrier-manager.h',
-        'model/mmwave-beamforming-model.h'
+        'model/mmwave-beamforming-model.h',
         #'model/mmwave-enb-cmac-sap.h',
         #'model/mmwave-enb-rrc.h',
         #'model/mmwave-mac-sap.h',
         #'model/mmwave-rrc-sap.h',
         #'model/mmwave-rlc.h',
         #'model/mmwave-rlc-sap.h'
+        'model/mmwave-async-hbf-mac-scheduler.h'
         ]
 
     if bld.env.ENABLE_EXAMPLES:
