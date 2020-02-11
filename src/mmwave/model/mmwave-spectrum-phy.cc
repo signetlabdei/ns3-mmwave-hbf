@@ -441,29 +441,29 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
 
 
       if (isAllocated)
-        {
-	  // This "BF gain calculation" must be used 
-	      Ptr<MobilityModel> txMobility = mmwaveDataRxParams->txPhy->GetMobility ();
-	      Ptr<ThreeGppSpectrumPropagationLossModel> pathlossmodel = DynamicCast<ThreeGppSpectrumPropagationLossModel>(m_channel->GetSpectrumPropagationLossModel());
-	      if (enbRx !=0)
-		{//in the BS Rx case, beamforming is evaluated using the layer of this mmwave-spectrum-phy, not the transmission layer index
-		  mmwaveDataRxParams->psd = pathlossmodel->CalcRxPowerSpectralDensityMultiLayers(mmwaveDataRxParams->psd,txMobility,this->GetMobility (),0,m_layerInd);//tx layer ind is UE which is always 0, I am a BS receiving in layer m_layerInd which is not necessarily the layerInd of the TXparam
-		  NS_LOG_INFO("Computed the BF gain at BS receiving in layer " << (int ) m_layerInd << " SpectrumPhy::StartRx for signal of layer " << (int) layerInd);
-		}
-	      else
-		{
-		  mmwaveDataRxParams->psd = pathlossmodel->CalcRxPowerSpectralDensityMultiLayers(mmwaveDataRxParams->psd,txMobility,this->GetMobility (),layerInd,m_layerInd);//tx layer ind is one from BS indicated in TXparam (not necessarily my GetAllocLayerInd()), I am a receiving UE and rx layer is always 0
-		  NS_LOG_INFO("Computed the BF gain at UE allocated layer " << (int ) ueRx->GetPhy (m_componentCarrierId)->GetAllocLayerInd() << " SpectrumPhy::StartRx for signal of layer " << (int) layerInd << " the UE m_layerInd is"<<(int)  m_layerInd);
-		}
-	  NS_LOG_INFO("Node "<<  GetDevice()->GetAddress() <<" detected in layer " << (int) m_layerInd << " a signal with power "<<Sum (*(mmwaveDataRxParams->psd)));
-	  m_interferenceData->AddSignal (mmwaveDataRxParams->psd, mmwaveDataRxParams->duration);
-          if (mmwaveDataRxParams->cellId == m_cellId && isMyLayer)
-            {
-              NS_LOG_INFO ("Data is for this UE/Layer, StartRxData");
-              //m_interferenceData->AddSignal (mmwaveDataRxParams->psd, mmwaveDataRxParams->duration);
-              StartRxData (mmwaveDataRxParams);
-            }
-          /*
+      {
+    	  // This "BF gain calculation" must be used
+    	  Ptr<MobilityModel> txMobility = mmwaveDataRxParams->txPhy->GetMobility ();
+    	  Ptr<ThreeGppSpectrumPropagationLossModel> pathlossmodel = DynamicCast<ThreeGppSpectrumPropagationLossModel>(m_channel->GetSpectrumPropagationLossModel());
+    	  if (enbRx !=0)
+    	  {//in the BS Rx case, beamforming is evaluated using the layer of this mmwave-spectrum-phy, not the transmission layer index
+    		  mmwaveDataRxParams->psd = pathlossmodel->CalcRxPowerSpectralDensityMultiLayers(mmwaveDataRxParams->psd,txMobility,this->GetMobility (),0,m_layerInd);//tx layer ind is UE which is always 0, I am a BS receiving in layer m_layerInd which is not necessarily the layerInd of the TXparam
+    		  NS_LOG_INFO("Computed the BF gain at BS receiving in layer " << (int ) m_layerInd << " SpectrumPhy::StartRx for signal of layer " << (int) layerInd);
+    	  }
+    	  else
+    	  {
+    		  mmwaveDataRxParams->psd = pathlossmodel->CalcRxPowerSpectralDensityMultiLayers(mmwaveDataRxParams->psd,txMobility,this->GetMobility (),layerInd,m_layerInd);//tx layer ind is one from BS indicated in TXparam (not necessarily my GetAllocLayerInd()), I am a receiving UE and rx layer is always 0
+    		  NS_LOG_INFO("Computed the BF gain at UE allocated layer " << (int ) ueRx->GetPhy (m_componentCarrierId)->GetAllocLayerInd() << " SpectrumPhy::StartRx for signal of layer " << (int) layerInd << " the UE m_layerInd is"<<(int)  m_layerInd);
+    	  }
+    	  NS_LOG_INFO("Node "<<  GetDevice()->GetAddress() <<" detected in layer " << (int) m_layerInd << " a signal with power "<<Sum (*(mmwaveDataRxParams->psd)));
+    	  m_interferenceData->AddSignal (mmwaveDataRxParams->psd, mmwaveDataRxParams->duration);
+    	  if (mmwaveDataRxParams->cellId == m_cellId && isMyLayer)
+    	  {
+    		  NS_LOG_INFO ("Data is for this UE/Layer, StartRxData");
+    		  //m_interferenceData->AddSignal (mmwaveDataRxParams->psd, mmwaveDataRxParams->duration);
+    		  StartRxData (mmwaveDataRxParams);
+    	  }
+    	  /*
           else
           {
                   if (ueRx != 0)
@@ -471,8 +471,8 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
                           m_interferenceData->AddSignal (mmwaveDataRxParams->psd, mmwaveDataRxParams->duration);
                   }
           }
-          */
-        }
+    	   */
+      }
     }
   else
     {

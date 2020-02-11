@@ -75,7 +75,7 @@ main (int argc, char *argv[])
 	uint16_t numUe = 3;
 	uint16_t numEnbLayers = 8;
 	double startTime = 1;
-	double simTime = 1.2;
+	double simTime = 0.2;
 	double packetSize = 1460; // packet size in byte
 	double interPacketInterval = 5000; // 500 microseconds
 	double minDistance = 40.0;           // eNB-UE distance in meters
@@ -140,8 +140,9 @@ main (int argc, char *argv[])
 
 
 	Ptr<MmWaveHelper> mmwaveHelper = CreateObject<MmWaveHelper> ();
-	mmwaveHelper->SetSchedulerType ("ns3::MmWaveFlexTtiMacScheduler");
-//	mmwaveHelper->SetSchedulerType ("ns3::MmWaveAsyncHbfMacScheduler");
+//	mmwaveHelper->SetSchedulerType ("ns3::MmWaveFlexTtiMacScheduler");
+	mmwaveHelper->SetSchedulerType ("ns3::MmWaveAsyncHbfMacScheduler");
+//	mmwaveHelper->SetSchedulerType ("ns3::MmWavePaddedHbfMacScheduler");
 
 	mmwaveHelper->SetPathlossModelType ("ns3::ThreeGppUmaPropagationLossModel");
 	mmwaveHelper->SetChannelConditionModelType ("ns3::ThreeGppUmaChannelConditionModel");
