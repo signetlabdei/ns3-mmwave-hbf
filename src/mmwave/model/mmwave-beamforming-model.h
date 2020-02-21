@@ -22,6 +22,7 @@
 #include "ns3/object.h"
 #include "ns3/antenna-array-basic-model.h"
 #include "ns3/mobility-model.h"
+#include "ns3/propagation-loss-model.h"
 #include "ns3/spectrum-propagation-loss-model.h"
 #include <map>
 #include <valarray>
@@ -73,12 +74,18 @@ public:
       */
      void SetAntenna (Ptr<AntennaArrayBasicModel> antenna);
 
-   /**
-      * Sets the spectrum propagation loss model that may be used to read channel values
-      * (WARNING: reading the channel directly from the model rather than from device status implies assuming perfect CSI for beamforming)
-      * \param spectrumPropagationLossModel the spectrum propagation loss model
-      */
+     /**
+        * Sets the spectrum propagation loss model that may be used to read channel values
+        * (WARNING: reading the channel directly from the model rather than from device status implies assuming perfect CSI for beamforming)
+        * \param spectrumPropagationLossModel the spectrum propagation loss model
+        */
      void SetSpectrumPropagationLossModel (Ptr<SpectrumPropagationLossModel> spectrumPropagationLossModel);
+     /**
+      * Sets the propagation loss model that may be used to read channel values
+      * (WARNING: reading the channel directly from the model rather than from device status implies assuming perfect CSI for beamforming)
+      * \param propagationLossModel the spectrum propagation loss model
+      */
+     void SetPropagationLossModel (Ptr<PropagationLossModel> propagationLossModel);
 
      /**
       * Assigns the beamforming vector to communicate with the target device
@@ -89,7 +96,8 @@ public:
 
 protected:
   Ptr<AntennaArrayBasicModel> m_antenna; // pointer to the antenna array instance
-  Ptr<SpectrumPropagationLossModel> m_spectrumPropagationLossModel; // pointer to the antenna array instance
+  Ptr<SpectrumPropagationLossModel> m_spectrumPropagationLossModel; // pointer to the multipath channel impulse response model
+  Ptr<PropagationLossModel> m_propagationLossModel; // pointer to the pathloss model
 };
 
 
@@ -212,7 +220,7 @@ public:
    * using using a FFT-codebook and assuming perfect CSI (reads channel matrix from propagation loss model)
    * \param the target device
    */
-  AntennaArrayBasicModel::BeamformingVector DoDesignBeamformingVectorForDevice (Ptr<NetDevice> otherDevice) override;
+  virtual AntennaArrayBasicModel::BeamformingVector DoDesignBeamformingVectorForDevice (Ptr<NetDevice> otherDevice) override;
 
   /**
       * Checks the expiration of a BF vector cache entry. Overriding this function can let subclasses of this class modify the cache  behavior
@@ -288,11 +296,13 @@ public:
       * \param the target device
       * \param the target cache entry
       */
-  void SetBeamformingVectorForSlotBundle( std::vector< Ptr<NetDevice> > vOtherDevs , std::vector<uint16_t> vLayerInds);
+  virtual void SetBeamformingVectorForSlotBundle( std::vector< Ptr<NetDevice> > vOtherDevs , std::vector<uint16_t> vLayerInds);
+  void SetNoisePowerSpectralDensity( double noisePSD );
 private:
 
   complex2DVector_t MmseCholesky (complex2DVector_t matrixH);
   complexVector_t MmseSolve (complex2DVector_t matrixH, complexVector_t y);
+  double m_noisePowerSpectralDensity;
 };
 
 } // namespace mmwave

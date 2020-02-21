@@ -353,7 +353,7 @@ ThreeGppSpectrumPropagationLossModel::GetFrequencyFlatChannelMatrixAtDeltaFreque
   NS_LOG_DEBUG ("tx dev " << txDevice << " antenna " << txAntennaArray);
 
   // retrieve the antenna of the rx device
-  NS_ASSERT_MSG (m_deviceAntennaMap.find (txDevice) != m_deviceAntennaMap.end (), "Antenna not found for device " << rxDevice);
+  NS_ASSERT_MSG (m_deviceAntennaMap.find (rxDevice) != m_deviceAntennaMap.end (), "Antenna not found for device " << rxDevice);
   Ptr<AntennaArrayBasicModel> rxAntennaArray = m_deviceAntennaMap.at (rxDevice);
   NS_LOG_DEBUG ("rx dev " << rxDevice << " antenna " << rxAntennaArray);
 

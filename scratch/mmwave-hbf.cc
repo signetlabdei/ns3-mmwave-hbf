@@ -75,7 +75,7 @@ main (int argc, char *argv[])
 	uint16_t numUe = 3;
 	uint16_t numEnbLayers = 8;
 	double startTime = 1;
-	double simTime = 0.2;
+	double simTime = 1.2;
 	double packetSize = 1460; // packet size in byte
 	double interPacketInterval = 5000; // 500 microseconds
 	double minDistance = 40.0;           // eNB-UE distance in meters
@@ -141,8 +141,8 @@ main (int argc, char *argv[])
 
 	Ptr<MmWaveHelper> mmwaveHelper = CreateObject<MmWaveHelper> ();
 //	mmwaveHelper->SetSchedulerType ("ns3::MmWaveFlexTtiMacScheduler");
-	mmwaveHelper->SetSchedulerType ("ns3::MmWaveAsyncHbfMacScheduler");
-//	mmwaveHelper->SetSchedulerType ("ns3::MmWavePaddedHbfMacScheduler");
+//	mmwaveHelper->SetSchedulerType ("ns3::MmWaveAsyncHbfMacScheduler");
+	mmwaveHelper->SetSchedulerType ("ns3::MmWavePaddedHbfMacScheduler");
 
 	mmwaveHelper->SetPathlossModelType ("ns3::ThreeGppUmaPropagationLossModel");
 	mmwaveHelper->SetChannelConditionModelType ("ns3::ThreeGppUmaChannelConditionModel");
@@ -203,8 +203,9 @@ main (int argc, char *argv[])
 	for (unsigned i = 0; i < numUe; i++)
 	{
 		double dist = distRv->GetValue (minDistance, maxDistance);
-		double angle = ( (double ) i / (double )numUe +.125 ) * 2 * 3.14159265;// in radians, add pi/4 to break specular symmetry of antenna array
+		double angle = ( (double ) i / (double )numUe +.125 )  * 3.14159265;// in radians, add pi/4 to break specular symmetry of antenna array
 		uePositionAlloc->Add (Vector (dist * cos (angle), dist * sin (angle), 0.0));
+		NS_LOG_UNCOND ("UE i: "<<i<<" is at position X: "<<dist * cos (angle)<<" Y: "<<dist * sin (angle));
 	}
 	uemobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
 	uemobility.SetPositionAllocator (uePositionAlloc);

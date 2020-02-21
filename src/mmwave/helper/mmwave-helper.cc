@@ -774,7 +774,8 @@ pCtrl->AddCallback (MakeCallback (&LteUePhy::GenerateCtrlCqiReport, phy));
 
       // TODO make the bf module configurable
 //      Ptr<MmWaveDftBeamforming> bfModule = CreateObjectWithAttributes<MmWaveDftBeamforming> ("MobilityModel", PointerValue (mm), "AntennaArray", PointerValue (antenna));
-      Ptr<MmWaveFFTCodebookBeamforming> bfModule = CreateObjectWithAttributes<MmWaveFFTCodebookBeamforming> ("MobilityModel", PointerValue (mm), "AntennaArray", PointerValue (antenna));
+//      Ptr<MmWaveFFTCodebookBeamforming> bfModule = CreateObjectWithAttributes<MmWaveFFTCodebookBeamforming> ("MobilityModel", PointerValue (mm), "AntennaArray", PointerValue (antenna));
+      Ptr<MmWaveMMSEBeamforming> bfModule = CreateObjectWithAttributes<MmWaveMMSEBeamforming> ("MobilityModel", PointerValue (mm), "AntennaArray", PointerValue (antenna));
       dlPhy->SetBeamformingModel (bfModule);
 
       // initialize the 3GPP channel model
@@ -1380,7 +1381,8 @@ pCtrl->AddCallback (MakeCallback (&LteUePhy::GenerateCtrlCqiReport, phy));
 
       // TODO make the bf module configurable
 //      Ptr<MmWaveDftBeamforming> bfModule = CreateObjectWithAttributes<MmWaveDftBeamforming> ("MobilityModel", PointerValue (mm), "AntennaArray", PointerValue (antenna));
-      Ptr<MmWaveFFTCodebookBeamforming> bfModule = CreateObjectWithAttributes<MmWaveFFTCodebookBeamforming> ("MobilityModel", PointerValue (mm), "AntennaArray", PointerValue (antenna));
+//      Ptr<MmWaveFFTCodebookBeamforming> bfModule = CreateObjectWithAttributes<MmWaveFFTCodebookBeamforming> ("MobilityModel", PointerValue (mm), "AntennaArray", PointerValue (antenna));
+      Ptr<MmWaveMMSEBeamforming> bfModule = CreateObjectWithAttributes<MmWaveMMSEBeamforming> ("MobilityModel", PointerValue (mm), "AntennaArray", PointerValue (antenna));
       bfModule->SetSpectrumPropagationLossModel( m_channel.at (it->first)->GetSpectrumPropagationLossModel ());//used to compute BF vectors in some cases
       dlPhy->SetBeamformingModel (bfModule);
 
@@ -1622,7 +1624,9 @@ MmWaveHelper::InstallSingleEnbDevice (Ptr<Node> n)
       
       // TODO make the bf module configurable
 //      Ptr<MmWaveDftBeamforming> bfModule = CreateObjectWithAttributes<MmWaveDftBeamforming> ("MobilityModel", PointerValue (mm), "AntennaArray", PointerValue (antenna));
-      Ptr<MmWaveFFTCodebookBeamforming> bfModule = CreateObjectWithAttributes<MmWaveFFTCodebookBeamforming> ("MobilityModel", PointerValue (mm), "AntennaArray", PointerValue (antenna));
+//      Ptr<MmWaveFFTCodebookBeamforming> bfModule = CreateObjectWithAttributes<MmWaveFFTCodebookBeamforming> ("MobilityModel", PointerValue (mm), "AntennaArray", PointerValue (antenna));
+      Ptr<MmWaveMMSEBeamforming> bfModule = CreateObjectWithAttributes<MmWaveMMSEBeamforming> ("MobilityModel", PointerValue (mm), "AntennaArray", PointerValue (antenna));
+      bfModule->SetPropagationLossModel( m_pathlossModel.at (it->first)->GetObject<PropagationLossModel> () );
       bfModule->SetSpectrumPropagationLossModel( m_channel.at (it->first)->GetSpectrumPropagationLossModel ());//used to compute BF vectors in some cases
       //dlPhy->SetBeamformingModel (bfModule);
       for (itSpec = dlPhyList.begin (); itSpec != dlPhyList.end (); itSpec++)

@@ -633,7 +633,7 @@ ThreeGppChannel::GetChannel (Ptr<const MobilityModel> a, Ptr<const MobilityModel
   if (m_channelMap.find (channelId) != m_channelMap.end ())
   {
     // channel matrix present in the map
-    NS_LOG_DEBUG ("channel matrix present in the map");
+    NS_LOG_DEBUG ("channel matrix with ID "<<channelId<<" is present in the map");
     channelMatrix = m_channelMap.at (channelId);
 
     // the channel matrix was generated for this link
@@ -645,7 +645,7 @@ ThreeGppChannel::GetChannel (Ptr<const MobilityModel> a, Ptr<const MobilityModel
   else if (m_channelMap.find (channelIdReverse) != m_channelMap.end ())
   {
     // channel matrix for the reverse link present in the map
-    NS_LOG_DEBUG ("channel matrix for the reverse link present in the map");
+    NS_LOG_DEBUG ("channel matrix with ID "<<channelId<<" for the reverse link  with ID "<<channelIdReverse<<" present in the map");
     channelMatrix = m_channelMap.at (channelIdReverse);
 
     // the channel matrix was generated for the reverse link

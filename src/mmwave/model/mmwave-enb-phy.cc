@@ -1381,6 +1381,10 @@ MmWaveEnbPhy::StartSlot (void)
           uint8_t currNumLayers = currSlotBundleInfo.m_numLayers;
           m_slotBundleList.pop_front ();
 
+          Ptr<MmWaveMMSEBeamforming> bfCasted = DynamicCast<MmWaveMMSEBeamforming> ( GetDlSpectrumPhyList () .at (0) -> GetBeamformingModel () );
+          std::vector< Ptr<NetDevice> > vDevsInBundle;
+          std::vector<uint16_t> vLayersInBundle;
+
           for (uint8_t layerInd = 0; layerInd < currNumLayers; layerInd++)
             {
               if (layerInd>0)
@@ -1418,21 +1422,39 @@ MmWaveEnbPhy::StartSlot (void)
                 }
 
               for (uint8_t i = 0; i < m_deviceMap.size (); i++)
-        	{
-        	  Ptr<mmwave::MmWaveUeNetDevice> ueDev = m_deviceMap.at (i)->GetObject<mmwave::MmWaveUeNetDevice> ();
-        	  if (currSlot.m_dci.m_rnti == ueDev->GetPhy ()->GetRnti ())
-        	    {
-        	      //NS_LOG_DEBUG ("Change Beamforming Vector");
-        	      //Antenna model is same for all layers 
-        	      GetDlSpectrumPhyList ().at(currSlot.m_dci.m_layerInd)->ConfigureBeamforming (m_deviceMap.at (i)); //always operates in the correct layerind
-        	      break;
-        	    }
-        	}
+                {
+                  Ptr<mmwave::MmWaveUeNetDevice> ueDev = m_deviceMap.at (i)->GetObject<mmwave::MmWaveUeNetDevice> ();
+                  if (currSlot.m_dci.m_rnti == ueDev->GetPhy ()->GetRnti ())
+                    {
+                      if ( bfCasted != 0)
+                        {
+                          vDevsInBundle.push_back(m_deviceMap.at (i));
+                          vLayersInBundle.push_back(currSlot.m_dci.m_layerInd);
+                        }
+//                      else
+//                        {
+                          //NS_LOG_DEBUG ("Change Beamforming Vector");
+                          //Antenna model is same for all layers
+                          GetDlSpectrumPhyList ().at(currSlot.m_dci.m_layerInd)->ConfigureBeamforming (m_deviceMap.at (i)); //always operates in the correct layerind
+//                        }
+                      break;
+                    }
+                }
               NS_LOG_DEBUG ("ENB " << m_cellId << " TXing DL DATA frame " << m_frameNum << " subframe " << (unsigned) m_sfNum << " symbols "
                             << (unsigned) currSlot.m_dci.m_symStart << "-" << (unsigned) (currSlot.m_dci.m_symStart + currSlot.m_dci.m_numSym - 1)
                             << "\t start " << Simulator::Now () + NanoSeconds (1.0) << " end " << Simulator::Now () + slotPeriod - NanoSeconds (2.0));
               Simulator::Schedule (NanoSeconds (1), &MmWaveEnbPhy::SendDataChannels, this, pktBurst, slotPeriod - NanoSeconds (2.0), currSlot);
             }
+
+          if ( bfCasted != 0)
+            {
+              //TODO: it would be preferable to have the noise PSD stored in the beamforming module once at the begining of the simulation instead of here.
+              Ptr<SpectrumValue> noisePsd = MmWaveSpectrumValueHelper::CreateNoisePowerSpectralDensity (m_phyMacConfig, m_noiseFigure);
+              double noisePsdNarrowband = (*noisePsd)[0]; //TODO we have to use the same frequency offset w.r.t. the OFDM subcarriers here than in the call to GetFrequencyFlatChannelMatrixAtDeltaFrequency in the Beamforming module
+              bfCasted-> SetNoisePowerSpectralDensity ( noisePsdNarrowband );
+              bfCasted-> SetBeamformingVectorForSlotBundle ( vDevsInBundle, vLayersInBundle );
+            }
+
           slotPeriod = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () * currSlotBundleInfo.m_minNumSym); //schedule for EndSlot()
         }
     }
@@ -1489,6 +1511,10 @@ MmWaveEnbPhy::StartSlot (void)
           antennaArray->ClearBeamformingVectorList();
           NS_LOG_INFO ("Curr number of layers in Anntena array model:" << (int)antennaArray->GetCurrNumLayers());
 
+          Ptr<MmWaveMMSEBeamforming> bfCasted = DynamicCast<MmWaveMMSEBeamforming> ( GetDlSpectrumPhyList () .at (0) -> GetBeamformingModel () );
+          std::vector< Ptr<NetDevice> > vDevsInBundle;
+          std::vector<uint16_t> vLayersInBundle;
+
           for (uint8_t layerInd = 0; layerInd < currNumLayers; layerInd++)
             {
               if (layerInd>0)
@@ -1517,12 +1543,28 @@ MmWaveEnbPhy::StartSlot (void)
 
                   if (currSlot.m_rnti == ueRnti && m_netDevice == associatedEnb)
                     {
+                      if ( bfCasted != 0)
+                        {
+                          vDevsInBundle.push_back(m_deviceMap.at (i));
+                          vLayersInBundle.push_back(currSlot.m_dci.m_layerInd);
+                        }
+//                      else
+//                        {
                       //NS_LOG_DEBUG ("Change Beamforming Vector");
                       //Antenna model is samle for all layers
                       GetDlSpectrumPhyList ().at(currSlot.m_dci.m_layerInd)->ConfigureBeamforming (m_deviceMap.at (i));
                      break;
                     }
                 }
+
+              if ( bfCasted != 0)
+                          {
+                            //TODO: it would be preferable to have the noise PSD stored in the beamforming module once at the begining of the simulation instead of here.
+                            Ptr<SpectrumValue> noisePsd = MmWaveSpectrumValueHelper::CreateNoisePowerSpectralDensity (m_phyMacConfig, m_noiseFigure);
+                            double noisePsdNarrowband = (*noisePsd)[0]; //TODO we have to use the same frequency offset w.r.t. the OFDM subcarriers here than in the call to GetFrequencyFlatChannelMatrixAtDeltaFrequency in the Beamforming module
+                            bfCasted-> SetNoisePowerSpectralDensity ( noisePsdNarrowband );
+                            bfCasted-> SetBeamformingVectorForSlotBundle ( vDevsInBundle, vLayersInBundle );
+                          }
 
               NS_LOG_DEBUG ("ENB " << m_cellId << " RXing UL DATA frame " << m_frameNum << " subframe "
                             << (unsigned) m_sfNum << " symbols "

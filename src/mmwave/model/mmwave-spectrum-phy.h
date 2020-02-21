@@ -135,6 +135,11 @@ public:
   void SetBeamformingModel (Ptr<MmWaveBeamformingModel> bfModule);
 
   /**
+  * Get the beamforming module object
+  */
+  Ptr<MmWaveBeamformingModel> GetBeamformingModel ();
+
+  /**
   * Compute the beamforming vector and update the antenna configuration
   * to point the beam towards the target device.
   * \param device target device

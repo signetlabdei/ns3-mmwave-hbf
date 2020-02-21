@@ -250,6 +250,14 @@ MmWaveSpectrumPhy::SetBeamformingModel (Ptr<MmWaveBeamformingModel> bfModule)
   m_beamforming = bfModule;
 }
 
+Ptr<MmWaveBeamformingModel>
+MmWaveSpectrumPhy::GetBeamformingModel ()
+{
+  NS_LOG_FUNCTION (this);
+
+  return m_beamforming;
+}
+
 void
 MmWaveSpectrumPhy::ChangeState (State newState)
 {
