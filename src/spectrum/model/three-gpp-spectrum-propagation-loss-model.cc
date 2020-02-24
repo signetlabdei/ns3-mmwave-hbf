@@ -197,7 +197,7 @@ ThreeGppSpectrumPropagationLossModel::CalBeamformingGain (Ptr<SpectrumValue> txP
 {
   NS_LOG_FUNCTION (this);
 
-  Ptr<SpectrumValue> tempPsd = Copy<SpectrumValue> (txPsd);
+  Ptr<SpectrumValue> tempPsd = Copy (txPsd);
 
   //channel[rx][tx][cluster]
   uint8_t numCluster = params->m_channel.at (0).at (0).size ();
@@ -234,7 +234,7 @@ ThreeGppSpectrumPropagationLossModel::CalBeamformingGain (Ptr<SpectrumValue> txP
               double delay = -2 * M_PI * fsb * (params->m_delay.at (cIndex));
               subsbandGain = subsbandGain + longTerm.at (cIndex) * doppler.at (cIndex) * exp (std::complex<double> (0, delay));
             }
-          *vit = (*vit) * (norm (subsbandGain));
+          *vit = norm (subsbandGain);
         }
       vit++;
       iSubband++;//TODO it seems iSubband does nothing whereas the subband iterator *sbit has not been incremented in this loop
@@ -305,7 +305,7 @@ ThreeGppSpectrumPropagationLossModel::GetLongTerm (Ptr<const MobilityModel> aMob
   if (update || notFound)
 //  if (update || notFound || interference)
   {
-    NS_LOG_DEBUG ("compute the long term");
+    NS_LOG_DEBUG ("compute the long term for channel ID "<<longTermId<<" using tx bf Id "<<AntennaArrayBasicModel::GetBeamId(aBF)<<" and rx bf Id "<<AntennaArrayBasicModel::GetBeamId(bBF));
     // compute the long term component
     longTerm = CalLongTerm (channelMatrix, aW, bW);
 
@@ -520,7 +520,10 @@ ThreeGppSpectrumPropagationLossModel::DoCalcRxPowerSpectralDensityMultilayers (P
 //      NS_LOG_DEBUG ("    txbfcoef " << (int) cIndex << " = " << txW.first.at(cIndex));
 //    }
   // apply the beamforming gain
-  rxPsd = CalBeamformingGain (rxPsd, longTerm, channelMatrix, a->GetVelocity (), b->GetVelocity ());
+  Ptr<SpectrumValue> bfGainPsd = CalBeamformingGain (rxPsd, longTerm, channelMatrix, a->GetVelocity (), b->GetVelocity ());
+  (*rxPsd) *= (*bfGainPsd);
+
+  NS_LOG_UNCOND("BF Gain "<< (*bfGainPsd)[36] );
 
   return rxPsd;
 }

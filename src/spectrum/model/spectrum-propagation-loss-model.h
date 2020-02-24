@@ -75,8 +75,14 @@ public:
    * power in the same units used for the txPower parameter.
    */
   Ptr<SpectrumValue> CalcRxPowerSpectralDensity (Ptr<const SpectrumValue> txPsd,
-                                                 Ptr<const MobilityModel> a,
-                                                 Ptr<const MobilityModel> b) const;
+                                                   Ptr<const MobilityModel> a,
+                                                   Ptr<const MobilityModel> b) const;
+  //This new method is intended to work as the above for legacy models, but be replaced by models that need more info than the mobility model from the spectrum phy in the future
+//  Ptr<SpectrumValue> CalcRxPowerSpectralDensity (Ptr<const SpectrumValue> txPsd,
+//                                                 Ptr<const SpectrumPhy> a,
+//                                                 Ptr<const SpectrumPhy> b){
+//    CalcRxPowerSpectralDensity(txPsd,a->GetMobilityModel(),b->GetMobilityModel());
+//  }
                                                  
 protected:
   virtual void DoDispose ();

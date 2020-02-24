@@ -693,13 +693,14 @@ MmWaveMMSEBeamforming::SetBeamformingVectorForSlotBundle(std::vector< Ptr<NetDev
       std::vector< Ptr<NetDevice> >::iterator itOtherDev = vOtherDevs.begin();
       for (std::vector< Ptr<CodebookBFVectorCacheEntry>>::iterator itBfOtherDev = bfCachesInSlot.begin() ; itBfOtherDev != bfCachesInSlot.end() ; itBfOtherDev++ )
         {
-          propagationGainAmplitude = sqrt( pow( 10, 0.1 * m_propagationLossModel->CalcRxPower (0, m_mobility, (*itOtherDev)->GetNode ()->GetObject<MobilityModel> ()) ) );
+          propagationGainAmplitude = sqrt( pow( 10.0, 0.1 * m_propagationLossModel->CalcRxPower (0, m_mobility, (*itOtherDev)->GetNode ()->GetObject<MobilityModel> ()) ) );
 	  rowEquivalentH.push_back( propagationGainAmplitude * (*itBfOtherDev)->m_equivalentChanCoefs.at( (*itBfOtherDev)->rxBeamInd ).at( (*itBfThisDev)->txBeamInd ) );//w[it2,i]H[it2,i]v[it2,i] where i=this node
 	  matrixline << (itBfOtherDev == bfCachesInSlot.begin() ? "" : ",") << std::real(rowEquivalentH.back())<< "+1i*"<<std::imag(rowEquivalentH.back());
 	  itOtherDev++;
-        }
+	 }
       matrixline<<";";
       equivalentH.push_back( rowEquivalentH );
+
     }
   matrixline<<"]";
   NS_LOG_DEBUG("Built the equivalent channel matrix Heq with size " << equivalentH.size() << " x " << equivalentH.at(0).size()<<" : "<<matrixline.str());
@@ -767,8 +768,8 @@ MmWaveMMSEBeamforming::SetBeamformingVectorForSlotBundle(std::vector< Ptr<NetDev
     {
       for ( complexVector_t::iterator colIt = (*rowIt).begin();  colIt != (*rowIt).end(); colIt++ )
         {//hybrid beamforming must be normalized
-          (*colIt) *= 1 / sqrt ( normSq[rowctr] );// this distributes the power of N beams with power allocation
-          matrixline<<(colIt == (*rowIt).begin() ? "" : ",") << std::real( (*colIt) )<< "+1i*"<<std::imag( (*colIt) );
+          (*colIt) = std::conj( (*colIt) ) / sqrt ( normSq[rowctr] );// this distributes the power of N beams with power allocation
+          matrixline<<(colIt == (*rowIt).begin() ? "" : ",") << std::real( (*colIt) )<< "-1i*"<<std::imag( (*colIt) );
         }
       matrixline<<";";
       rowctr ++ ;
@@ -782,7 +783,7 @@ MmWaveMMSEBeamforming::SetBeamformingVectorForSlotBundle(std::vector< Ptr<NetDev
   complex2DVector_t::iterator hybridWit = hybridW.begin();
   for (std::vector< Ptr<CodebookBFVectorCacheEntry>>::iterator itBf = bfCachesInSlot.begin() ; itBf != bfCachesInSlot.end() ; itBf++ )
     {
-      AntennaArrayBasicModel::BeamId bId = 0;//TODO design a beam id value convention for this beamforming technique, possibly based on the cache key value
+      AntennaArrayBasicModel::BeamId bId = 100+*itLId;//TODO design a beam id value convention for this beamforming technique, possibly based on the cache key value
 
       NS_LOG_UNCOND("Setting up MMSE antenna weights for UE "<< (*itDev )->GetNode ()->GetId () );
 

@@ -461,7 +461,7 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
     	  else
     	  {
     		  mmwaveDataRxParams->psd = pathlossmodel->CalcRxPowerSpectralDensityMultiLayers(mmwaveDataRxParams->psd,txMobility,this->GetMobility (),layerInd,m_layerInd);//tx layer ind is one from BS indicated in TXparam (not necessarily my GetAllocLayerInd()), I am a receiving UE and rx layer is always 0
-    		  NS_LOG_INFO("Computed the BF gain at UE allocated layer " << (int ) ueRx->GetPhy (m_componentCarrierId)->GetAllocLayerInd() << " SpectrumPhy::StartRx for signal of layer " << (int) layerInd << " the UE m_layerInd is"<<(int)  m_layerInd);
+    		  NS_LOG_INFO("Computed the BF gain at UE allocated layer " << (int ) ueRx->GetPhy (m_componentCarrierId)->GetAllocLayerInd() << " SpectrumPhy::StartRx for signal of layer " << (int) layerInd << " the UE m_layerInd is "<<(int)  m_layerInd);
     	  }
     	  NS_LOG_INFO("Node "<<  GetDevice()->GetAddress() <<" detected in layer " << (int) m_layerInd << " a signal with power "<<Sum (*(mmwaveDataRxParams->psd)));
     	  m_interferenceData->AddSignal (mmwaveDataRxParams->psd, mmwaveDataRxParams->duration);
