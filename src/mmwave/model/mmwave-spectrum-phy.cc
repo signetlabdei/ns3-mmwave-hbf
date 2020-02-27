@@ -705,7 +705,7 @@ MmWaveSpectrumPhy::EndRxData ()
               NS_LOG_INFO (this << " RNTI " << itTb->first << " " << ( (itTb->second.downlink)?"DL":"UL") << " size " << itTb->second.size << " mcs " << (uint32_t)itTb->second.mcs << " bitmap " << itTb->second.rbBitmap.size () << " rv " << (int)rv << " TBLER " << tbStats.tbler << " corrupted " << itTb->second.corrupt);
 
               int mcsShould = 0;
-	      while (mcsShould <= 28)
+	      while (mcsShould < 28)
 		{
 		  tbStats = MmWaveMiErrorModel::GetTbDecodificationStats (m_sinrPerceived, itTb->second.rbBitmap, itTb->second.size, mcsShould, harqInfoList);
 		  if (tbStats.tbler > 0.1)

@@ -308,7 +308,7 @@ MmWaveFFTCodebookBeamforming::~MmWaveFFTCodebookBeamforming ()
 }
 
 void
-MmWaveFFTCodebookBeamforming::InPlaceArrayFFT (ComplexArray_t& x)
+MmWaveFFTCodebookBeamforming::InPlaceArrayFFT (ComplexArray_t& x, bool inv)
 {
   //This method is a direct transposition of the fft examples provided in https://rosettacode.org/wiki/Fast_Fourier_transform#C.2B.2B
   //The code in this method implementation is under the GNU Free Documentation License 1.2  https://www.gnu.org/licenses/old-licenses/fdl-1.2.html
@@ -316,13 +316,18 @@ MmWaveFFTCodebookBeamforming::InPlaceArrayFFT (ComplexArray_t& x)
   const  uint16_t N = x.size();
   if (N <= 1) return;
 
+  if ( inv )
+    {//the IFFT uses the FFT internally, only conjugate at the beginning and end
+      x=x.apply(std::conj);
+    }
+
   // divide
   ComplexArray_t even = x[std::slice(0, N/2, 2)];
   ComplexArray_t  odd = x[std::slice(1, N/2, 2)];
 
   // conquer
-  InPlaceArrayFFT(even);
-  InPlaceArrayFFT(odd);
+  InPlaceArrayFFT(even,false);
+  InPlaceArrayFFT(odd,false);
 
   // combine
   for ( uint16_t k = 0; k < N/2; ++k)
@@ -332,6 +337,11 @@ MmWaveFFTCodebookBeamforming::InPlaceArrayFFT (ComplexArray_t& x)
       x[k+N/2] = even[k] - t;
     }
   //--------------------------------------------------------------------------
+
+  if ( inv )
+    {
+      x=x.apply(std::conj);
+    }
 }
 
 
@@ -356,7 +366,7 @@ MmWaveFFTCodebookBeamforming::Channel4DFFT (complex2DVector_t& matrix,Ptr<NetDev
 	{
 	  complexVector_t subvector(rowItemIterator1,rowItemIterator2);//take a segment from the row we are considering |s1.s1.s1.s1|s2.s2.s2.s2|...
 	  ComplexArray_t x (subvector.data(),antennaNum[0]);//convert to valarray for convenient slicing
-	  InPlaceArrayFFT(x); //in-place FFT of the segment
+	  InPlaceArrayFFT(x,false); //in-place FFT of the segment
 	  for ( uint16_t colItem = 0; colItem < antennaNum[0]; colItem++)//TODO can we replace this for with native stl subvector methods?
 	    {
 	      matrix.at(row).at ( colItem +  antennaNum[0]*colSegment ) = x[colItem] / sqrt( (double )antennaNum[0] ); // replace the segment with its energy-normalized FFT
@@ -376,7 +386,7 @@ MmWaveFFTCodebookBeamforming::Channel4DFFT (complex2DVector_t& matrix,Ptr<NetDev
 	      {
 		x[colItem] = matrix.at(row).at ( colComb +  antennaNum[0]*colItem );// read the segment into the subarray
 	      }
-	    InPlaceArrayFFT(x); //in-place FFT of the segment
+	    InPlaceArrayFFT(x,false); //in-place FFT of the segment
 	    for ( uint16_t colItem = 0; colItem < antennaNum[1]; colItem++)//TODO can we replace this for with native stl subvector methods?
 	      {
 		matrix.at(row).at ( colComb +  antennaNum[0]*colItem ) = x[colItem] / sqrt( (double )antennaNum[1] ); // replace the segment with its energy-normalized FFT
@@ -393,7 +403,7 @@ MmWaveFFTCodebookBeamforming::Channel4DFFT (complex2DVector_t& matrix,Ptr<NetDev
 	      {
 		x[rowItem] = matrix.at(rowItem + otherAntennaNum[0] * rowSegment).at (col); // read the segment into the subarray
 	      }
-	    InPlaceArrayFFT(x); //in-place FFT of the segment
+	    InPlaceArrayFFT(x,true); //in-place FFT of the segment
 	    for ( uint16_t rowItem = 0; rowItem < otherAntennaNum[0]; rowItem++)//TODO can we replace this for with native stl subvector methods?
 	      {
 		matrix.at(rowItem + otherAntennaNum[0] * rowSegment).at (col) = x[rowItem] / sqrt( (double )otherAntennaNum[0] ); // replace the segment with its energy-normalized FFT
@@ -411,7 +421,7 @@ MmWaveFFTCodebookBeamforming::Channel4DFFT (complex2DVector_t& matrix,Ptr<NetDev
 	      {
 		x[rowItem] = matrix.at ( rowComb +  otherAntennaNum[0]*rowItem ).at(col); // read the segment into the subarray
 	      }
-	    InPlaceArrayFFT(x); //in-place FFT of the segment
+	    InPlaceArrayFFT(x,true); //in-place FFT of the segment
 	    for ( uint16_t rowItem = 0; rowItem < otherAntennaNum[1]; rowItem++)//TODO can we replace this for with native stl subvector methods?
 	      {
 		matrix.at ( rowComb +  otherAntennaNum[0]*rowItem ).at(col) = x[rowItem]  / sqrt( (double )otherAntennaNum[1] ); // replace the segment with its energy-normalized FFT
@@ -674,15 +684,14 @@ MmWaveMMSEBeamforming::SetBeamformingVectorForSlotBundle(std::vector< Ptr<NetDev
 
     NS_LOG_DEBUG("Started MMSE slot bundle processing. Detected " << bfCachesInSlot.size() << " simultaneous analog beams");
 
-  //this segment builds and equivalent channel matrix Heq = Dg B H Wa
-    // Dg is the pathloss gain diagonal matrix, size Nb x Nb
-    // B is the beamforming of the neighbors, size Nb x Nant2
-    // H is the physical array MIMO channe, Nant2 x Nant
-    // Wa is my set of analog beamforming vectors, Nant x Nb
+  //this segment builds and equivalent channel Nb x Nb matrix with coefficients Heq_{i,j} = wa_i^H H_j^h b_j g_j
+    // wa_i are my analog beamforming vectors, 1 x Nant, hermitian when we are receiving
+    // H_j is the physical array MIMO channel towards device j, Nant x Nant2
+    // b_j is the transmit beamforming of device j, size Nant_of_j x 1
+    // g_j is the pathloss gain towards device j
   //  the diagonal Heq[ii,ii] is the complex gain for beam ii,
-  //  and Heq[ii][jj] is the side-lobe cross-interference between beam ii-transmitter and beam jj-receiver
-  //  the pathloss differences between differen users are taken into account
-  //  this matrix is stored transposed (see below)
+  //  and Heq[ii][jj] is the side-lobe cross-interference between beam ii-receiver and beam jj-transmitter
+  //  this matrix coefficients are obtained as the conjugates of the matrix stored in the analog beam design, which was implemented in transmission mode
   complex2DVector_t equivalentH;
   double propagationGainAmplitude = 0;
   std::stringstream matrixline;
@@ -694,7 +703,7 @@ MmWaveMMSEBeamforming::SetBeamformingVectorForSlotBundle(std::vector< Ptr<NetDev
       for (std::vector< Ptr<CodebookBFVectorCacheEntry>>::iterator itBfOtherDev = bfCachesInSlot.begin() ; itBfOtherDev != bfCachesInSlot.end() ; itBfOtherDev++ )
         {
           propagationGainAmplitude = sqrt( pow( 10.0, 0.1 * m_propagationLossModel->CalcRxPower (0, m_mobility, (*itOtherDev)->GetNode ()->GetObject<MobilityModel> ()) ) );
-	  rowEquivalentH.push_back( propagationGainAmplitude * (*itBfOtherDev)->m_equivalentChanCoefs.at( (*itBfOtherDev)->rxBeamInd ).at( (*itBfThisDev)->txBeamInd ) );//w[it2,i]H[it2,i]v[it2,i] where i=this node
+	  rowEquivalentH.push_back( std::conj ( propagationGainAmplitude * (*itBfOtherDev)->m_equivalentChanCoefs.at( (*itBfOtherDev)->rxBeamInd ).at( (*itBfThisDev)->txBeamInd ) ) );//w[it2,i]H[it2,i]v[it2,i] where i=this node
 	  matrixline << (itBfOtherDev == bfCachesInSlot.begin() ? "" : ",") << std::real(rowEquivalentH.back())<< "+1i*"<<std::imag(rowEquivalentH.back());
 	  itOtherDev++;
 	 }
@@ -705,7 +714,7 @@ MmWaveMMSEBeamforming::SetBeamformingVectorForSlotBundle(std::vector< Ptr<NetDev
   matrixline<<"]";
   NS_LOG_DEBUG("Built the equivalent channel matrix Heq with size " << equivalentH.size() << " x " << equivalentH.at(0).size()<<" : "<<matrixline.str());
 
-  // this segment builds the matrix Wa^T from the antenna array weights
+  // this segment builds the matrix Wa^H from the antenna array weights in my beamforming vectors. The conjugate is used in reception
   complex2DVector_t analogWtransposed;
   matrixline.str("");
   matrixline << "[";
@@ -718,15 +727,15 @@ MmWaveMMSEBeamforming::SetBeamformingVectorForSlotBundle(std::vector< Ptr<NetDev
           if ( rowctr == 0 )
             {
               complexVector_t newCol;
-              newCol .push_back( (*itWcoef) );
+              newCol .push_back( std::conj (*itWcoef) );
               analogWtransposed .push_back ( newCol );
             }
           else
             {
               matrixline<<(colctr == 0 ? ";" : "");
-              analogWtransposed[colctr].push_back( (*itWcoef) );
+              analogWtransposed[colctr].push_back( std::conj (*itWcoef) );
             }
-          matrixline<<(colctr == 0 ? "" : ",") << std::real( (*itWcoef) )<< "+1i*"<<std::imag( (*itWcoef) );
+          matrixline<<(colctr == 0 ? "" : ",") << std::real( (*itWcoef) )<< "+1i*"<<std::imag( std::conj (*itWcoef) );
           colctr ++ ;
         }
       rowctr ++ ;
@@ -735,7 +744,7 @@ MmWaveMMSEBeamforming::SetBeamformingVectorForSlotBundle(std::vector< Ptr<NetDev
   NS_LOG_DEBUG("Built the analog beam matrix Wa^T with size " << analogWtransposed.size() << " x " << analogWtransposed.at(0).size()<<" : "<<matrixline.str());
 
   //this segment computes a MMSE beamforming-refinement.
-  // We want to design W = Heq^H(HeqHeq^H+I)^{-1} and we want to load Wh = WaW in the array weights
+  // We want to design W^H = (Heq^HHeq+NoI)^{-1}Heq^H and we want to load Wh^H = W^HWa^H in the array weights
   // Using transposes, we obtain Wh^T by solving the system of equations (Heq^HHeq+I)Wh^T = Heq^HWa^T
   // The variable containing hybridW is returned untransposed
   complex2DVector_t hybridW;
@@ -767,9 +776,9 @@ MmWaveMMSEBeamforming::SetBeamformingVectorForSlotBundle(std::vector< Ptr<NetDev
   for ( complex2DVector_t::iterator rowIt = hybridW.begin();  rowIt != hybridW.end(); rowIt++ )
     {
       for ( complexVector_t::iterator colIt = (*rowIt).begin();  colIt != (*rowIt).end(); colIt++ )
-        {//hybrid beamforming must be normalized
-          (*colIt) = std::conj( (*colIt) ) / sqrt ( normSq[rowctr] );// this distributes the power of N beams with power allocation
-          matrixline<<(colIt == (*rowIt).begin() ? "" : ",") << std::real( (*colIt) )<< "-1i*"<<std::imag( (*colIt) );
+        {//hybrid beamforming must be normalized. Also, we have used transposes instead of conjugates above, so we have computed Wh^H^T, we need to conjugate the coefficients to obtain Wh
+          (*colIt) = ( std::conj (*colIt) ) / sqrt ( normSq[rowctr] );// this distributes the power of N beams with power allocation
+          matrixline<<(colIt == (*rowIt).begin() ? "" : ",") << std::real( (*colIt) )<< "+1i*"<<std::imag( (*colIt) );
         }
       matrixline<<";";
       rowctr ++ ;

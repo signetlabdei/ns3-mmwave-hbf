@@ -233,7 +233,7 @@ public:
 private:
 
   static constexpr double PI = 3.141592653589793238460;
-  void InPlaceArrayFFT (ComplexArray_t& x);
+  void InPlaceArrayFFT (ComplexArray_t& x, bool inv = false);
   void Channel4DFFT (complex2DVector_t& matrix,Ptr<NetDevice> otherDevice);
 };
 

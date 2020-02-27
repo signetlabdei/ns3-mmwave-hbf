@@ -1448,13 +1448,7 @@ MmWaveEnbPhy::StartSlot (void)
 
           if ( bfCasted != 0)
             {
-              //TODO: it would be preferable to have the noise PSD stored in the beamforming module once at the begining of the simulation instead of here.
-              Ptr<SpectrumValue> noisePsd = MmWaveSpectrumValueHelper::CreateNoisePowerSpectralDensity (m_phyMacConfig, m_noiseFigure); //I know this is Botlzman thermal noise times noise figure, but for the sake of uniformity we call this function to generate the number exactly in the same way as in the receiver
-              double noisePsdNarrowband = (*noisePsd)[0]; //TODO we have to use the same frequency offset w.r.t. the OFDM subcarriers here than in the call to GetFrequencyFlatChannelMatrixAtDeltaFrequency in the Beamforming module
-              double myTxPSD = pow(10.0, ((double) m_txPower - 30.0) / 10.0 ) * 1.0 / (double) m_phyMacConfig->GetSystemBandwidth ();
-                  NS_LOG_UNCOND("No PSD is "<< noisePsdNarrowband <<" W, Num subbands is "<<noisePsd->GetSpectrumModel()->GetNumBands ());
-              NS_LOG_UNCOND("Tx power is" << m_txPower << " dBm bandiwdh is " << m_phyMacConfig->GetSystemBandwidth () << " TxPSD is "<< myTxPSD);
-              bfCasted-> SetNoisePowerSpectralDensity ( noisePsdNarrowband/myTxPSD ); // The MMSE bf takes an "effective" value of No because it is written assuming Ptx=1
+              bfCasted-> SetNoisePowerSpectralDensity ( 0 ); //In DL, we use the special case of MMSE with No=0 to implement the ZF method
               bfCasted-> SetBeamformingVectorForSlotBundle ( vDevsInBundle, vLayersInBundle );
             }
 
@@ -1560,15 +1554,6 @@ MmWaveEnbPhy::StartSlot (void)
                     }
                 }
 
-              if ( bfCasted != 0)
-                          {
-                            //TODO: it would be preferable to have the noise PSD stored in the beamforming module once at the begining of the simulation instead of here.
-                            Ptr<SpectrumValue> noisePsd = MmWaveSpectrumValueHelper::CreateNoisePowerSpectralDensity (m_phyMacConfig, m_noiseFigure);
-                            double noisePsdNarrowband = (*noisePsd)[0]; //TODO we have to use the same frequency offset w.r.t. the OFDM subcarriers here than in the call to GetFrequencyFlatChannelMatrixAtDeltaFrequency in the Beamforming module
-                            bfCasted-> SetNoisePowerSpectralDensity ( noisePsdNarrowband );
-                            bfCasted-> SetBeamformingVectorForSlotBundle ( vDevsInBundle, vLayersInBundle );
-                          }
-
               NS_LOG_DEBUG ("ENB " << m_cellId << " RXing UL DATA frame " << m_frameNum << " subframe "
                             << (unsigned) m_sfNum << " symbols "
                             << (unsigned) currSlot.m_dci.m_symStart << "-"
@@ -1577,6 +1562,19 @@ MmWaveEnbPhy::StartSlot (void)
                             << Simulator::Now () + slotPeriod << " layer "
                             << (int) currSlot.m_dci.m_layerInd);
             }
+
+          if ( bfCasted != 0)
+            {
+              //TODO: it would be preferable to have the noise PSD stored in the beamforming module once at the begining of the simulation instead of here.
+              Ptr<SpectrumValue> noisePsd = MmWaveSpectrumValueHelper::CreateNoisePowerSpectralDensity (m_phyMacConfig, m_noiseFigure); //I know this is Botlzman thermal noise times noise figure, but for the sake of uniformity we call this function to generate the number exactly in the same way as in the receiver
+              double noisePsdNarrowband = (*noisePsd)[0]; //TODO we have to use the same frequency offset w.r.t. the OFDM subcarriers here than in the call to GetFrequencyFlatChannelMatrixAtDeltaFrequency in the Beamforming module
+              double myTxPSD = pow(10.0, ((double) m_txPower - 30.0) / 10.0 ) * 1.0 / (double) m_phyMacConfig->GetSystemBandwidth ();
+              NS_LOG_UNCOND("No PSD is "<< noisePsdNarrowband <<" W, Num subbands is "<<noisePsd->GetSpectrumModel()->GetNumBands ());
+              NS_LOG_UNCOND("Tx power is " << m_txPower << " dBm bandiwdh is " << m_phyMacConfig->GetSystemBandwidth () << " TxPSD is "<< myTxPSD);
+              bfCasted-> SetNoisePowerSpectralDensity ( noisePsdNarrowband );
+              bfCasted-> SetBeamformingVectorForSlotBundle ( vDevsInBundle, vLayersInBundle );
+            }
+
           slotPeriod = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () * currSlotBundleInfo.m_minNumSym); //schedule for EndSlot()
 
 //          Time thisSlotStart = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () *

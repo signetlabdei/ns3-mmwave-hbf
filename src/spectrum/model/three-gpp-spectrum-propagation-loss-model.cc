@@ -234,7 +234,7 @@ ThreeGppSpectrumPropagationLossModel::CalBeamformingGain (Ptr<SpectrumValue> txP
               double delay = -2 * M_PI * fsb * (params->m_delay.at (cIndex));
               subsbandGain = subsbandGain + longTerm.at (cIndex) * doppler.at (cIndex) * exp (std::complex<double> (0, delay));
             }
-          *vit = norm (subsbandGain);
+          *vit = norm (subsbandGain); //TODO: technically, if the channel matrix isReversed, this loop has calculate conj(subsbandGain), but the norm is unchanged. We should verify there are no consequences of this in other points of the code.
         }
       vit++;
       iSubband++;//TODO it seems iSubband does nothing whereas the subband iterator *sbit has not been incremented in this loop
@@ -408,9 +408,9 @@ ThreeGppSpectrumPropagationLossModel::GetFrequencyFlatChannelMatrixAtDeltaFreque
 	  for (uint8_t cIndex = 0; cIndex < numCluster; cIndex++)
 	    {
 	      if ( channelMatrix->m_isReverse )
-		{//we read from the ChannelMatrix in reverse but store in the current order, effectively transposing the result
+		{//we read from the ChannelMatrix in reverse but store in the current order, effectively conjugating the result
 
-		  resultElement +=  channelMatrix->m_channel.at (txIndex).at (rxIndex).at (cIndex) * doppler.at (cIndex) * delay_doppler.at(cIndex);
+		  resultElement += std::conj( channelMatrix->m_channel.at (txIndex).at (rxIndex).at (cIndex) * doppler.at (cIndex) * delay_doppler.at(cIndex) );
 //		  NS_LOG_DEBUG ("REVERSE Computing step ["<< rxIndex <<","<< txIndex <<","<< (int )cIndex <<
 //				"] Array size = ["<<  channelMatrix->m_channel.at(0).size() <<","<< channelMatrix->m_channel.size() <<","<< channelMatrix->m_channel.at(0).at(0).size() <<
 //				"] loop limits ["<< numRxAntenna <<","<< numTxAntenna<<","<<(int )numCluster<<

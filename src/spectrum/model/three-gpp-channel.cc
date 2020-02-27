@@ -689,6 +689,10 @@ ThreeGppChannel::GetChannel (Ptr<const MobilityModel> a, Ptr<const MobilityModel
 
     // store the channel matrix in the channel map
     m_channelMap[channelId] = channelMatrix;
+    if ( m_channelMap .find (channelIdReverse) != m_channelMap .end () )
+      { //if we arrive to an update scenario from an "expired" matrix that was generated in reverse form, we must delete the old reversed data in the map
+        m_channelMap .erase ( channelIdReverse ) ;
+      }
   }
 
   return channelMatrix;
