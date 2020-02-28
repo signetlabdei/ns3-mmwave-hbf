@@ -239,10 +239,10 @@ main (int argc, char *argv[])
 	{
 	    ulPort++;
 		PacketSinkHelper dlPacketSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), dlPort));
-		PacketSinkHelper ulPacketSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), ulPort));
+//		PacketSinkHelper ulPacketSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), ulPort));
 //		PacketSinkHelper packetSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), otherPort));
 		serverApps.Add (dlPacketSinkHelper.Install (ueNodes.Get (u)));
-		serverApps.Add (ulPacketSinkHelper.Install (remoteHost));
+//		serverApps.Add (ulPacketSinkHelper.Install (remoteHost));
 //		serverApps.Add (packetSinkHelper.Install (ueNodes.Get (u)));
 
 		UdpClientHelper dlClient (ueIpIface.GetAddress (u), dlPort);
@@ -256,7 +256,7 @@ main (int argc, char *argv[])
 		ulClient.SetAttribute ("PacketSize", UintegerValue (packetSize));
 
 		clientApps.Add (dlClient.Install (remoteHost));
-		clientApps.Add (ulClient.Install (ueNodes.Get(u)));
+//		clientApps.Add (ulClient.Install (ueNodes.Get(u)));
 		//      if (u+1 < ueNodes.GetN ())
 		//        {
 		//          clientApps.Add (client.Install (ueNodes.Get(u+1)));

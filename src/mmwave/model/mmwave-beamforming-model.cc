@@ -459,6 +459,7 @@ MmWaveFFTCodebookBeamforming::DoDesignBeamformingVectorForDevice (Ptr<NetDevice>
 
 //  std::stringstream matrixline;
 //  matrixline << "[";
+// NS_LOG_DEBUG("4DFFT of channel Matrix: ");
   for ( uint16_t rxInd=0; rxInd<channelInfo.size(); rxInd++)
     {
       for ( uint16_t txInd=0; txInd<totNoArrayElements; txInd++)
@@ -477,9 +478,10 @@ MmWaveFFTCodebookBeamforming::DoDesignBeamformingVectorForDevice (Ptr<NetDevice>
 //        {
 //          matrixline << ";";
 //        }
+//      NS_LOG_DEBUG(matrixline.str());
+//      matrixline.str("");
     }
-//  matrixline << "]";
-//  NS_LOG_DEBUG("4DFFT of channel Matrix: "<<matrixline.str());
+//  NS_LOG_DEBUG("]");
 
   AntennaArrayBasicModel::BeamformingVector newBfParam;
   double power = 1 / sqrt (totNoArrayElements);
