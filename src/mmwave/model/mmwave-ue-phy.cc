@@ -890,6 +890,9 @@ MmWaveUePhy::CreateDlCqiFeedbackMessage (const SpectrumValue& sinr)
   int mcs;
   dlcqi.m_wbCqi = m_amc->CreateCqiFeedbackWbTdma (newSinr, m_currSlot.m_dci.m_numSym, m_currSlot.m_dci.m_tbSize, mcs);
 
+
+  NS_LOG_INFO ("Average SINR on DlCqiReport " << 10 * std::log10 (Sum(newSinr)/newSinr.GetSpectrumModel ()->GetNumBands ()) << " dB CQI code " << (int ) dlcqi.m_wbCqi << " for RNTI "<<m_rnti);
+
 //	int activeSubChannels = newSinr.GetSpectrumModel()->GetNumBands ();
   /*cqi = m_amc->CreateCqiFeedbacksTdma (newSinr, m_currNumSym);
   int nbSubChannels = cqi.size ();

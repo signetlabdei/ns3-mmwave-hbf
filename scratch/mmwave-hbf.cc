@@ -238,33 +238,23 @@ main (int argc, char *argv[])
 	for (uint32_t u = 0; u < ueNodes.GetN (); ++u)
 	{
 	    ulPort++;
-		PacketSinkHelper dlPacketSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), dlPort));
-//		PacketSinkHelper ulPacketSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), ulPort));
-//		PacketSinkHelper packetSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), otherPort));
-		serverApps.Add (dlPacketSinkHelper.Install (ueNodes.Get (u)));
-//		serverApps.Add (ulPacketSinkHelper.Install (remoteHost));
-//		serverApps.Add (packetSinkHelper.Install (ueNodes.Get (u)));
+	    PacketSinkHelper dlPacketSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), dlPort));
+	    PacketSinkHelper ulPacketSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), ulPort));
+	    serverApps.Add (dlPacketSinkHelper.Install (ueNodes.Get (u)));
+	    serverApps.Add (ulPacketSinkHelper.Install (remoteHost));
 
-		UdpClientHelper dlClient (ueIpIface.GetAddress (u), dlPort);
-		dlClient.SetAttribute ("Interval", TimeValue (MicroSeconds (interPacketInterval)));
-		dlClient.SetAttribute ("PacketSize", UintegerValue (packetSize));
-		//dlClient.SetAttribute ("MaxPackets", UintegerValue (100));
+	    UdpClientHelper dlClient (ueIpIface.GetAddress (u), dlPort);
+	    dlClient.SetAttribute ("Interval", TimeValue (MicroSeconds (interPacketInterval)));
+	    dlClient.SetAttribute ("PacketSize", UintegerValue (packetSize));
+	    //dlClient.SetAttribute ("MaxPackets", UintegerValue (100));
 
 
-		UdpClientHelper ulClient (remoteHostAddr, ulPort);
-		ulClient.SetAttribute ("Interval", TimeValue (MicroSeconds (interPacketInterval)));
-		ulClient.SetAttribute ("PacketSize", UintegerValue (packetSize));
+	    UdpClientHelper ulClient (remoteHostAddr, ulPort);
+	    ulClient.SetAttribute ("Interval", TimeValue (MicroSeconds (interPacketInterval)));
+	    ulClient.SetAttribute ("PacketSize", UintegerValue (packetSize));
 
-		clientApps.Add (dlClient.Install (remoteHost));
-//		clientApps.Add (ulClient.Install (ueNodes.Get(u)));
-		//      if (u+1 < ueNodes.GetN ())
-		//        {
-		//          clientApps.Add (client.Install (ueNodes.Get(u+1)));
-		//        }
-		//      else
-		//        {
-		//          clientApps.Add (client.Install (ueNodes.Get(0)));
-		//        }
+	    clientApps.Add (dlClient.Install (remoteHost));
+	    clientApps.Add (ulClient.Install (ueNodes.Get(u)));
 	}
 	serverApps.Start (Seconds (startTime));
 	clientApps.Start (Seconds (startTime));
@@ -283,9 +273,9 @@ main (int argc, char *argv[])
 		NS_LOG_UNCOND ("The number of DL received packets for UE " << u+1 << ": " << sink->GetTotalRx ()/packetSize);
 		//NS_LOG_UNCOND ("UE(" << ueIpIface.GetAddress(0) <<") NR throughput: " << nrThroughput << " Mbps");
 		sink = serverApps.Get (2*(u+1)-1)->GetObject<PacketSink> ();
-		//double nrThroughput = sink->GetTotalRx () * 8.0 / (1000000.0*(simTime - 0.01));
+//		//double nrThroughput = sink->GetTotalRx () * 8.0 / (1000000.0*(simTime - 0.01));
 		NS_LOG_UNCOND ("The number of UL received packets for UE " << u+1 << ": " << sink->GetTotalRx ()/packetSize);
-		//NS_LOG_UNCOND ("UE(" << ueIpIface.GetAddress(0) <<") NR throughput: " << nrThroughput << " Mbps");
+//		//NS_LOG_UNCOND ("UE(" << ueIpIface.GetAddress(0) <<") NR throughput: " << nrThroughput << " Mbps");
 	}
 
 	Simulator::Destroy ();

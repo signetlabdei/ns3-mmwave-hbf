@@ -53,7 +53,7 @@ struct Key3DLongTerm {
   uint32_t a;
   uint32_t b;
   uint32_t c;
-}; //TODO we can make this into a template for better reuse, perhaps even find an existing stl/ns3 template that does this
+}; //TODO we can make this into a template for better reuse, perhaps even find an existing stl/ns3 template that does this (stl tuple in C++ new versions)
 
 typedef std::vector< std::complex<double> > complexVector_t; //!< type definition for complex vectors
 typedef std::vector<complexVector_t> complex2DVector_t; //!< type definition for complex matrices

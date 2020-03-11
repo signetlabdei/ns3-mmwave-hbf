@@ -1144,8 +1144,8 @@ MmWaveEnbPhy::StartSubFrame (void)
   NS_LOG_INFO ("Frame num:" << (int)m_frameNum << ", Subframe num:" << (int)m_sfNum << ", Num allocated layers:" << (int)m_currNumAllocLayers);
   NS_LOG_INFO ("Num slots in this subframe:" << (int)m_currSfNumSlots);
 
-  if (m_currNumAllocLayers != 1)
-    {
+//  if (m_currNumAllocLayers != 1)
+//    {
       m_slotBundleList.clear ();
       //uint8_t numLayers = 0;
       bool isLastSlot = false;
@@ -1161,7 +1161,7 @@ MmWaveEnbPhy::StartSubFrame (void)
               uint8_t numSym = slotAllocInfo.m_dci.m_numSym;
               if (isFirst)
                 {
-                  slotBundle.m_numLayers++;
+                  slotBundle.m_numLayers=1;
                   slotBundle.m_symStart = symStart;
                   slotBundle.m_minNumSym = numSym;
                   isFirst = false;
@@ -1195,7 +1195,7 @@ MmWaveEnbPhy::StartSubFrame (void)
           NS_LOG_INFO ("Minimum no. of symbols: " << (int) m_slotBundleList[ind].m_minNumSym);
         }
       
-    }
+//    }
 
   NS_ASSERT ((m_currSfAllocInfo.m_sfnSf.m_frameNum == m_frameNum) && (m_currSfAllocInfo.m_sfnSf.m_sfNum == m_sfNum));
 
@@ -1329,51 +1329,62 @@ MmWaveEnbPhy::StartSlot (void)
     }
   else if (currSlot.m_tddMode == SlotAllocInfo::DL_slotAllocInfo)                 // transmit DL slot
     {
-      if (m_currNumAllocLayers == 1)
-        {
-          slotPeriod = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () * currSlot.m_dci.m_numSym);
-          NS_ASSERT (currSlot.m_tddMode == SlotAllocInfo::DL_slotAllocInfo);
-          //NS_LOG_DEBUG ("Slot " << m_slotNum << " scheduled for Downlink");
-          //			if (m_prevSlotDir == SlotAllocInfo::UL_slotAllocInfo)  // if curr slot == DL and prev slot == UL
-          //			{
-          //				guardPeriod = NanoSeconds (1000.0 * m_phyMacConfig->GetGuardPeriod ());
-          //			}
-
-          //Ptr<PacketBurst> pktBurst = GetPacketBurst (SfnSf (m_frameNum, m_sfNum, currSlot.m_dci.m_symStart));
-          Ptr<PacketBurst> pktBurst;
-          pktBurst = GetPacketBurst (SfnSf (m_frameNum, m_sfNum, currSlot.m_dci.m_symStart));
-          
-          if (pktBurst && pktBurst->GetNPackets () > 0)
-            {
-              std::list<Ptr<Packet>> pkts = pktBurst->GetPackets ();
-              MmWaveMacPduTag macTag;
-              pkts.front ()->PeekPacketTag (macTag);
-              NS_ASSERT ((macTag.GetSfn ().m_sfNum == m_sfNum) && (macTag.GetSfn ().m_slotNum == currSlot.m_dci.m_symStart));
-            }
-          else
-            {
-              // sometimes the UE will be scheduled when no data is queued
-              // in this case, send an empty PDU
-              NS_LOG_UNCOND(Simulator::Now () << " [jskim14] UE is scheduled, but no data");
-              MmWaveMacPduTag tag (SfnSf (m_frameNum, m_sfNum, currSlot.m_dci.m_symStart));
-              Ptr<Packet> emptyPdu = Create<Packet> ();
-              MmWaveMacPduHeader header;
-              MacSubheader subheader (3, 0); // lcid = 3, size = 0
-              header.AddSubheader (subheader);
-              emptyPdu->AddHeader (header);
-              emptyPdu->AddPacketTag (tag);
-              LteRadioBearerTag bearerTag (currSlot.m_dci.m_rnti, 3, 0);
-              emptyPdu->AddPacketTag (bearerTag);
-              pktBurst = CreateObject<PacketBurst> ();
-              pktBurst->AddPacket (emptyPdu);
-            }
-          NS_LOG_DEBUG ("ENB " << m_cellId << " TXing DL DATA frame " << m_frameNum << " subframe " << (unsigned) m_sfNum << " symbols "
-                        << (unsigned) currSlot.m_dci.m_symStart << "-" << (unsigned) (currSlot.m_dci.m_symStart + currSlot.m_dci.m_numSym - 1)
-                        << "\t start " << Simulator::Now () + NanoSeconds (1.0) << " end " << Simulator::Now () + slotPeriod - NanoSeconds (2.0));
-          Simulator::Schedule (NanoSeconds (1.0), &MmWaveEnbPhy::SendDataChannels, this, pktBurst, slotPeriod - NanoSeconds (2.0), currSlot);
-        }
-      else
-        {
+//      if (m_currNumAllocLayers == 1)
+//        {
+//          slotPeriod = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () * currSlot.m_dci.m_numSym);
+//          NS_ASSERT (currSlot.m_tddMode == SlotAllocInfo::DL_slotAllocInfo);
+//          //NS_LOG_DEBUG ("Slot " << m_slotNum << " scheduled for Downlink");
+//          //			if (m_prevSlotDir == SlotAllocInfo::UL_slotAllocInfo)  // if curr slot == DL and prev slot == UL
+//          //			{
+//          //				guardPeriod = NanoSeconds (1000.0 * m_phyMacConfig->GetGuardPeriod ());
+//          //			}
+//
+//          //Ptr<PacketBurst> pktBurst = GetPacketBurst (SfnSf (m_frameNum, m_sfNum, currSlot.m_dci.m_symStart));
+//          Ptr<PacketBurst> pktBurst;
+//          pktBurst = GetPacketBurst (SfnSf (m_frameNum, m_sfNum, currSlot.m_dci.m_symStart));
+//
+//          if (pktBurst && pktBurst->GetNPackets () > 0)
+//            {
+//              std::list<Ptr<Packet>> pkts = pktBurst->GetPackets ();
+//              MmWaveMacPduTag macTag;
+//              pkts.front ()->PeekPacketTag (macTag);
+//              NS_ASSERT ((macTag.GetSfn ().m_sfNum == m_sfNum) && (macTag.GetSfn ().m_slotNum == currSlot.m_dci.m_symStart));
+//            }
+//          else
+//            {
+//              // sometimes the UE will be scheduled when no data is queued
+//              // in this case, send an empty PDU
+//              NS_LOG_UNCOND(Simulator::Now () << " [jskim14] UE is scheduled, but no data");
+//              MmWaveMacPduTag tag (SfnSf (m_frameNum, m_sfNum, currSlot.m_dci.m_symStart));
+//              Ptr<Packet> emptyPdu = Create<Packet> ();
+//              MmWaveMacPduHeader header;
+//              MacSubheader subheader (3, 0); // lcid = 3, size = 0
+//              header.AddSubheader (subheader);
+//              emptyPdu->AddHeader (header);
+//              emptyPdu->AddPacketTag (tag);
+//              LteRadioBearerTag bearerTag (currSlot.m_dci.m_rnti, 3, 0);
+//              emptyPdu->AddPacketTag (bearerTag);
+//              pktBurst = CreateObject<PacketBurst> ();
+//              pktBurst->AddPacket (emptyPdu);
+//            }
+//
+//          for (uint8_t i = 0; i < m_deviceMap.size (); i++)
+//            {
+//              Ptr<mmwave::MmWaveUeNetDevice> ueDev = m_deviceMap.at (i)->GetObject<mmwave::MmWaveUeNetDevice> ();
+//              if (currSlot.m_dci.m_rnti == ueDev->GetPhy ()->GetRnti ())
+//                {
+//                  GetDlSpectrumPhyList ().at(currSlot.m_dci.m_layerInd)->ConfigureBeamforming (m_deviceMap.at (i)); //always operates in the correct layerind
+//                  break;
+//                }
+//            }
+//
+//          NS_LOG_DEBUG ("ENB " << m_cellId << " TXing DL DATA frame " << m_frameNum << " subframe " << (unsigned) m_sfNum << " symbols "
+//                        << (unsigned) currSlot.m_dci.m_symStart << "-" << (unsigned) (currSlot.m_dci.m_symStart + currSlot.m_dci.m_numSym - 1)
+//                        << "\t start " << Simulator::Now () + NanoSeconds (1.0) << " end " << Simulator::Now () + slotPeriod - NanoSeconds (2.0));
+//          Simulator::Schedule (NanoSeconds (1.0), &MmWaveEnbPhy::SendDataChannels, this, pktBurst, slotPeriod - NanoSeconds (2.0), currSlot);
+//        }
+//      else
+//        {
           SlotBundleInfo currSlotBundleInfo = m_slotBundleList.front ();
           NS_LOG_INFO ("No. of layers: " << (int) currSlotBundleInfo.m_numLayers);
           NS_LOG_INFO ("Start symbol index: " << (int) currSlotBundleInfo.m_symStart);
@@ -1433,8 +1444,6 @@ MmWaveEnbPhy::StartSlot (void)
                         }
 //                      else
 //                        {
-                          //NS_LOG_DEBUG ("Change Beamforming Vector");
-                          //Antenna model is same for all layers
                           GetDlSpectrumPhyList ().at(currSlot.m_dci.m_layerInd)->ConfigureBeamforming (m_deviceMap.at (i)); //always operates in the correct layerind
 //                        }
                       break;
@@ -1446,57 +1455,63 @@ MmWaveEnbPhy::StartSlot (void)
               Simulator::Schedule (NanoSeconds (1), &MmWaveEnbPhy::SendDataChannels, this, pktBurst, slotPeriod - NanoSeconds (2.0), currSlot);
             }
 
-          if ( bfCasted != 0)
+          if ( bfCasted != 0 )
             {
-              bfCasted-> SetNoisePowerSpectralDensity ( 0 ); //In DL, we use the special case of MMSE with No=0 to implement the ZF method
+              //TODO: it would be preferable to have the noise PSD stored in the beamforming module once at the begining of the simulation instead of here.
+              Ptr<SpectrumValue> noisePsd = MmWaveSpectrumValueHelper::CreateNoisePowerSpectralDensity (m_phyMacConfig, m_noiseFigure); //I know this is Botlzman thermal noise times noise figure, but for the sake of uniformity we call this function to generate the number exactly in the same way as in the receiver
+              double noisePsdNarrowband = (*noisePsd)[0]; //TODO we have to use the same frequency offset w.r.t. the OFDM subcarriers here than in the call to GetFrequencyFlatChannelMatrixAtDeltaFrequency in the Beamforming module
+              double myTxPSD = pow(10.0, ((double) m_txPower - 30.0) / 10.0 ) * 1.0 / (double) m_phyMacConfig->GetSystemBandwidth ();
+              NS_LOG_UNCOND("No PSD is "<< noisePsdNarrowband <<" W, Num subbands is "<<noisePsd->GetSpectrumModel()->GetNumBands ());
+              NS_LOG_UNCOND("Tx power is " << m_txPower << " dBm bandiwdh is " << m_phyMacConfig->GetSystemBandwidth () << " TxPSD is "<< myTxPSD);
+              bfCasted-> SetNoisePowerSpectralDensity ( noisePsdNarrowband ); //In DL, we use the special case of MMSE with No=0 to implement the ZF method
               bfCasted-> SetBeamformingVectorForSlotBundle ( vDevsInBundle, vLayersInBundle );
             }
 
           slotPeriod = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () * currSlotBundleInfo.m_minNumSym); //schedule for EndSlot()
-        }
+//        }
     }
   else if (currSlot.m_tddMode == SlotAllocInfo::UL_slotAllocInfo) // receive UL slot
     {
       m_receptionEnabled = true;
-      if (m_currNumAllocLayers == 1)
-        {
-          slotPeriod = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () * currSlot.m_dci.m_numSym);
-          //NS_LOG_DEBUG ("Slot " << (uint8_t)m_slotNum << " scheduled for Uplink");
-          /*m_downlinkSpectrumPhy->AddExpectedTb (currSlot.m_dci.m_rnti, currSlot.m_dci.m_ndi, currSlot.m_dci.m_tbSize,
-                                            currSlot.m_dci.m_mcs, m_channelChunks, currSlot.m_dci.m_harqProcess, currSlot.m_dci.m_rv, false,
-                                            currSlot.m_dci.m_symStart, currSlot.m_dci.m_numSym);*/
-          m_downlinkSpectrumPhyList.at (currSlot.m_dci.m_layerInd)->AddExpectedTb (currSlot.m_dci.m_rnti, currSlot.m_dci.m_ndi, currSlot.m_dci.m_tbSize,
-                               currSlot.m_dci.m_mcs, m_channelChunks, currSlot.m_dci.m_harqProcess,
-                               currSlot.m_dci.m_rv, false, currSlot.m_dci.m_symStart,
-                               currSlot.m_dci.m_numSym);
-
-          for (uint8_t i = 0; i < m_deviceMap.size (); i++)
-            {
-              Ptr<mmwave::MmWaveUeNetDevice> ueDev = DynamicCast<mmwave::MmWaveUeNetDevice> (m_deviceMap.at (i));
-              Ptr<McUeNetDevice> mcUeDev = DynamicCast<McUeNetDevice> (m_deviceMap.at (i));
-              uint64_t ueRnti = (ueDev != 0) ? (ueDev->GetPhy ()->GetRnti ()) : (mcUeDev->GetMmWavePhy ()->GetRnti ());
-              Ptr<NetDevice> associatedEnb = (ueDev != 0) ? (ueDev->GetTargetEnb ()) : (mcUeDev->GetMmWaveTargetEnb ());
-              
-              NS_LOG_DEBUG ("Scheduled rnti: " << currSlot.m_rnti << " ue rnti: " << ueRnti << " target eNB " << associatedEnb << " this eNB " << m_netDevice);
-
-              if (currSlot.m_rnti == ueRnti && m_netDevice == associatedEnb)
-                {
-                  //NS_LOG_DEBUG ("Change Beamforming Vector");
-                  //Antenna model is samle for all layers
-        	  GetDlSpectrumPhyList ().at(currSlot.m_dci.m_layerInd)->ConfigureBeamforming (m_deviceMap.at (i));
-                  break;
-                }
-            }
-
-          NS_LOG_DEBUG ("ENB " << m_cellId << " RXing UL DATA frame " << m_frameNum << " subframe "
-                     << (unsigned) m_sfNum << " symbols " << (unsigned) currSlot.m_dci.m_symStart
-                     << "-" << (unsigned) (currSlot.m_dci.m_symStart + currSlot.m_dci.m_numSym - 1)
-                     << "\t start " << Simulator::Now () << " end "
-                     << Simulator::Now () + slotPeriod << " layer "
-                     << (int) currSlot.m_dci.m_layerInd);
-        }
-      else
-        {
+//      if (m_currNumAllocLayers == 1)
+//        {
+//          slotPeriod = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () * currSlot.m_dci.m_numSym);
+//          //NS_LOG_DEBUG ("Slot " << (uint8_t)m_slotNum << " scheduled for Uplink");
+//          /*m_downlinkSpectrumPhy->AddExpectedTb (currSlot.m_dci.m_rnti, currSlot.m_dci.m_ndi, currSlot.m_dci.m_tbSize,
+//                                            currSlot.m_dci.m_mcs, m_channelChunks, currSlot.m_dci.m_harqProcess, currSlot.m_dci.m_rv, false,
+//                                            currSlot.m_dci.m_symStart, currSlot.m_dci.m_numSym);*/
+//          m_downlinkSpectrumPhyList.at (currSlot.m_dci.m_layerInd)->AddExpectedTb (currSlot.m_dci.m_rnti, currSlot.m_dci.m_ndi, currSlot.m_dci.m_tbSize,
+//                               currSlot.m_dci.m_mcs, m_channelChunks, currSlot.m_dci.m_harqProcess,
+//                               currSlot.m_dci.m_rv, false, currSlot.m_dci.m_symStart,
+//                               currSlot.m_dci.m_numSym);
+//
+//          for (uint8_t i = 0; i < m_deviceMap.size (); i++)
+//            {
+//              Ptr<mmwave::MmWaveUeNetDevice> ueDev = DynamicCast<mmwave::MmWaveUeNetDevice> (m_deviceMap.at (i));
+//              Ptr<McUeNetDevice> mcUeDev = DynamicCast<McUeNetDevice> (m_deviceMap.at (i));
+//              uint64_t ueRnti = (ueDev != 0) ? (ueDev->GetPhy ()->GetRnti ()) : (mcUeDev->GetMmWavePhy ()->GetRnti ());
+//              Ptr<NetDevice> associatedEnb = (ueDev != 0) ? (ueDev->GetTargetEnb ()) : (mcUeDev->GetMmWaveTargetEnb ());
+//
+//              NS_LOG_DEBUG ("Scheduled rnti: " << currSlot.m_rnti << " ue rnti: " << ueRnti << " target eNB " << associatedEnb << " this eNB " << m_netDevice);
+//
+//              if (currSlot.m_rnti == ueRnti && m_netDevice == associatedEnb)
+//                {
+//                  //NS_LOG_DEBUG ("Change Beamforming Vector");
+//                  //Antenna model is samle for all layers
+//        	  GetDlSpectrumPhyList ().at(currSlot.m_dci.m_layerInd)->ConfigureBeamforming (m_deviceMap.at (i));
+//                  break;
+//                }
+//            }
+//
+//          NS_LOG_DEBUG ("ENB " << m_cellId << " RXing UL DATA frame " << m_frameNum << " subframe "
+//                     << (unsigned) m_sfNum << " symbols " << (unsigned) currSlot.m_dci.m_symStart
+//                     << "-" << (unsigned) (currSlot.m_dci.m_symStart + currSlot.m_dci.m_numSym - 1)
+//                     << "\t start " << Simulator::Now () << " end "
+//                     << Simulator::Now () + slotPeriod << " layer "
+//                     << (int) currSlot.m_dci.m_layerInd);
+//        }
+//      else
+//        {
           SlotBundleInfo currSlotBundleInfo = m_slotBundleList.front ();
           NS_LOG_INFO ("No. of layers: " << (int) currSlotBundleInfo.m_numLayers);
           NS_LOG_INFO ("Start symbol index: " << (int) currSlotBundleInfo.m_symStart);
@@ -1586,7 +1601,7 @@ MmWaveEnbPhy::StartSlot (void)
 //            {//the case when we start slot A at time t1, then slot B must start at time t2>t1, before end of slot A at time t3>t2>t1.
 //              Simulator::Schedule ( difSlotStart + m_lastSfStart - Simulator::Now (), &MmWaveEnbPhy::StartSlot, this);
 //            }
-        }
+//        }
     }
 
   m_prevSlotDir = currSlot.m_tddMode;
@@ -1785,7 +1800,6 @@ MmWaveEnbPhy::GenerateDataCqiReport (const SpectrumValue& sinr)
 {
   NS_LOG_LOGIC ("Sinr from DataCqiReport = " << sinr);
   double sinrAvg = Sum (sinr) / (sinr.GetSpectrumModel ()->GetNumBands ());
-  NS_LOG_INFO ("Average SINR on DataCqiReport " << 10 * std::log10 (sinrAvg));
 
   Values::const_iterator it;
   MmWaveMacSchedSapProvider::SchedUlCqiInfoReqParameters ulcqi;
@@ -1804,6 +1818,7 @@ MmWaveEnbPhy::GenerateDataCqiReport (const SpectrumValue& sinr)
   // here we use the start symbol index of the slot in place of the slot index because the absolute UL slot index is
   // not known to the scheduler when m_allocationMap gets populated
   ulcqi.m_sfnSf = SfnSf (m_frameNum, m_sfNum, m_currSymStart);
+  NS_LOG_INFO ("Average SINR on Ul DataCqiReport " << 10 * std::log10 (sinrAvg) << " dB in slot id "<<ulcqi.m_sfnSf.Encode ());
   SpectrumValue newSinr = sinr;
   m_ulSinrTrace (0, newSinr, newSinr);
   m_phySapUser->UlCqiReport (ulcqi);

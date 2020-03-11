@@ -72,6 +72,7 @@ mmWaveChunkProcessor::EvaluateChunk (const SpectrumValue& sinr, Time duration)
     {
       m_sumValues = Create<SpectrumValue> (sinr.GetSpectrumModel ());
     }
+//  NS_LOG_UNCOND("SINR tracker updated base "<<((m_totDuration>0)?Sum(*m_sumValues)/m_totDuration.GetSeconds ():0)/m_sumValues->GetSpectrumModel()->GetNumBands()<< " add " << Sum(sinr)/m_sumValues->GetSpectrumModel()->GetNumBands() <<" during "<< duration.GetSeconds()<< "s new "<<Sum( (*m_sumValues) + sinr*duration.GetSeconds () )/(m_totDuration.GetSeconds () + duration.GetSeconds ())/m_sumValues->GetSpectrumModel()->GetNumBands());
   (*m_sumValues) += sinr * duration.GetSeconds ();
   m_totDuration += duration;
 }

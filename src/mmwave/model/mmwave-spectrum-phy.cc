@@ -666,7 +666,7 @@ MmWaveSpectrumPhy::EndRxData ()
           sinrMin = *it;
         }
     }
-  NS_LOG_INFO (this << " SINR perceived " << sinrMin);
+//  NS_LOG_INFO (this << " SINR perceived mean " << sinrAvg <<" min " << sinrMin);
 
   NS_ASSERT (m_state = RX_DATA);
   
@@ -702,19 +702,22 @@ MmWaveSpectrumPhy::EndRxData ()
           itTb->second.corrupt = m_random->GetValue () > tbStats.tbler ? false : true;
           //if (itTb->second.corrupt)
             {
-              NS_LOG_INFO (this << " RNTI " << itTb->first << " " << ( (itTb->second.downlink)?"DL":"UL") << " size " << itTb->second.size << " mcs " << (uint32_t)itTb->second.mcs << " bitmap " << itTb->second.rbBitmap.size () << " rv " << (int)rv << " TBLER " << tbStats.tbler << " corrupted " << itTb->second.corrupt);
-
               int mcsShould = 0;
-	      while (mcsShould < 28)
+	      while (mcsShould <= 28)
 		{
-		  tbStats = MmWaveMiErrorModel::GetTbDecodificationStats (m_sinrPerceived, itTb->second.rbBitmap, itTb->second.size, mcsShould, harqInfoList);
-		  if (tbStats.tbler > 0.1)
+	          MmWaveTbStats_t tbStats2 = MmWaveMiErrorModel::GetTbDecodificationStats (m_sinrPerceived, itTb->second.rbBitmap, itTb->second.size, mcsShould, harqInfoList);
+		  if (tbStats2.tbler > 0.1)
 		    {
 		      break;
 		    }
 		  mcsShould++;
 		}
-              NS_LOG_INFO ("The MCS for 1e-2 error should have been " << mcsShould);
+	      if (mcsShould > 0)
+	        {
+	          mcsShould--;
+	        }
+	      NS_LOG_INFO (this << " RNTI " << itTb->first << " " << ( (itTb->second.downlink)?"DL":"UL") << " size " << itTb->second.size << " mcs " << (uint32_t)itTb->second.mcs << " bitmap " << itTb->second.rbBitmap.size () << " rv " << (int)rv << " SINR "<< 10 * std::log10 (sinrAvg) << " dB TBLER " << tbStats.tbler << " corrupted " << itTb->second.corrupt
+	                   <<". MCS for 10% BLER should be " << mcsShould<< " instead");
             }
         }
       itTb++;

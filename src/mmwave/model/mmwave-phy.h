@@ -113,8 +113,8 @@ public:
 
 
 //	virtual Ptr<PacketBurst> GetPacketBurst (void);
-  virtual Ptr<PacketBurst> GetPacketBurst (SfnSf);
-  virtual Ptr<PacketBurst> GetPacketBurst (SfnSf, uint8_t);
+//  virtual Ptr<PacketBurst> GetPacketBurst (SfnSf);
+  virtual Ptr<PacketBurst> GetPacketBurst (SfnSf sfn, uint8_t layerInd = 0);
 
   void SetConfigurationParameters (Ptr<MmWavePhyMacCommon> ptrConfig);
   Ptr<MmWavePhyMacCommon> GetConfigurationParameters (void) const;

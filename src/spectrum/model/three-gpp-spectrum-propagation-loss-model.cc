@@ -150,7 +150,7 @@ ThreeGppSpectrumPropagationLossModel::CalLongTerm (Ptr<ThreeGppChannelMatrix> pa
   if (params->m_isReverse)
   {
     // TODO we should never enter in this branch because we should have already
-    // computed the long term for the direct link. Consider to remove it
+    // computed the long term for the direct link. Consider to remove it (NOTE: Fgomez this point can be reached in the HBF extension when more than one bf vector is evaluated for the same channel matrix)
 
     // the channel matrix was generated considering device b as tx and device
     // a as rx
@@ -183,7 +183,7 @@ ThreeGppSpectrumPropagationLossModel::CalLongTerm (Ptr<ThreeGppChannelMatrix> pa
           std::complex<double> rxSum (0,0);
           for (uint16_t rxIndex = 0; rxIndex < rxAntenna; rxIndex++)
             {
-              rxSum = rxSum + std::conj (rxW.at (rxIndex)) * params->m_channel.at (rxIndex).at (txIndex).at (cIndex);
+              rxSum = rxSum + rxW.at (rxIndex) * params->m_channel.at (rxIndex).at (txIndex).at (cIndex);
             }
           txSum = txSum + txW.at (txIndex) * rxSum;
         }
@@ -228,23 +228,18 @@ ThreeGppSpectrumPropagationLossModel::CalBeamformingGain (Ptr<SpectrumValue> txP
       std::complex<double> subsbandGain (0.0,0.0);
       if ((*vit) != 0.00)
         {
-          double fsb = (*sbit).fc; //TODO it seems that the iterator (*sbit) is never changed, this may be a bug resulting in the fc of subcarrier 0 used for the doppler of all bands
+          double fsb = GetFrequency (); //(*sbit).fc; //TODO it seems that the iterator (*sbit) is never changed, this may be a bug resulting in the fc of subcarrier 0 used for the doppler of all bands
+//          NS_LOG_UNCOND("fsb: "<<fsb);
           for (uint8_t cIndex = 0; cIndex < numCluster; cIndex++)
             {
               double delay = -2 * M_PI * fsb * (params->m_delay.at (cIndex));
-              if (params->m_isReverse)
-              {
-                  subsbandGain = subsbandGain + std::conj( longTerm.at (cIndex) ) * doppler.at (cIndex) * exp (std::complex<double> (0, delay));
-              }
-              else
-                {
-                  subsbandGain = subsbandGain + longTerm.at (cIndex) * doppler.at (cIndex) * exp (std::complex<double> (0, delay));
-                }
+              subsbandGain = subsbandGain + longTerm.at (cIndex) * doppler.at (cIndex) * exp (std::complex<double> (0, delay));
             }
-          *vit = norm (subsbandGain); //TODO: verify that adding the conjugate above makes sense.
+          *vit = norm (subsbandGain);
         }
       vit++;
       iSubband++;//TODO it seems iSubband does nothing whereas the subband iterator *sbit has not been incremented in this loop
+      sbit++;
     }
   return tempPsd;
 }
@@ -387,6 +382,7 @@ ThreeGppSpectrumPropagationLossModel::GetFrequencyFlatChannelMatrixAtDeltaFreque
   complexVector_t delay_doppler;
   double slotTime = Simulator::Now ().GetSeconds ();
   double fsb = deltaFc + GetFrequency (); //we assume the reference signal is Deltafc distant from the center frequency of the channel model
+  NS_LOG_UNCOND("fsb estim: "<<fsb);
   for (uint8_t cIndex = 0; cIndex < numCluster; cIndex++)
     {
       //cluster angle angle[direction][n],where, direction = 0(aoa), 1(zoa).
@@ -417,7 +413,7 @@ ThreeGppSpectrumPropagationLossModel::GetFrequencyFlatChannelMatrixAtDeltaFreque
 	      if ( channelMatrix->m_isReverse )
 		{//we read from the ChannelMatrix in reverse but store in the current order, effectively conjugating the result
 
-		  resultElement += std::conj( channelMatrix->m_channel.at (txIndex).at (rxIndex).at (cIndex) * doppler.at (cIndex) * delay_doppler.at(cIndex) );
+		  resultElement +=   channelMatrix->m_channel.at (txIndex).at (rxIndex).at (cIndex) * doppler.at (cIndex) * delay_doppler.at(cIndex);
 //		  NS_LOG_DEBUG ("REVERSE Computing step ["<< rxIndex <<","<< txIndex <<","<< (int )cIndex <<
 //				"] Array size = ["<<  channelMatrix->m_channel.at(0).size() <<","<< channelMatrix->m_channel.size() <<","<< channelMatrix->m_channel.at(0).at(0).size() <<
 //				"] loop limits ["<< numRxAntenna <<","<< numTxAntenna<<","<<(int )numCluster<<
@@ -530,8 +526,7 @@ ThreeGppSpectrumPropagationLossModel::DoCalcRxPowerSpectralDensityMultilayers (P
   Ptr<SpectrumValue> bfGainPsd = CalBeamformingGain (rxPsd, longTerm, channelMatrix, a->GetVelocity (), b->GetVelocity ());
   (*rxPsd) *= (*bfGainPsd);
 
-  NS_LOG_UNCOND("BF Gain "<< (*bfGainPsd)[0] );
-  NS_LOG_UNCOND("Rx PSD "<< (*rxPsd)[0] );
+  NS_LOG_UNCOND("BF Gain TxId " << a->GetObject<Node>()->GetId () << " RxId " << b->GetObject<Node>()->GetId () << " TxBeam " << AntennaArrayBasicModel::GetBeamId(txW) << " RxBeam " << AntennaArrayBasicModel::GetBeamId(rxW) << " g= " << Sum(*bfGainPsd) / bfGainPsd->GetSpectrumModel()->GetNumBands() );
 
   return rxPsd;
 }

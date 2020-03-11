@@ -229,6 +229,8 @@ public:
       */
    virtual bool CheckBfCacheExpiration(Ptr<NetDevice> otherDevice, Ptr<BFVectorCacheEntry> pCacheValue) override;
 
+   virtual std::pair<uint16_t,uint16_t> bfGainLookup(complex2DVector_t& equivalentChannelCoefs, std::set<uint16_t> blockedTxIdx = {});
+   complexVector_t bfVector2DFFT(uint16_t index, uint16_t antennaNum [2]);
 
 private:
 

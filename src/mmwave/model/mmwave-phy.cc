@@ -264,22 +264,22 @@ MmWavePhy::SetMacPdu (Ptr<Packet> p)
       uint8_t layerInd = tag.GetLayerInd();
       NS_LOG_INFO (" Sf num: " << (int)sfNum << ", slot num: " << (int)slotNum);
       NS_LOG_INFO (" No. of allocated layers: " << (int)numAllocLayers << ", Layer number: " << (int)layerInd);
-      if (numAllocLayers == 1)
-        {
-          std::map<uint32_t, Ptr<PacketBurst>>::iterator it = m_packetBurstMap.find (tag.GetSfn ().Encode ());
-          if (it == m_packetBurstMap.end ())
-            {
-              it = m_packetBurstMap.insert (std::pair<uint32_t, Ptr<PacketBurst> > (tag.GetSfn ().Encode (), CreateObject<PacketBurst> ())).first;
-            }
-          else
-            {
-              NS_FATAL_ERROR ("Packet burst map entry already exists");
-            }
-          it->second->AddPacket (p);
-        }
-      else
-        {
-    	    //NS_LOG_UNCOND ("Code " << tag.Encode());
+//      if (numAllocLayers == 1)
+//        {
+//          std::map<uint32_t, Ptr<PacketBurst>>::iterator it = m_packetBurstMap.find (tag.GetSfn ().Encode ());
+//          if (it == m_packetBurstMap.end ())
+//            {
+//              it = m_packetBurstMap.insert (std::pair<uint32_t, Ptr<PacketBurst> > (tag.GetSfn ().Encode (), CreateObject<PacketBurst> ())).first;
+//            }
+//          else
+//            {
+//              NS_FATAL_ERROR ("Packet burst map entry already exists");
+//            }
+//          it->second->AddPacket (p);
+//        }
+//      else
+//        {
+    	    NS_LOG_UNCOND ("Code " << tag.Encode());
           std::map<uint64_t, Ptr<PacketBurst>>::iterator it = m_packetBurstLayerMap.find (tag.Encode());
           if (it == m_packetBurstLayerMap.end ())
             {
@@ -291,30 +291,31 @@ MmWavePhy::SetMacPdu (Ptr<Packet> p)
             }
           it->second->AddPacket (p);
         }
-    }
+//    }
   else
     {
       NS_FATAL_ERROR ("No MAC packet PDU header available");
     }
 }
 
-Ptr<PacketBurst>
-MmWavePhy::GetPacketBurst (SfnSf sfn)
-{
-  Ptr<PacketBurst> pburst;
-  std::map<uint32_t, Ptr<PacketBurst> >::iterator it = m_packetBurstMap.find (sfn.Encode ());
-  if (it == m_packetBurstMap.end ())
-    {
-      NS_LOG_ERROR ("GetPacketBurst(): Packet burst not found for subframe " << (unsigned)sfn.m_sfNum << " slot/sym start "  << (unsigned)sfn.m_slotNum);
-      return pburst;
-    }
-  else
-    {
-      pburst = it->second;
-      m_packetBurstMap.erase (it);
-    }
-  return pburst;
-}
+//Ptr<PacketBurst>
+//MmWavePhy::GetPacketBurst (SfnSf sfn)
+//{
+////  Ptr<PacketBurst> pburst;
+////  std::map<uint32_t, Ptr<PacketBurst> >::iterator it = m_packetBurstMap.find (sfn.Encode ());
+////  if (it == m_packetBurstMap.end ())
+////    {
+////      NS_LOG_ERROR ("GetPacketBurst(): Packet burst not found for subframe " << (unsigned)sfn.m_sfNum << " slot/sym start "  << (unsigned)sfn.m_slotNum);
+////      return pburst;
+////    }
+////  else
+////    {
+////      pburst = it->second;
+////      m_packetBurstMap.erase (it);
+////    }
+////  return pburst;
+//  return GetPacketBurst (sfn,0);//default to layer 0
+//}
 
 Ptr<PacketBurst>
 MmWavePhy::GetPacketBurst (SfnSf sfn, uint8_t layerInd)
