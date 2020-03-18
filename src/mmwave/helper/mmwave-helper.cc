@@ -1586,7 +1586,7 @@ MmWaveHelper::InstallSingleEnbDevice (Ptr<Node> n)
           Ptr<mmWaveChunkProcessor> pData = Create<mmWaveChunkProcessor> ();
           if (!m_snrTest)
             {
-              pData->AddCallback (MakeCallback (&MmWaveEnbPhy::GenerateDataCqiReport, phy));
+              pData->AddCallback (MakeCallback (&MmWaveSpectrumPhy::DoEnbPhyDataCqiReportWithLayer, (*itSpec)));
               pData->AddCallback (MakeCallback (&MmWaveSpectrumPhy::UpdateSinrPerceived, (*itSpec)));
             }
           (*itSpec)->AddDataSinrChunkProcessor (pData);

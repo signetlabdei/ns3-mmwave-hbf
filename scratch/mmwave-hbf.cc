@@ -69,11 +69,13 @@ main (int argc, char *argv[])
 	LogComponentEnable ("ThreeGppSpectrumPropagationLossModel", LOG_LEVEL_INFO);
 	LogComponentEnable ("ThreeGppChannel", LOG_LEVEL_DEBUG);
 	//LogComponentEnable("PropagationLossModel",LOG_LEVEL_ALL);
-//	LogComponentEnable ("MmwaveHbfSpectrumChannel", LOG_LEVEL_INFO);
+	//      LogComponentEnable ("MmwaveHbfSpectrumChannel", LOG_LEVEL_INFO);
+        LogComponentEnable ("MmWavePaddedHbfMacScheduler", LOG_LEVEL_INFO);
+        LogComponentEnable ("MmWaveFlexTtiMacScheduler", LOG_LEVEL_INFO);
 
 	uint16_t numEnb = 1;
-	uint16_t numUe = 3;
-	uint16_t numEnbLayers = 8;
+	uint16_t numUe = 7;
+	uint16_t numEnbLayers = 4;
 	double startTime = 1;
 	double simTime = 1.2;
 	double packetSize = 1460; // packet size in byte
@@ -202,8 +204,9 @@ main (int argc, char *argv[])
 	Ptr<UniformRandomVariable> distRv = CreateObject<UniformRandomVariable> ();
 	for (unsigned i = 0; i < numUe; i++)
 	{
+	        //
 		double dist = distRv->GetValue (minDistance, maxDistance);
-		double angle = ( (double ) i / (double )numUe +.125 )  * 3.14159265;// in radians, add pi/4 to break specular symmetry of antenna array
+		double angle = ( ((double ) i + 0.125) / (double )numUe )  * 2* 3.14159265;// in radians, add pi/2/n to break specular symmetry of antenna array
 		uePositionAlloc->Add (Vector (dist * cos (angle), dist * sin (angle), 0.0));
 		NS_LOG_UNCOND ("UE i: "<<i<<" is at position X: "<<dist * cos (angle)<<" Y: "<<dist * sin (angle));
 	}

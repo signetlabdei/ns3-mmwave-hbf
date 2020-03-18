@@ -708,7 +708,7 @@ MmWaveMMSEBeamforming::SetBeamformingVectorForSlotBundle(std::vector< Ptr<NetDev
           bCacheEntry=DynamicCast<CodebookBFVectorCacheEntry>( m_vectorCache[beamKey] );
       }
       if (txBeamsCollection.find(bCacheEntry->txBeamInd)!=txBeamsCollection.end())
-        {//if two users employ the same tx beam we have a matrix rank problem and the SINR suffers a lot, hence we adopt an alternative beam
+        {//if two users employ the same tx beam we have a matrix rank problem and the SINR suffers a lot, hence we adopt an alternative second-best beam
               Ptr<CodebookBFVectorCacheEntry> auxBfRecord = Create<CodebookBFVectorCacheEntry> (); //we must create a temporary single-use copy of the bfCache struct
               auxBfRecord->m_beamId = bCacheEntry->m_beamId;
               auxBfRecord->rxBeamInd = bCacheEntry->rxBeamInd;
@@ -716,6 +716,7 @@ MmWaveMMSEBeamforming::SetBeamformingVectorForSlotBundle(std::vector< Ptr<NetDev
               complex2DVector_t oneColumnAuxChan;
               oneColumnAuxChan.push_back(auxBfRecord->m_equivalentChanCoefs.at(auxBfRecord->rxBeamInd));//this auxiliary vector reduces the following lookup dimensions in rx side
               std::pair<uint16_t,uint16_t> bfPairSelection = bfGainLookup(auxBfRecord->m_equivalentChanCoefs,txBeamsCollection);
+              //the first component of this pair is actually garbage (always 1) because we used the AuxChan variable in the function call
               uint16_t altBeam = bfPairSelection.second;
               uint16_t antennaNum [2];
               antennaNum[0] = m_antenna->GetAntennaNumDim1 ();
@@ -724,6 +725,10 @@ MmWaveMMSEBeamforming::SetBeamformingVectorForSlotBundle(std::vector< Ptr<NetDev
               auxBfRecord->m_antennaWeights=bfVector2DFFT(altBeam,antennaNum);
               bfCachesInSlot.push_back( auxBfRecord );
               txBeamsCollection.insert(auxBfRecord->txBeamInd);
+              NS_LOG_DEBUG("MMSE BF beam conflict, node " << m_mobility->GetObject<Node> ()->GetId ()<< " pointing at node " << (*itDev )->GetNode ()->GetId () <<
+                           " may not use beamID " << bCacheEntry->txBeamInd << " fall back to beamID " << auxBfRecord->txBeamInd <<
+                           " BFgain penalty 1/"<< std::norm(auxBfRecord->m_equivalentChanCoefs.at(auxBfRecord->rxBeamInd).at(bCacheEntry->txBeamInd)) / std::norm(auxBfRecord->m_equivalentChanCoefs.at(auxBfRecord->rxBeamInd).at(auxBfRecord->txBeamInd))
+                           );
         }
       else
         {
@@ -806,6 +811,7 @@ MmWaveMMSEBeamforming::SetBeamformingVectorForSlotBundle(std::vector< Ptr<NetDev
   for ( complex2DVector_t::iterator columnIt = analogWtransposed.begin();  columnIt != analogWtransposed.end(); columnIt++ )
     {
       AntennaArrayBasicModel::complexVector_t mmseAntennaWeights =  MmseSolve( equivalentH , (*columnIt) );
+//      AntennaArrayBasicModel::complexVector_t mmseAntennaWeights =  *columnIt;
       for ( uint8_t i = 0; i < mmseAntennaWeights.size(); i++ )
         {
           if ( rowctr == 0 )
@@ -849,7 +855,7 @@ MmWaveMMSEBeamforming::SetBeamformingVectorForSlotBundle(std::vector< Ptr<NetDev
 
       if ( castAntenna != 0 )
 	{
-//	  castAntenna->SetBeamformingVectorMultilayers ( (*hybridWit), bId, (*itDev), (*itLId));
+	  castAntenna->SetBeamformingVectorMultilayers ( (*hybridWit), bId, (*itDev), (*itLId));
 	}
       else
 	{

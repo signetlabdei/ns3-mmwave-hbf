@@ -1054,6 +1054,17 @@ MmWaveSpectrumPhy::StartTxDlControlFrames (std::list<Ptr<MmWaveControlMessage> >
 }
 
 void
+MmWaveSpectrumPhy::DoEnbPhyDataCqiReportWithLayer (const SpectrumValue& sinr)
+{
+  Ptr<MmWaveEnbNetDevice> enbRx = DynamicCast<MmWaveEnbNetDevice> (GetDevice ());
+  if (enbRx != 0)
+    {
+      enbRx->GetPhy()->GenerateDataCqiReport(sinr,m_layerInd);
+    }
+  //else do nothing, we should only see this function called when the
+}
+
+void
 MmWaveSpectrumPhy::EndTx ()
 {
   NS_ASSERT (m_state == TX);

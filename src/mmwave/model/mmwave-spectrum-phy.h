@@ -196,6 +196,8 @@ public:
 
   void SetHarqPhyModule (Ptr<MmWaveHarqPhy> harq);
 
+  void DoEnbPhyDataCqiReportWithLayer (const SpectrumValue& sinr);
+
   uint8_t GetLayerInd ();
 
 private:

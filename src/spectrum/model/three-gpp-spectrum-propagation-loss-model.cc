@@ -199,14 +199,65 @@ ThreeGppSpectrumPropagationLossModel::CalBeamformingGain (Ptr<SpectrumValue> txP
 
   Ptr<SpectrumValue> tempPsd = Copy (txPsd);
 
+  complexVector_t tempComplexCoef = CalBeamformingComplexCoef ( tempPsd, longTerm, params, txSpeed, rxSpeed);
+
+
+//  //channel[rx][tx][cluster]
+//  uint8_t numCluster = params->m_channel.at (0).at (0).size ();
+//
+//  //the update of Doppler is simplified by only taking the center angle of each cluster in to consideration.
+  Values::iterator vit = tempPsd->ValuesBegin ();
+//  Bands::const_iterator sbit = tempPsd->ConstBandsBegin(); // sub band iterator
+//
+  uint16_t iSubband = 0;
+//  double slotTime = Simulator::Now ().GetSeconds ();
+//  complexVector_t doppler;
+//  for (uint8_t cIndex = 0; cIndex < numCluster; cIndex++)
+//    {
+//      //cluster angle angle[direction][n],where, direction = 0(aoa), 1(zoa).
+//      // TODO should I include the "alfa" term for the Doppler of delayed paths?
+//      double temp_doppler = 2 * M_PI * ((sin (params->m_angle.at (ThreeGppChannel::ZOA_INDEX).at (cIndex) * M_PI / 180) * cos (params->m_angle.at (ThreeGppChannel::AOA_INDEX).at (cIndex) * M_PI / 180) * rxSpeed.x
+//                                        + sin (params->m_angle.at (ThreeGppChannel::ZOA_INDEX).at (cIndex) * M_PI / 180) * sin (params->m_angle.at (ThreeGppChannel::AOA_INDEX).at (cIndex) * M_PI / 180) * rxSpeed.y
+//                                        + cos (params->m_angle.at (ThreeGppChannel::ZOA_INDEX).at (cIndex) * M_PI / 180) * rxSpeed.z)
+//                                        + (sin (params->m_angle.at (ThreeGppChannel::ZOD_INDEX).at (cIndex) * M_PI / 180) * cos (params->m_angle.at (ThreeGppChannel::AOD_INDEX).at (cIndex) * M_PI / 180) * txSpeed.x
+//                                        + sin (params->m_angle.at (ThreeGppChannel::ZOD_INDEX).at (cIndex) * M_PI / 180) * sin (params->m_angle.at (ThreeGppChannel::AOD_INDEX).at (cIndex) * M_PI / 180) * txSpeed.y
+//                                        + cos (params->m_angle.at (ThreeGppChannel::ZOD_INDEX).at (cIndex) * M_PI / 180) * txSpeed.z))
+//                                        * slotTime * GetFrequency () / 3e8;
+//      doppler.push_back (exp (std::complex<double> (0, temp_doppler)));
+//    }
+//
+  while (vit != tempPsd->ValuesEnd ())
+    {
+//      std::complex<double> subsbandGain (0.0,0.0);
+//      if ((*vit) != 0.00)
+//        {
+//          double fsb = GetFrequency (); //TODO this is a temporary fix to test MMSE beamforming in a frequency-flat channel. We must restore the behavior on next line and implement frequency-selective MMSE beamforming in the future
+////          double fsb = (*sbit).fc; //TODO it seems that the iterator (*sbit) is never changed, this may be a bug resulting in the fc of subcarrier 0 used for the doppler of all bands
+////          NS_LOG_UNCOND("fsb: "<<fsb);
+//          for (uint8_t cIndex = 0; cIndex < numCluster; cIndex++)
+//            {
+//              double delay = -2 * M_PI * fsb * (params->m_delay.at (cIndex));
+//              subsbandGain = subsbandGain + longTerm.at (cIndex) * doppler.at (cIndex) * exp (std::complex<double> (0, delay));
+//            }
+//          *vit = norm (subsbandGain);
+//        }
+      *vit = norm(tempComplexCoef.at(iSubband));
+      vit++;
+      iSubband++;//TODO it seems iSubband does nothing whereas the subband iterator *sbit has not been incremented in this loop
+//      sbit++;
+    }
+  return tempPsd;
+}
+
+complexVector_t
+ThreeGppSpectrumPropagationLossModel::CalBeamformingComplexCoef (Ptr<SpectrumValue> refPsd, complexVector_t longTerm, Ptr<ThreeGppChannelMatrix> params, Vector txSpeed, Vector rxSpeed) const
+{
+  NS_LOG_FUNCTION (this);
+
   //channel[rx][tx][cluster]
   uint8_t numCluster = params->m_channel.at (0).at (0).size ();
+  complexVector_t tempComplexSpectrum;
 
-  //the update of Doppler is simplified by only taking the center angle of each cluster in to consideration.
-  Values::iterator vit = tempPsd->ValuesBegin ();
-  Bands::const_iterator sbit = tempPsd->ConstBandsBegin(); // sub band iterator
-
-  uint16_t iSubband = 0;
   double slotTime = Simulator::Now ().GetSeconds ();
   complexVector_t doppler;
   for (uint8_t cIndex = 0; cIndex < numCluster; cIndex++)
@@ -223,26 +274,23 @@ ThreeGppSpectrumPropagationLossModel::CalBeamformingGain (Ptr<SpectrumValue> txP
       doppler.push_back (exp (std::complex<double> (0, temp_doppler)));
     }
 
-  while (vit != tempPsd->ValuesEnd ())
+  for (Bands::const_iterator sbit = refPsd->ConstBandsBegin(); sbit != refPsd->ConstBandsEnd (); sbit++)
     {
       std::complex<double> subsbandGain (0.0,0.0);
-      if ((*vit) != 0.00)
+
+      double fsb = GetFrequency (); //TODO this is a temporary fix to test MMSE beamforming in a frequency-flat channel. We must restore the behavior on next line and implement frequency-selective MMSE beamforming in the future
+      //          double fsb = (*sbit).fc; //TODO it seems that the iterator (*sbit) is never changed, this may be a bug resulting in the fc of subcarrier 0 used for the doppler of all bands
+      //          NS_LOG_UNCOND("fsb: "<<fsb);
+      for (uint8_t cIndex = 0; cIndex < numCluster; cIndex++)
         {
-          double fsb = GetFrequency (); //(*sbit).fc; //TODO it seems that the iterator (*sbit) is never changed, this may be a bug resulting in the fc of subcarrier 0 used for the doppler of all bands
-//          NS_LOG_UNCOND("fsb: "<<fsb);
-          for (uint8_t cIndex = 0; cIndex < numCluster; cIndex++)
-            {
-              double delay = -2 * M_PI * fsb * (params->m_delay.at (cIndex));
-              subsbandGain = subsbandGain + longTerm.at (cIndex) * doppler.at (cIndex) * exp (std::complex<double> (0, delay));
-            }
-          *vit = norm (subsbandGain);
+          double delay = -2 * M_PI * fsb * (params->m_delay.at (cIndex));
+          subsbandGain = subsbandGain + longTerm.at (cIndex) * doppler.at (cIndex) * exp (std::complex<double> (0, delay));
         }
-      vit++;
-      iSubband++;//TODO it seems iSubband does nothing whereas the subband iterator *sbit has not been incremented in this loop
-      sbit++;
+      tempComplexSpectrum.push_back(subsbandGain);
     }
-  return tempPsd;
+  return tempComplexSpectrum;
 }
+
 
 complexVector_t
 ThreeGppSpectrumPropagationLossModel::GetLongTerm (Ptr<const MobilityModel> aMob, Ptr<const MobilityModel> bMob, Ptr<ThreeGppChannelMatrix> channelMatrix, AntennaArrayBasicModel::BeamformingVector aBF, AntennaArrayBasicModel::BeamformingVector bBF) const

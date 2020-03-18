@@ -1521,7 +1521,7 @@ MmWaveEnbPhy::StartSlot (void)
           Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhyList ().at (0)->GetRxAntenna ());
           antennaArray->SetCurrNumLayers(currNumLayers);
           antennaArray->ClearBeamformingVectorList();
-          NS_LOG_INFO ("Curr number of layers in Anntena array model:" << (int)antennaArray->GetCurrNumLayers());
+          NS_LOG_INFO ("Curr number of layers in UL bundle " << (int) currNumLayers << " , in Anntena array model:" << (int)antennaArray->GetCurrNumLayers());
 
           Ptr<MmWaveMMSEBeamforming> bfCasted = DynamicCast<MmWaveMMSEBeamforming> ( GetDlSpectrumPhyList () .at (0) -> GetBeamformingModel () );
           std::vector< Ptr<NetDevice> > vDevsInBundle;
@@ -1589,6 +1589,8 @@ MmWaveEnbPhy::StartSlot (void)
               bfCasted-> SetNoisePowerSpectralDensity ( noisePsdNarrowband );
               bfCasted-> SetBeamformingVectorForSlotBundle ( vDevsInBundle, vLayersInBundle );
             }
+
+          ResetDataCqiReportLayerCounter (); //the UL cqi is counted in parallel in the allocator and the cqi reception, instead of passing layer info explicitly
 
           slotPeriod = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () * currSlotBundleInfo.m_minNumSym); //schedule for EndSlot()
 
@@ -1796,7 +1798,13 @@ MmWaveEnbPhy::PhyDataPacketReceived (Ptr<Packet> p)
 }
 
 void
-MmWaveEnbPhy::GenerateDataCqiReport (const SpectrumValue& sinr)
+MmWaveEnbPhy::ResetDataCqiReportLayerCounter ()
+{
+  m_layerCtrUlDataCqiReport = 0;
+}
+
+void
+MmWaveEnbPhy::GenerateDataCqiReport (const SpectrumValue& sinr, uint8_t layerInd)
 {
   NS_LOG_LOGIC ("Sinr from DataCqiReport = " << sinr);
   double sinrAvg = Sum (sinr) / (sinr.GetSpectrumModel ()->GetNumBands ());
@@ -1817,11 +1825,13 @@ MmWaveEnbPhy::GenerateDataCqiReport (const SpectrumValue& sinr)
 
   // here we use the start symbol index of the slot in place of the slot index because the absolute UL slot index is
   // not known to the scheduler when m_allocationMap gets populated
-  ulcqi.m_sfnSf = SfnSf (m_frameNum, m_sfNum, m_currSymStart);
+  ulcqi.m_sfnSf = SfnSf (m_frameNum, m_sfNum, m_currSymStart * m_phyMacConfig->GetNumEnbLayers () + layerInd);
   NS_LOG_INFO ("Average SINR on Ul DataCqiReport " << 10 * std::log10 (sinrAvg) << " dB in slot id "<<ulcqi.m_sfnSf.Encode ());
   SpectrumValue newSinr = sinr;
   m_ulSinrTrace (0, newSinr, newSinr);
   m_phySapUser->UlCqiReport (ulcqi);
+  m_layerCtrUlDataCqiReport++;
+  m_layerCtrUlDataCqiReport=m_layerCtrUlDataCqiReport % m_phyMacConfig->GetNumEnbLayers ();//this is a protection that should never occur if the reset function is used properly
 }
 
 

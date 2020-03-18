@@ -1398,6 +1398,8 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
       //Divide the HBF frame in DL and UL contiguous regions proportionally to the total demand for new TB allocations.
       uint32_t dlUlBarrier = nextSymAvail + ceil ( ((double) lastSymAvail - (double) nextSymAvail) * ( (double) totDlSymReq) / ( (double) totDlSymReq + (double) totUlSymReq) );
 
+      NS_LOG_LOGIC("Semiemty frame after HARQ alloc: Available symbols " << nextSymAvail << " to " << lastSymAvail << " UL starts in symbol "<<dlUlBarrier);
+
       //Run a (almost always) RR allocator on each Layer separately for the each DL UL portions
 
       //DL allocation part (we follow a RR policy without looking at buffer size, potentially wasting some resources when transmit buffers are short)
@@ -1408,8 +1410,10 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
         {
           symPerDlBlock = ceil ((double)symPerDlBlock / (double)m_symPerSlot) * m_symPerSlot;
         }
+      NS_LOG_LOGIC("RR division of DL region: "<< (int)nDlFlowsPerLayer <<" groups up to "<< (int)m_phyMacConfig->GetNumEnbLayers () <<" UE get up to " << (int)symPerDlBlock << " symbols each");
 
-      //DL allocation part
+
+      //UL allocation part
       uint8_t nUlFlowsPerLayer = ceil( ( (double ) nFlowsUl ) / ( (double ) m_phyMacConfig->GetNumEnbLayers () ) );
       uint8_t nUlSymPerLayer = lastSymAvail - dlUlBarrier;
       uint8_t symPerUlBlock = ceil( ( (double ) nUlSymPerLayer ) / ( (double ) nUlFlowsPerLayer ) );
@@ -1417,6 +1421,7 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
         {
           symPerUlBlock = ceil ((double)symPerUlBlock / (double)m_symPerSlot) * m_symPerSlot;
         }
+      NS_LOG_LOGIC("RR division of UL region: "<< (int)nUlFlowsPerLayer <<" groups up to "<< (int)m_phyMacConfig->GetNumEnbLayers () <<" UE get up to " << (int)symPerUlBlock << " symbols each");
 
       //recover the last UE that was served
       std::map <uint16_t, struct UeSchedInfo>::iterator itUeInfoStart;
@@ -1467,12 +1472,13 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
               dci.m_rv = 0;
               dci.m_harqProcess = UpdateDlHarqProcessId (itUeInfo->first);
               NS_ASSERT (dci.m_harqProcess < m_phyMacConfig->GetNumHarqProcess ());
-              NS_LOG_DEBUG ("UE" << itUeInfo->first << " DL harqId " << (unsigned)dci.m_harqProcess << " HARQ process assigned");
+              NS_LOG_DEBUG ("UE " << itUeInfo->first << " DL harqId " << (unsigned)dci.m_harqProcess << " HARQ process assigned");
 
               SlotAllocInfo slotInfo (tempDlslotIdx++, SlotAllocInfo::DL_slotAllocInfo, SlotAllocInfo::CTRL_DATA, SlotAllocInfo::DIGITAL, itUeInfo->first, layerIdxDl);
               slotInfo.m_dci = dci;
-              NS_LOG_DEBUG ("UE" << dci.m_rnti << " gets DL slots " << (unsigned)dci.m_symStart << "-" << (unsigned)(dci.m_symStart + dci.m_numSym - 1) <<
-                            " tbs " << dci.m_tbSize << " mcs " << (unsigned)dci.m_mcs << " harqId " << (unsigned)dci.m_harqProcess << " rv " << (unsigned)dci.m_rv << " in frame " << ret.m_sfnSf.m_frameNum << " subframe " << (unsigned)ret.m_sfnSf.m_sfNum);
+              NS_LOG_DEBUG ("UE " << dci.m_rnti << " gets DL slots " << (unsigned)dci.m_symStart << "-" << (unsigned)(dci.m_symStart + dci.m_numSym - 1) <<
+                            " tbs " << dci.m_tbSize << " mcs " << (unsigned)dci.m_mcs << " harqId " << (unsigned)dci.m_harqProcess << " rv " << (unsigned)dci.m_rv <<
+                            " in frame " << ret.m_sfnSf.m_frameNum << " subframe " << (unsigned)ret.m_sfnSf.m_sfNum<< " layer " << (unsigned) dci.m_layerInd);
 
               if (m_harqOn == true)
                 {                   // store DCI for HARQ buffer
@@ -1571,12 +1577,13 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
                                    dci.m_tbSize = m_amc->GetTbSizeFromMcsSymbols (dci.m_mcs, dci.m_numSym) / 8;
                            }*/
               dci.m_harqProcess = UpdateUlHarqProcessId (itUeInfo->first);
-              NS_LOG_DEBUG ("UE" << itUeInfo->first << " UL harqId " << (unsigned)dci.m_harqProcess << " HARQ process assigned");
+              NS_LOG_DEBUG ("UE " << itUeInfo->first << " UL harqId " << (unsigned)dci.m_harqProcess << " HARQ process assigned");
               NS_ASSERT (dci.m_harqProcess < m_phyMacConfig->GetNumHarqProcess ());
               SlotAllocInfo slotInfo (tempUlSlotIdx++, SlotAllocInfo::UL_slotAllocInfo, SlotAllocInfo::CTRL_DATA, SlotAllocInfo::DIGITAL, itUeInfo->first, layerIdxUl);
               slotInfo.m_dci = dci;
-              NS_LOG_DEBUG ("UE" << dci.m_rnti << " gets UL slots " << (unsigned)dci.m_symStart << "-" << (unsigned)(dci.m_symStart + dci.m_numSym - 1) <<
-                            " tbs " << dci.m_tbSize << " mcs " << (unsigned)dci.m_mcs << " harqId " << (unsigned)dci.m_harqProcess << " rv " << (unsigned)dci.m_rv << " in frame " << ulSfn.m_frameNum << " subframe " << (unsigned)ulSfn.m_sfNum);
+              NS_LOG_DEBUG ("UE " << dci.m_rnti << " gets UL slots " << (unsigned)dci.m_symStart << "-" << (unsigned)(dci.m_symStart + dci.m_numSym - 1) <<
+                            " tbs " << dci.m_tbSize << " mcs " << (unsigned)dci.m_mcs << " harqId " << (unsigned)dci.m_harqProcess << " rv " << (unsigned)dci.m_rv <<
+                            " in frame " << ulSfn.m_frameNum << " subframe " << (unsigned)ulSfn.m_sfNum << " layer " << (unsigned) dci.m_layerInd );
               UpdateUlRlcBufferInfo (itUeInfo->first, dci.m_tbSize - m_subHdrSize);
               //          ret.m_sfAllocInfo.m_slotAllocInfo.push_back (slotInfo);                // add to front
               tempUlslotAllocInfo[layerIdxUl].push_front (slotInfo); //remember we fill from end backward
@@ -1586,8 +1593,8 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
                 {
                   ueChunkMap.push_back (dci.m_rnti);
                 }
-              SfnSf slotSfn = ret.m_sfAllocInfo.m_sfnSf;
-              slotSfn.m_slotNum = dci.m_symStart;                // use the start symbol index of the slot because the absolute UL slot index depends on the future DL allocation
+              SfnSf slotSfn = ret.m_sfAllocInfo.m_sfnSf; //this sfnsf struct is used only to tag uplink CQI where the slotNum is not know upon reception so we use the following trick
+              slotSfn.m_slotNum = dci.m_symStart * m_phyMacConfig->GetNumEnbLayers () + layerIdxUl;                // use the start symbol index of the slot because the absolute UL slot index depends on the future DL allocation
               // insert into allocation map to recall previous allocations upon receiving UL-CQI
               m_ulAllocationMap.insert ( std::pair<uint32_t, struct AllocMapElem> (slotSfn.Encode (), AllocMapElem (ueChunkMap, dci.m_numSym, dci.m_tbSize)) );
 

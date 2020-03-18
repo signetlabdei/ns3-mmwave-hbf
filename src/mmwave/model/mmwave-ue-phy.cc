@@ -693,7 +693,7 @@ MmWaveUePhy::StartSlot ()
     {
       SetSubChannelsForTransmission (m_channelChunks);
       slotPeriod = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () * currSlot.m_dci.m_numSym);
-      Ptr<PacketBurst> pktBurst = GetPacketBurst (SfnSf (m_frameNum, m_sfNum, currSlot.m_dci.m_symStart));
+      Ptr<PacketBurst> pktBurst = GetPacketBurst (SfnSf (m_frameNum, m_sfNum, currSlot.m_dci.m_symStart), currSlot.m_dci.m_layerInd);
       if (pktBurst && pktBurst->GetNPackets () > 0)
         {
           std::list< Ptr<Packet> > pkts = pktBurst->GetPackets ();

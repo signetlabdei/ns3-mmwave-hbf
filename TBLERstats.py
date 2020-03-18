@@ -113,6 +113,7 @@ for usr in dlAllMCSreqUl:
 plt.figure()
 for key in dlAllBFGain:
     lAux=sorted(dlAllBFGain[key])
-    print "BF tuple %s uses %d E[G]= %.2f dB"%(key,len(dlAllBFGain[key]),10*np.log10(sum(dlAllBFGain[key])/len(dlAllBFGain[key])))
-    plt.plot(range(0,len(lAux)),10*np.log10(lAux))
+    if len(lAux)>0:
+        #print "BF tuple %s uses %d E[G]= %.2f dB"%(key,len(dlAllBFGain[key]),10*np.log10(1e-20+sum(dlAllBFGain[key])/len(dlAllBFGain[key])))
+        plt.plot(np.arange(0.0,len(lAux),1.0)/len(lAux),10*np.log10([1e-20+x for x in lAux]))
 plt.show()

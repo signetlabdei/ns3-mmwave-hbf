@@ -199,6 +199,14 @@ private:
    */
   Ptr<SpectrumValue> CalBeamformingGain (Ptr<SpectrumValue> txPsd,  complexVector_t longTerm, Ptr<ThreeGppChannelMatrix> params, Vector txSpeed, Vector rxSpeed) const;
 
+  /**
+   * Computes the beamforming complex coefficients. The norm of this vector can be used to compute the Gain
+   * \param the tx PSD to copy its SpectrumModel
+   * \param the long term component
+   * \return the bf gain PSD
+   */
+  complexVector_t CalBeamformingComplexCoef (Ptr<SpectrumValue> refPsd, complexVector_t longTerm, Ptr<ThreeGppChannelMatrix> params, Vector txSpeed, Vector rxSpeed) const;
+
   std::map < Ptr<NetDevice>, Ptr<AntennaArrayBasicModel> > m_deviceAntennaMap; //!< map containig the <device, antenna> associations
   //TODO remove this commented line if the change below is adopted, or uncommment and remove the next line if we change our mind and decide to disable the interference caching implementation
 //  mutable std::map < uint32_t, Ptr<LongTerm> > m_longTermMap; //!< map containing the long term components

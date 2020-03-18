@@ -115,7 +115,7 @@ public:
 
   void PhyDataPacketReceived (Ptr<Packet> p);
 
-  void GenerateDataCqiReport (const SpectrumValue& sinr);
+  void GenerateDataCqiReport (const SpectrumValue& sinr, uint8_t layerInd = 0);
 
   void PhyCtrlMessagesReceived (std::list<Ptr<MmWaveControlMessage> > msgList);
 
@@ -228,6 +228,10 @@ private:
   uint8_t m_currNumAllocLayers;
 
   bool m_receptionEnabled;
+
+  //this counter is used in Ul Data CQI reception to count the layer index of different calls to GenerateDataCqiReport with the same starSimbol value
+  void ResetDataCqiReportLayerCounter ();
+  uint8_t m_layerCtrUlDataCqiReport;
 
   TracedCallback< uint64_t, SpectrumValue&, SpectrumValue& > m_ulSinrTrace;
 };
