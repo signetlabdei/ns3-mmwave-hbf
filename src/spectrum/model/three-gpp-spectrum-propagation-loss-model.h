@@ -168,6 +168,13 @@ public:
 		                                           uint8_t txLayerInd,
 							   uint8_t rxLayerInd) const;
 
+  complexVector_t DoCalcRxComplexSpectrum (Ptr<SpectrumValue> refPsd,
+                                                                      Ptr<const MobilityModel> a,
+                                                                      Ptr<const MobilityModel> b,
+                                                                      AntennaArrayBasicModel::BeamformingVector txW,
+                                                                      AntennaArrayBasicModel::BeamformingVector rxW
+                                                                  ) const;
+
 protected:
 private:
   /**

@@ -279,7 +279,7 @@ ThreeGppSpectrumPropagationLossModel::CalBeamformingComplexCoef (Ptr<SpectrumVal
       std::complex<double> subsbandGain (0.0,0.0);
 
       double fsb = GetFrequency (); //TODO this is a temporary fix to test MMSE beamforming in a frequency-flat channel. We must restore the behavior on next line and implement frequency-selective MMSE beamforming in the future
-      //          double fsb = (*sbit).fc; //TODO it seems that the iterator (*sbit) is never changed, this may be a bug resulting in the fc of subcarrier 0 used for the doppler of all bands
+//      double fsb = (*sbit).fc; //TODO it seems that the iterator (*sbit) is never changed, this may be a bug resulting in the fc of subcarrier 0 used for the doppler of all bands
       //          NS_LOG_UNCOND("fsb: "<<fsb);
       for (uint8_t cIndex = 0; cIndex < numCluster; cIndex++)
         {
@@ -557,26 +557,125 @@ ThreeGppSpectrumPropagationLossModel::DoCalcRxPowerSpectralDensityMultilayers (P
   // get the precoding and combining vectors
   Ptr<AntennaArrayModel> castTxArray=DynamicCast<AntennaArrayModel>(txAntennaArray);
   Ptr<AntennaArrayModel> castRxArray=DynamicCast<AntennaArrayModel>(rxAntennaArray);
+
   AntennaArrayBasicModel::BeamformingVector txW = castTxArray->GetCurrentBeamformingVectorMultilayers (txLayerInd);
   AntennaArrayBasicModel::BeamformingVector rxW = castRxArray->GetCurrentBeamformingVectorMultilayers (rxLayerInd);
 
-//  NS_LOG_DEBUG ("In this calcPSDmultilayer call layerInd: "<<(int ) txLayerInd<<"->"<< (int ) rxLayerInd<< " tx vect size " << txW.first.size() << " rx vect size " << rxW.first.size());
-//  NS_LOG_DEBUG ("Tx MAC: "<< txDevice->GetAddress() <<" -> Rx MAC:"<< rxDevice->GetAddress() << " at distance " << a->GetDistanceFrom (b));
+  Ptr<SpectrumValue>  bfGainPsd = Create<SpectrumValue>( rxPsd->GetSpectrumModel () );
 
-  // retrieve the long term component
-  complexVector_t longTerm = GetLongTerm (a, b, channelMatrix, txW, rxW);
-
-//  for (uint16_t cIndex = 0; cIndex < txW.first.size(); cIndex++)
-//    {
-//      NS_LOG_DEBUG ("    txbfcoef " << (int) cIndex << " = " << txW.first.at(cIndex));
-//    }
-  // apply the beamforming gain
-  Ptr<SpectrumValue> bfGainPsd = CalBeamformingGain (rxPsd, longTerm, channelMatrix, a->GetVelocity (), b->GetVelocity ());
+  if (castTxArray->isDigitalCombiningOn())
+    {
+      NS_ASSERT_MSG ( ! castRxArray->isDigitalCombiningOn() , "Digital combining at both transmitter and receiver is impossible if one is a UE");
+      AntennaArrayModel::complex3DVector_t mmseWDCmatrix = castTxArray->GetDigitalCombining();
+      if ( mmseWDCmatrix.at(0).size()<=txLayerInd )
+        {//when we are called with a value of txLayerInd greater than the number of active layers
+         //for example if a mmwave-phy calls startTx for all its layers indiscriminately, including those that are not allocated
+         //by convention we assume unallocated layers transmit 0 power and thus do not send out unnecessary interference
+          (*bfGainPsd)=0;
+        }
+      else
+        {
+          complexVector_t bfComplexSpectrum ( mmseWDCmatrix.size() , 0.0) ;
+          for (uint8_t txLayerCtr = 0; txLayerCtr< mmseWDCmatrix.at(0).size(); txLayerCtr++ )
+            {
+              AntennaArrayBasicModel::BeamformingVector txWaux = castTxArray->GetCurrentBeamformingVectorMultilayers ( txLayerCtr );
+              complexVector_t longTerm = GetLongTerm (a, b, channelMatrix, txWaux, rxW);
+              complexVector_t bfComplexNewComponent = CalBeamformingComplexCoef (rxPsd, longTerm, channelMatrix, a->GetVelocity (), b->GetVelocity ());          ;
+              for ( size_t sBandCtr = 0; sBandCtr < mmseWDCmatrix.size(); sBandCtr++)
+                {//if there are no bugs dimensions always match
+                  bfComplexSpectrum.at( sBandCtr ) += mmseWDCmatrix.at( sBandCtr ).at( txLayerInd ).at( txLayerCtr ) * bfComplexNewComponent.at( sBandCtr );
+                }
+            }
+          for ( size_t sBandCtr = 0; sBandCtr < mmseWDCmatrix.size(); sBandCtr++)
+            {
+              (*bfGainPsd)[sBandCtr] = std::norm( bfComplexSpectrum.at( sBandCtr ) );
+            }
+        }
+    }
+  else if(castRxArray->isDigitalCombiningOn())
+    {
+      AntennaArrayModel::complex3DVector_t mmseWDCmatrix = castRxArray->GetDigitalCombining();
+      if ( mmseWDCmatrix.at(0).size()<=rxLayerInd )
+        {//when we are called with a value of rxLayerInd greater than the number of active layers
+         //for example, for example if a mmwave-phy  is always trying to receive in all its layers, entering this segment of code for the layers it has not allocated
+          //by convention we assume unallocated layers receive 0 power and thus do not capture unnecessary noise and interference
+          (*bfGainPsd)=0;
+        }
+      else
+        {
+          complexVector_t bfComplexSpectrum ( mmseWDCmatrix.size() , 0.0 ) ;
+          for (uint8_t rxLayerCtr = 0; rxLayerCtr< mmseWDCmatrix.at(0).size(); rxLayerCtr++ )
+            {
+              AntennaArrayBasicModel::BeamformingVector rxWaux = castRxArray->GetCurrentBeamformingVectorMultilayers ( rxLayerCtr );
+              complexVector_t longTerm = GetLongTerm (a, b, channelMatrix, txW, rxWaux);
+              complexVector_t bfComplexNewComponent = CalBeamformingComplexCoef (rxPsd, longTerm, channelMatrix, a->GetVelocity (), b->GetVelocity ());
+              for ( size_t sBandCtr = 0; sBandCtr < mmseWDCmatrix.size(); sBandCtr++)
+                {//if there are no bugs dimensions always match
+                  bfComplexSpectrum.at( sBandCtr ) += mmseWDCmatrix.at( sBandCtr ).at( rxLayerInd ).at( rxLayerCtr ) * bfComplexNewComponent.at( sBandCtr );
+                }
+            }
+          for ( size_t sBandCtr = 0; sBandCtr < mmseWDCmatrix.size(); sBandCtr++)
+            {
+              (*bfGainPsd)[sBandCtr] = std::norm( bfComplexSpectrum.at( sBandCtr ) );
+            }
+        }
+    }
+  else
+    {
+      //  NS_LOG_DEBUG ("In this calcPSDmultilayer call layerInd: "<<(int ) txLayerInd<<"->"<< (int ) rxLayerInd<< " tx vect size " << txW.first.size() << " rx vect size " << rxW.first.size());
+      //  NS_LOG_DEBUG ("Tx MAC: "<< txDevice->GetAddress() <<" -> Rx MAC:"<< rxDevice->GetAddress() << " at distance " << a->GetDistanceFrom (b));
+      // retrieve the long term component
+      complexVector_t longTerm = GetLongTerm (a, b, channelMatrix, txW, rxW);
+      //  for (uint16_t cIndex = 0; cIndex < txW.first.size(); cIndex++)
+      //    {
+      //      NS_LOG_DEBUG ("    txbfcoef " << (int) cIndex << " = " << txW.first.at(cIndex));
+      //    }
+      // apply the beamforming gain
+      bfGainPsd = CalBeamformingGain (rxPsd, longTerm, channelMatrix, a->GetVelocity (), b->GetVelocity ());
+    }
   (*rxPsd) *= (*bfGainPsd);
-
   NS_LOG_UNCOND("BF Gain TxId " << a->GetObject<Node>()->GetId () << " RxId " << b->GetObject<Node>()->GetId () << " TxBeam " << AntennaArrayBasicModel::GetBeamId(txW) << " RxBeam " << AntennaArrayBasicModel::GetBeamId(rxW) << " g= " << Sum(*bfGainPsd) / bfGainPsd->GetSpectrumModel()->GetNumBands() );
-
   return rxPsd;
+}
+
+complexVector_t
+ThreeGppSpectrumPropagationLossModel::DoCalcRxComplexSpectrum (Ptr<SpectrumValue> refPsd,
+                                                                    Ptr<const MobilityModel> a,
+                                                                    Ptr<const MobilityModel> b,
+                                                                    AntennaArrayBasicModel::BeamformingVector txW,
+                                                                    AntennaArrayBasicModel::BeamformingVector rxW
+                                                                ) const
+{
+  // retrieve the tx and rx devices
+    Ptr<NetDevice> txDevice = a->GetObject<Node> ()->GetDevice (0);
+    Ptr<NetDevice> rxDevice = b->GetObject<Node> ()->GetDevice (0);
+
+    // retrieve the antenna of the tx device
+    NS_ASSERT_MSG (m_deviceAntennaMap.find (txDevice) != m_deviceAntennaMap.end (), "Antenna not found for device " << txDevice);
+    Ptr<AntennaArrayBasicModel> txAntennaArray = m_deviceAntennaMap.at (txDevice);
+    NS_LOG_DEBUG ("tx dev " << txDevice << " antenna " << txAntennaArray);
+
+    // retrieve the antenna of the rx device
+    NS_ASSERT_MSG (m_deviceAntennaMap.find (txDevice) != m_deviceAntennaMap.end (), "Antenna not found for device " << rxDevice);
+    Ptr<AntennaArrayBasicModel> rxAntennaArray = m_deviceAntennaMap.at (rxDevice);
+    NS_LOG_DEBUG ("rx dev " << rxDevice << " antenna " << rxAntennaArray);
+
+    NS_ASSERT_MSG ( !(txAntennaArray->IsOmniTx () || rxAntennaArray->IsOmniTx () ), "The arrays must not be in omni mode in this function");
+
+    NS_ASSERT_MSG (a->GetDistanceFrom (b) != 0, "The position of tx and rx devices cannot be the same");
+
+    // retrieve the channel condition
+    Ptr<ChannelCondition> condition = m_channelConditionModel->GetChannelCondition (a, b);
+
+    // compute the channel matrix between a and b
+    bool los = (condition->GetLosCondition () == ChannelCondition::LosConditionValue::LOS);
+    bool o2i = false; // TODO include the o2i condition in the channel condition model
+    Ptr<ThreeGppChannelMatrix> channelMatrix = m_channelModel->GetChannel (a, b, txAntennaArray, rxAntennaArray, los, o2i);
+
+    // retrieve the long term component
+    complexVector_t longTerm = GetLongTerm (a, b, channelMatrix, txW, rxW);
+
+    return CalBeamformingComplexCoef (refPsd, longTerm, channelMatrix, a->GetVelocity (), b->GetVelocity ());
 }
 
 

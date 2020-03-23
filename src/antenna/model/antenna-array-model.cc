@@ -38,6 +38,7 @@ NS_OBJECT_ENSURE_REGISTERED (AntennaArrayModel);
 AntennaArrayModel::AntennaArrayModel () : AntennaArrayBasicModel ()
 {
   m_omniTx = false;
+  m_activeDigitalCombining = false;
 }
 
 AntennaArrayModel::~AntennaArrayModel ()
@@ -155,6 +156,30 @@ AntennaArrayModel::ChangeBeamformingVectorMultilayers (Ptr<NetDevice> device, ui
   BeamformingStorage::iterator it = m_beamformingVectorMap.find (device);
   NS_ASSERT_MSG (it != m_beamformingVectorMap.end (), "could not find the beamforming vector for the provided device");
   m_currentBeamformingVectorList[layerInd] = it->second;
+}
+
+
+void
+AntennaArrayModel::ToggleDigitalCombining (bool bActive)
+{
+  m_activeDigitalCombining = bActive;
+}
+bool
+AntennaArrayModel::isDigitalCombiningOn ()
+{
+  return m_activeDigitalCombining;
+}
+
+void
+AntennaArrayModel::SetDigitalCombining (complex3DVector_t spectrumWDCmatrix)
+{
+  m_currDigitalCombining = spectrumWDCmatrix;
+}
+
+AntennaArrayModel::complex3DVector_t
+AntennaArrayModel::GetDigitalCombining ()
+{
+  return m_currDigitalCombining;
 }
 
 AntennaArrayModel::BeamformingVector

@@ -24,6 +24,7 @@
 #include "ns3/mobility-model.h"
 #include "ns3/propagation-loss-model.h"
 #include "ns3/spectrum-propagation-loss-model.h"
+#include "ns3/mmwave-phy-mac-common.h"
 #include <map>
 #include <valarray>
 
@@ -75,17 +76,31 @@ public:
      void SetAntenna (Ptr<AntennaArrayBasicModel> antenna);
 
      /**
+        * Set the mobility model object.
+        * \param mobility model of the device
+        */
+     void SetMobilityModel (Ptr<MobilityModel> mm);
+
+
+     /**
         * Sets the spectrum propagation loss model that may be used to read channel values
         * (WARNING: reading the channel directly from the model rather than from device status implies assuming perfect CSI for beamforming)
         * \param spectrumPropagationLossModel the spectrum propagation loss model
         */
      void SetSpectrumPropagationLossModel (Ptr<SpectrumPropagationLossModel> spectrumPropagationLossModel);
+
      /**
       * Sets the propagation loss model that may be used to read channel values
       * (WARNING: reading the channel directly from the model rather than from device status implies assuming perfect CSI for beamforming)
       * \param propagationLossModel the spectrum propagation loss model
       */
      void SetPropagationLossModel (Ptr<PropagationLossModel> propagationLossModel);
+
+     /**
+      * Sets the mmwave phy mac parameters, allowing to use SpectrumValueHelper by the beamforming model
+      * \param ptrConfig the configuration parameters
+      */
+     void SetConfigurationParameters (Ptr<MmWavePhyMacCommon> ptrConfig);
 
      /**
       * Assigns the beamforming vector to communicate with the target device
@@ -96,8 +111,10 @@ public:
 
 protected:
   Ptr<AntennaArrayBasicModel> m_antenna; // pointer to the antenna array instance
+  Ptr<MobilityModel> m_mobility; // pointer to the MobilityModel installed in this device
   Ptr<SpectrumPropagationLossModel> m_spectrumPropagationLossModel; // pointer to the multipath channel impulse response model
   Ptr<PropagationLossModel> m_propagationLossModel; // pointer to the pathloss model
+  Ptr<MmWavePhyMacCommon> m_mmWavePhyMacConfig;
 };
 
 
@@ -168,7 +185,6 @@ protected:
    {//TODO this is a replica of ThreeGppChannel id generation, it is not required to import modification to that function, but it should be considered
      return (((x1 + x2) * (x1 + x2 + 1)) / 2) + x2;
    }
-   Ptr<MobilityModel> m_mobility; // pointer to the MobilityModel installed in this device
    std::map< uint32_t, Ptr<BFVectorCacheEntry> > m_vectorCache; // a memory to remember previous bf vectors and reuse them without recomputing
 };
 
@@ -271,40 +287,55 @@ public:
   static TypeId GetTypeId (void);
 
   /**
-   * Computes the beamforming vector to communicate with the target device
-   * and sets the antenna.
-   * The beamforming vector is computed using a FFT-codebook
-   * \param the target device
-   */
-//  void SetBeamformingVectorForDevice (Ptr<NetDevice> otherDevice, uint8_t layerInd = 0);//we do not need to override this function, only the call to the next one
-
-
-  /**
-   * Computes the beamforming vector to communicate with the target device
-   * using using a FFT-codebook and assuming perfect CSI (reads channel matrix from propagation loss model)
-   * \param the target device
-   */
-//  AntennaArrayBasicModel::BeamformingVector DoDesignBeamformingVectorForDevice (Ptr<NetDevice> otherDevice) override;
-
-  /**
-      * Checks the expiration of a BF vector cache entry. Overriding this function can let subclasses of this class modify the cache  behavior
-      * \param the target device
-      * \param the target cache entry
-      */
-//   virtual bool CheckBfCacheExpiration(Ptr<NetDevice> otherDevice, Ptr<BFVectorCacheEntry> pCacheValue) override;
-
-  /**
       * Sets the MMSE bf vectors for a bundle of slots
       * \param the target device
       * \param the target cache entry
       */
   virtual void SetBeamformingVectorForSlotBundle( std::vector< Ptr<NetDevice> > vOtherDevs , std::vector<uint16_t> vLayerInds);
   void SetNoisePowerSpectralDensity( double noisePSD );
+
+protected:
+  complex2DVector_t MmseCholesky (complex2DVector_t matrixH);
+
 private:
 
-  complex2DVector_t MmseCholesky (complex2DVector_t matrixH);
   complexVector_t MmseSolve (complex2DVector_t matrixH, complexVector_t y);
   double m_noisePowerSpectralDensity;
+};
+
+
+/**
+ * This class extends the MmWaveFFTCodebookBeamforming interface.
+ * It implements a frequency-selective MMSE digital stage with better SINR but more computational complexity.
+ */
+class MmWaveMMSESpectrumBeamforming : public MmWaveMMSEBeamforming
+{
+public:
+  /**
+   * Constructor
+   */
+  MmWaveMMSESpectrumBeamforming ();
+
+  /**
+   * Destructor
+   */
+  virtual ~MmWaveMMSESpectrumBeamforming ();
+
+  /**
+   * Returns the object type id
+   * \return the type id
+   */
+  static TypeId GetTypeId (void);
+
+  /**
+      * Sets the MMSE bf vectors for a bundle of slots
+      * \param the target device
+      * \param the target cache entry
+      */
+  virtual void SetBeamformingVectorForSlotBundle( std::vector< Ptr<NetDevice> > vOtherDevs , std::vector<uint16_t> vLayerInds) override;
+private:
+
+  complex2DVector_t MmseSolveSimplified (complex2DVector_t matrixH);
 };
 
 } // namespace mmwave

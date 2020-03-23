@@ -1396,16 +1396,20 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
         }
 
       //Divide the HBF frame in DL and UL contiguous regions proportionally to the total demand for new TB allocations.
-      uint32_t dlUlBarrier = nextSymAvail + ceil ( ((double) lastSymAvail - (double) nextSymAvail) * ( (double) totDlSymReq) / ( (double) totDlSymReq + (double) totUlSymReq) );
+      uint32_t dlUlBarrier = nextSymAvail + round ( ((double) lastSymAvail - (double) nextSymAvail) * ( (double) totDlSymReq) / ( (double) totDlSymReq + (double) totUlSymReq) );
 
-      NS_LOG_LOGIC("Semiemty frame after HARQ alloc: Available symbols " << nextSymAvail << " to " << lastSymAvail << " UL starts in symbol "<<dlUlBarrier);
+      NS_LOG_LOGIC("Semiempty frame after HARQ alloc: Available symbols " << nextSymAvail << " to " << lastSymAvail << " UL start in symbol "<<dlUlBarrier);
 
       //Run a (almost always) RR allocator on each Layer separately for the each DL UL portions
 
       //DL allocation part (we follow a RR policy without looking at buffer size, potentially wasting some resources when transmit buffers are short)
       uint8_t nDlFlowsPerLayer = ceil( ( (double ) nFlowsDl ) / ( (double ) m_phyMacConfig->GetNumEnbLayers () ) );
       uint8_t nDlSymPerLayer = dlUlBarrier - nextSymAvail;
-      uint8_t symPerDlBlock = ceil( ( (double ) nDlSymPerLayer ) / ( (double ) nDlFlowsPerLayer ) );
+      uint8_t symPerDlBlock = floor( ( (double ) nDlSymPerLayer ) / ( (double ) nDlFlowsPerLayer ) );
+      if (symPerDlBlock==0)
+        {//if there are more UE than symbols not all ue get one and RR serves as many UE as possible
+          symPerDlBlock=1;
+        }
       if (m_fixedTti)
         {
           symPerDlBlock = ceil ((double)symPerDlBlock / (double)m_symPerSlot) * m_symPerSlot;
@@ -1416,7 +1420,11 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
       //UL allocation part
       uint8_t nUlFlowsPerLayer = ceil( ( (double ) nFlowsUl ) / ( (double ) m_phyMacConfig->GetNumEnbLayers () ) );
       uint8_t nUlSymPerLayer = lastSymAvail - dlUlBarrier;
-      uint8_t symPerUlBlock = ceil( ( (double ) nUlSymPerLayer ) / ( (double ) nUlFlowsPerLayer ) );
+      uint8_t symPerUlBlock = floor( ( (double ) nUlSymPerLayer ) / ( (double ) nUlFlowsPerLayer ) );
+      if (symPerUlBlock==0)
+        {//if there are more UE than symbols not all ue get one and RR serves as many UE as possible
+          symPerUlBlock=1;
+        }
       if (m_fixedTti)
         {
           symPerUlBlock = ceil ((double)symPerUlBlock / (double)m_symPerSlot) * m_symPerSlot;
@@ -1453,7 +1461,7 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
           itUeInfo->second.m_ulSymbols = std::min( symPerUlBlock ,  itUeInfo->second.m_maxUlSymbols );
 
 
-          if ( itUeInfo->second.m_dlSymbols > 0 ) // If buffer_size is 0 this UE is not counted in nFlowsDl and no actual block is created
+          if ( ( itUeInfo->second.m_dlSymbols > 0 ) & ( (nextSymAvail + symPerDlBlock) <= dlUlBarrier ) ) // If buffer_size is 0 this UE is not counted in nFlowsDl and no actual block is created
             {
               NS_ASSERT( symAvail >= symPerDlBlock );
               NS_ASSERT( symAvailLayer[layerIdxDl]>= symPerDlBlock);
@@ -1555,10 +1563,11 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
                 }
             }
 
-          if (ueSchedInfo.m_ulSymbols > 0)
+          if ( ( ueSchedInfo.m_ulSymbols > 0 ) & ( (lastSymAvail - symPerUlBlock) >= dlUlBarrier ) )
             {
               NS_ASSERT( symAvail >= symPerUlBlock );
-              NS_ASSERT( symAvailLayer[layerIdxUl]>= symPerUlBlock);
+              NS_ASSERT_MSG( symAvailLayer[layerIdxUl]>= symPerUlBlock , "UL allocation problem: UE " << itUeInfo->first << " needs " << (int) symPerUlBlock  <<
+                             " symbols but only " << symAvailLayer[layerIdxUl] << " remain free in layer " << layerIdxUl);
               symAvail -= symPerUlBlock;
               symAvailLayer[layerIdxUl] -= symPerUlBlock;
 

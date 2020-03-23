@@ -78,6 +78,7 @@
 #include <ns3/lte-spectrum-value-helper.h>
 #include <ns3/core-network-stats-calculator.h>
 #include <ns3/mmwave-component-carrier-enb.h>
+#include <ns3/mmwave-beamforming-model.h>
 
 
 namespace ns3 {
@@ -167,6 +168,9 @@ public:
 
   void SetSchedulerType (std::string type);
   std::string GetSchedulerType () const;
+
+  void SetBeamformerType (std::string type);
+  std::string GetBeamformerType () const;
 
   void SetLteSchedulerType (std::string type);
   std::string GetLteSchedulerType () const;
@@ -327,6 +331,7 @@ private:
   ObjectFactory m_pathlossModelFactory;         // Each channel (mmWave, LteUl & LteDl) may have a different pathloss with diff attributes
   ObjectFactory m_spectrumPropagationLossModelFactory; //!< the factory for the SpectrumPropagationLossModel objects
   ObjectFactory m_schedulerFactory;
+  ObjectFactory m_beamformerFactory;
   ObjectFactory m_lteSchedulerFactory;       // Factory for LTE scheduler
   ObjectFactory m_ffrAlgorithmFactory;
   ObjectFactory m_lteFfrAlgorithmFactory;

@@ -70,8 +70,8 @@ main (int argc, char *argv[])
 	LogComponentEnable ("ThreeGppChannel", LOG_LEVEL_DEBUG);
 	//LogComponentEnable("PropagationLossModel",LOG_LEVEL_ALL);
 	//      LogComponentEnable ("MmwaveHbfSpectrumChannel", LOG_LEVEL_INFO);
-        LogComponentEnable ("MmWavePaddedHbfMacScheduler", LOG_LEVEL_INFO);
-        LogComponentEnable ("MmWaveFlexTtiMacScheduler", LOG_LEVEL_INFO);
+        LogComponentEnable ("MmWavePaddedHbfMacScheduler", LOG_LEVEL_LOGIC);
+        LogComponentEnable ("MmWaveFlexTtiMacScheduler", LOG_LEVEL_LOGIC);
 
 	uint16_t numEnb = 1;
 	uint16_t numUe = 7;
@@ -142,9 +142,14 @@ main (int argc, char *argv[])
 
 
 	Ptr<MmWaveHelper> mmwaveHelper = CreateObject<MmWaveHelper> ();
-//	mmwaveHelper->SetSchedulerType ("ns3::MmWaveFlexTtiMacScheduler");
-//	mmwaveHelper->SetSchedulerType ("ns3::MmWaveAsyncHbfMacScheduler");
-	mmwaveHelper->SetSchedulerType ("ns3::MmWavePaddedHbfMacScheduler");
+        //      mmwaveHelper->SetSchedulerType ("ns3::MmWaveFlexTtiMacScheduler");
+        //      mmwaveHelper->SetSchedulerType ("ns3::MmWaveAsyncHbfMacScheduler");
+        mmwaveHelper->SetSchedulerType ("ns3::MmWavePaddedHbfMacScheduler");
+
+        //      mmwaveHelper->SetBeamformerType ("ns3::MmWaveDftBeamforming");
+        //      mmwaveHelper->SetBeamformerType ("ns3::MmWaveFFTCodebookBeamforming");
+        //      mmwaveHelper->SetBeamformerType ("ns3::MmWaveMMSEBeamforming");
+        mmwaveHelper->SetBeamformerType ("ns3::MmWaveMMSESpectrumBeamforming");
 
 	mmwaveHelper->SetPathlossModelType ("ns3::ThreeGppUmaPropagationLossModel");
 	mmwaveHelper->SetChannelConditionModelType ("ns3::ThreeGppUmaChannelConditionModel");

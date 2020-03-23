@@ -64,6 +64,12 @@ public:
   static TypeId GetTypeId ();
 
   /**
+     * Syntax sugar to express complex matrix and 3D tensor
+     */
+  typedef std::vector<complexVector_t> complex2DVector_t;
+  typedef std::vector<complex2DVector_t> complex3DVector_t;
+
+  /**
    * Must override the function to set 0 gain,
    * since the gain is already accounted for with GetRadiationPattern function
    * \param angles angles of gain
@@ -211,6 +217,27 @@ public:
     */
   virtual void SetAntennaNumDim2 (uint8_t antennaNum) override;
 
+  /**
+   * Set the use of the frequency-selective digital combining
+   * \param bActive digital combining active flag
+   */
+ virtual void ToggleDigitalCombining (bool bActive = true );  /**
+  * Check if frequency-selective digital combining is on
+  * \return bActive digital combining active flag
+  */
+virtual bool isDigitalCombiningOn ();
+ /**
+  * Set a frequency-selective digital combining matrix
+  * \param spectrumWDCmatrix a 3D complex vector with indexes [subcarrier, digital layerInd, analog layerInd]
+  */
+virtual void SetDigitalCombining (complex3DVector_t spectrumWDCmatrix);
+/**
+ * Get the current frequency-selective digital combining matrix
+ * \return spectrumWDCmatrix a 3D complex vector with indexes [subcarrier, digital layerInd, analog layerInd]
+ */
+virtual complex3DVector_t GetDigitalCombining ();
+
+
 private:
 
   typedef std::map<Ptr<NetDevice>, BeamformingVector> BeamformingStorage; /*!< A type represents a map where the key is a pointer
@@ -243,6 +270,9 @@ protected:
   uint8_t m_antennaNumDim2; //!< the number of antenna elements in the second dimension.
 
   uint8_t m_currNumLayers; //the number of parallel DAC/ADCs used in hybrid beamforming
+
+  bool m_activeDigitalCombining;
+  complex3DVector_t m_currDigitalCombining;
 };
 
 } /* namespace ns3 */
