@@ -770,7 +770,7 @@ MmWaveMMSEBeamforming::SetBeamformingVectorForSlotBundle(std::vector< Ptr<NetDev
       for (std::vector< Ptr<CodebookBFVectorCacheEntry>>::iterator itBfOtherDev = bfCachesInSlot.begin() ; itBfOtherDev != bfCachesInSlot.end() ; itBfOtherDev++ )
         {
           propagationGainAmplitude = sqrt( pow( 10.0, 0.1 * m_propagationLossModel->CalcRxPower (0, m_mobility, (*itOtherDev)->GetNode ()->GetObject<MobilityModel> ()) ) );
-	  rowEquivalentH.push_back( ( propagationGainAmplitude * (*itBfOtherDev)->m_equivalentChanCoefs.at( (*itBfOtherDev)->rxBeamInd ).at( (*itBfThisDev)->txBeamInd ) ) );//w[it2,i]H[it2,i]v[it2,i] where i=this node
+	  rowEquivalentH.push_back( ( propagationGainAmplitude * (*itBfOtherDev)->m_equivalentChanCoefs.at( (*itBfOtherDev)->rxBeamInd ).at( (*itBfThisDev)->txBeamInd ) ) );//w[it2,i]H[it2,i]v[it,i] where i=this node
 	  matrixline << (itBfOtherDev == bfCachesInSlot.begin() ? "" : ",") << std::real(rowEquivalentH.back())<< "+1i*"<<std::imag(rowEquivalentH.back());
 	  itOtherDev++;
 	 }
@@ -824,9 +824,6 @@ MmWaveMMSEBeamforming::SetBeamformingVectorForSlotBundle(std::vector< Ptr<NetDev
     {
       // hybrid beamforming option
       AntennaArrayBasicModel::complexVector_t mmseAntennaWeights =  MmseSolve( equivalentH , (*columnIt) );
-      // analog beamforming option
-      //TODO make the bf configurable without recompiling this
-//      AntennaArrayBasicModel::complexVector_t mmseAntennaWeights =  *columnIt;
       for ( uint8_t i = 0; i < mmseAntennaWeights.size(); i++ )
         {
           if ( rowctr == 0 )

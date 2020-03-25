@@ -805,7 +805,7 @@ pCtrl->AddCallback (MakeCallback (&LteUePhy::GenerateCtrlCqiReport, phy));
       bfModule->SetSpectrumPropagationLossModel( m_channel.at (it->first)->GetSpectrumPropagationLossModel ());//used to compute BF vectors in some cases
       bfModule->SetConfigurationParameters( phy->GetConfigurationParameters ());//used to compute BF vectors in some cases
       dlPhy->SetBeamformingModel (bfModule);
-      ulPhy->SetBeamformingModel (bfModule);
+      //ulPhy->SetBeamformingModel (bfModule);
 
       // initialize the 3GPP channel model
       Ptr<SpectrumPropagationLossModel> splm = m_channel.at (it->first)->GetSpectrumPropagationLossModel ();
@@ -1416,7 +1416,7 @@ pCtrl->AddCallback (MakeCallback (&LteUePhy::GenerateCtrlCqiReport, phy));
       bfModule->SetSpectrumPropagationLossModel( m_channel.at (it->first)->GetSpectrumPropagationLossModel ());//used to compute BF vectors in some cases
       bfModule->SetConfigurationParameters( phy->GetConfigurationParameters ());//used to compute BF vectors in some cases
       dlPhy->SetBeamformingModel (bfModule);
-      ulPhy->SetBeamformingModel (bfModule);
+      //ulPhy->SetBeamformingModel (bfModule);
 
       // initialize the 3GPP channel model
       Ptr<SpectrumPropagationLossModel> splm = m_channel.at (it->first)->GetSpectrumPropagationLossModel ();

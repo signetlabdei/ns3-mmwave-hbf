@@ -278,8 +278,8 @@ ThreeGppSpectrumPropagationLossModel::CalBeamformingComplexCoef (Ptr<SpectrumVal
     {
       std::complex<double> subsbandGain (0.0,0.0);
 
-      double fsb = GetFrequency (); //TODO this is a temporary fix to test MMSE beamforming in a frequency-flat channel. We must restore the behavior on next line and implement frequency-selective MMSE beamforming in the future
-//      double fsb = (*sbit).fc; //TODO it seems that the iterator (*sbit) is never changed, this may be a bug resulting in the fc of subcarrier 0 used for the doppler of all bands
+//      double fsb = GetFrequency (); //TODO this is a temporary fix to test MMSE beamforming in a frequency-flat channel. We must restore the behavior on next line and implement frequency-selective MMSE beamforming in the future
+      double fsb = (*sbit).fc;
       //          NS_LOG_UNCOND("fsb: "<<fsb);
       for (uint8_t cIndex = 0; cIndex < numCluster; cIndex++)
         {

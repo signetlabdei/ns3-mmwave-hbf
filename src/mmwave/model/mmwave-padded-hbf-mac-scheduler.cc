@@ -815,78 +815,81 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
                     }
                   continue;
                 }
-              // (1) Check if the CQI has decreased. If no updated value available, use the same MCS minus 1.
-              //                        If CQI is below min threshold, drop process.
-              // (2) Calculate new number of symbols it will take to encode at lower MCS.
-              //			If this exceeds the total number of symbols, reTX with original parameters.
-              //                        If exceeds remaining symbols available in this subframe (but not total symbols in SF),
-              //			update DCI info and try scheduling in next SF.
-
-              /*std::map <uint16_t,uint8_t>::iterator itCqi = m_wbCqiRxed.find (itRlcBuf->m_rnti);
-              int cqi;
-              int mcsNew;
-              if (itCqi != m_wbCqiRxed.end ())
-              {
-                      cqi = itCqi->second;
-                      if (cqi == 0)
-                      {
-                              NS_LOG_INFO ("CQI for reTX is below threshhold. Drop process");
-                              itStat->second.at (harqId) = 0;
-                              for (uint16_t k = 0; k < (*itRlcPdu).second.size (); k++)
-                              {
-                                      itRlcPdu->second.at (harqId).clear ();
-                              }
-                              continue;
-                      }
-                      else
-                      {
-                              mcsNew = m_amc->GetMcsFromCqi (cqi);  // get MCS
-                      }
-              }
               else
-              {
-                      if(dciInfoReTx.m_mcs > 0)
-                      {
-                              mcsNew = dciInfoReTx.m_mcs - 1;
-                      }
-                      else
-                      {
-                              mcsNew = dciInfoReTx.m_mcs;
-                      }
-              }
-              // compute number of symbols required
-              unsigned numSymReq;
-              if (mcsNew < dciInfoReTx.m_mcs)
-              {
-                      numSymReq = m_amc->GetNumSymbolsFromTbsMcs (dciInfoReTx.m_tbSize, mcsNew);
-                      while (numSymReq < symAvail && mcsNew < dciInfoReTx.m_mcs);
-                      {
-                              mcsNew++;
-                              numSymReq = m_amc->GetNumSymbolsFromTbsMcs (dciInfoReTx.m_tbSize, mcsNew);
-                      }
-                      mcsNew--;
-                      numSymReq = m_amc->GetNumSymbolsFromTbsMcs (dciInfoReTx.m_tbSize, mcsNew);
-              }
-              if (numSymReq <= (m_phyMacConfig->GetSymbolsPerSubframe () - resvCtrl))
-              {	// not enough symbols to encode TB at required MCS, attempt in later SF
-                      dlInfoListUntxed.push_back (m_dlHarqInfoList.at (i));
-                      continue;
-              }*/
+                {
+                  // (1) Check if the CQI has decreased. If no updated value available, use the same MCS minus 1.
+                  //                        If CQI is below min threshold, drop process.
+                  // (2) Calculate new number of symbols it will take to encode at lower MCS.
+                  //			If this exceeds the total number of symbols, reTX with original parameters.
+                  //                        If exceeds remaining symbols available in this subframe (but not total symbols in SF),
+                  //			update DCI info and try scheduling in next SF.
 
-              // add a reference to this harq process to the list in increasing order of TB size in symbols
-              std::pair <uint8_t,uint32_t> cqiInfoToSort (dciInfoReTx.m_numSym , i); // i is used to access m_dlHarqInfoList.at(i)
-              sortedDlHarqRetx.insert(
-                  std::lower_bound( sortedDlHarqRetx.begin(), sortedDlHarqRetx.end(), cqiInfoToSort ), //log(n) search
-                  cqiInfoToSort //vector insert
-              );
+                  /*std::map <uint16_t,uint8_t>::iterator itCqi = m_wbCqiRxed.find (itRlcBuf->m_rnti);
+                  int cqi;
+                  int mcsNew;
+                  if (itCqi != m_wbCqiRxed.end ())
+                  {
+                          cqi = itCqi->second;
+                          if (cqi == 0)
+                          {
+                                  NS_LOG_INFO ("CQI for reTX is below threshhold. Drop process");
+                                  itStat->second.at (harqId) = 0;
+                                  for (uint16_t k = 0; k < (*itRlcPdu).second.size (); k++)
+                                  {
+                                          itRlcPdu->second.at (harqId).clear ();
+                                  }
+                                  continue;
+                          }
+                          else
+                          {
+                                  mcsNew = m_amc->GetMcsFromCqi (cqi);  // get MCS
+                          }
+                  }
+                  else
+                  {
+                          if(dciInfoReTx.m_mcs > 0)
+                          {
+                                  mcsNew = dciInfoReTx.m_mcs - 1;
+                          }
+                          else
+                          {
+                                  mcsNew = dciInfoReTx.m_mcs;
+                          }
+                  }
+                  // compute number of symbols required
+                  unsigned numSymReq;
+                  if (mcsNew < dciInfoReTx.m_mcs)
+                  {
+                          numSymReq = m_amc->GetNumSymbolsFromTbsMcs (dciInfoReTx.m_tbSize, mcsNew);
+                          while (numSymReq < symAvail && mcsNew < dciInfoReTx.m_mcs);
+                          {
+                                  mcsNew++;
+                                  numSymReq = m_amc->GetNumSymbolsFromTbsMcs (dciInfoReTx.m_tbSize, mcsNew);
+                          }
+                          mcsNew--;
+                          numSymReq = m_amc->GetNumSymbolsFromTbsMcs (dciInfoReTx.m_tbSize, mcsNew);
+                  }
+                  if (numSymReq <= (m_phyMacConfig->GetSymbolsPerSubframe () - resvCtrl))
+                  {	// not enough symbols to encode TB at required MCS, attempt in later SF
+                          dlInfoListUntxed.push_back (m_dlHarqInfoList.at (i));
+                          continue;
+                  }*/
 
+                  // add a reference to this harq process to the list in increasing order of TB size in symbols
+                  std::pair <uint8_t,uint32_t> cqiInfoToSort (dciInfoReTx.m_numSym , i); // i is used to access m_dlHarqInfoList.at(i)
+                  sortedDlHarqRetx.insert(
+                      std::lower_bound( sortedDlHarqRetx.begin(), sortedDlHarqRetx.end(), cqiInfoToSort, std::greater< std::pair <uint8_t,uint32_t> >() ), //log(n) search
+                      cqiInfoToSort //vector insert
+                  );
+                }
             }
         }
 
       // After we have sorted all DL-HARQ by TBsize, we allocate them in increasing sequential layer-time blocks (increasing layer first)
       layerIdx = 0;
-      bool done = false;
       std::vector< std::pair <uint8_t,uint32_t> >::iterator itSortedHarq = sortedDlHarqRetx.begin();
+      bool done = ( itSortedHarq == sortedDlHarqRetx.end() );
+
       while (! done ){
           uint32_t idxSortedHarq = itSortedHarq->second;
           uint16_t rnti = m_dlHarqInfoList.at ( idxSortedHarq ).m_rnti;
@@ -913,7 +916,7 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
               itSetUeQuery = setUeInCurrentSymbolBlock.find ( rnti );
             }
           uint8_t harqId = m_dlHarqInfoList.at ( idxSortedHarq ).m_harqProcessId;
-          std::map <uint16_t, UlHarqProcessesStatus_t>::iterator itStat = m_dlHarqProcessesStatus.find (rnti); //this is the second time this is searched, error check was done first time so here we know we will always succeed
+          std::map <uint16_t, DlHarqProcessesStatus_t>::iterator itStat = m_dlHarqProcessesStatus.find (rnti); //this is the second time this is searched, error check was done first time so here we know we will always succeed
           std::map <uint16_t, DlHarqProcessesDciInfoList_t>::iterator itHarq = m_dlHarqProcessesDciInfoMap.find (rnti); //this is the second time this is searched, error check was done first time so here we know we will always succeed
           DciInfoElementTdma dciInfoReTx = itHarq->second.at (harqId);
 
@@ -948,7 +951,7 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
               slotInfo.m_dci = dciInfoReTx;
               NS_LOG_DEBUG ("UE" << dciInfoReTx.m_rnti << " gets DL slots " << (unsigned)dciInfoReTx.m_symStart << "-" << (unsigned)(dciInfoReTx.m_symStart + dciInfoReTx.m_numSym - 1) <<
                             " tbs " << dciInfoReTx.m_tbSize << " harqId " << (unsigned)dciInfoReTx.m_harqProcess << " harqId " << (unsigned)dciInfoReTx.m_harqProcess <<
-                            " rv " << (unsigned)dciInfoReTx.m_rv << " in frame " << ret.m_sfnSf.m_frameNum << " subframe " << (unsigned)ret.m_sfnSf.m_sfNum << " RETX");
+                            " rv " << (unsigned)dciInfoReTx.m_rv << " in frame " << ret.m_sfnSf.m_frameNum << " subframe " << (unsigned)ret.m_sfnSf.m_sfNum << " layer " << (unsigned) dciInfoReTx.m_layerInd << " RETX");
               std::map <uint16_t, DlHarqRlcPduList_t>::iterator itRlcList =  m_dlHarqProcessesRlcPduMap.find (rnti);
               if ( itRlcList == m_dlHarqProcessesRlcPduMap.end () )
                 {
@@ -1056,17 +1059,18 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
 
               std::pair <uint8_t,uint32_t> cqiInfoToSort (dciInfoReTx.m_numSym , i); // i is used to access m_dlHarqInfoList.at(i)
               sortedUlHarqRetx.insert(
-                  std::lower_bound( sortedUlHarqRetx.begin(), sortedUlHarqRetx.end(), cqiInfoToSort ), //log(n) search
+                  std::lower_bound( sortedUlHarqRetx.begin(), sortedUlHarqRetx.end(), cqiInfoToSort , std::greater< std::pair <uint8_t,uint32_t> >() ), //log(n) search
                   cqiInfoToSort //vector insert
               );
             }
         }
 
       layerIdx = 0;
-      done = false;
       itSortedHarq = sortedUlHarqRetx.begin();
+      done = ( itSortedHarq == sortedUlHarqRetx.end() );
       while (! done ){
           uint32_t idxSortedHarq = itSortedHarq->second;
+          NS_LOG_UNCOND("peta antes6");
           uint16_t rnti = m_ulHarqInfoList.at ( idxSortedHarq ).m_rnti;
           //we must skip the harq items of UEs that already have other transmissions during the same symbol-time interval
           itSetUeQuery = setUeInCurrentSymbolBlock.find ( rnti );
@@ -1122,7 +1126,7 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
               SlotAllocInfo slotInfo (tempUlSlotIdx++, SlotAllocInfo::UL_slotAllocInfo, SlotAllocInfo::CTRL_DATA, SlotAllocInfo::DIGITAL, rnti, layerIdx);
               slotInfo.m_dci = dciInfoReTx;
               NS_LOG_DEBUG ("UE" << dciInfoReTx.m_rnti << " gets UL slots " << (unsigned)dciInfoReTx.m_symStart << "-" << (unsigned)(dciInfoReTx.m_symStart + dciInfoReTx.m_numSym - 1) <<
-                            " tbs " << dciInfoReTx.m_tbSize << " harqId " << (unsigned)dciInfoReTx.m_harqProcess << " rv " << (unsigned)dciInfoReTx.m_rv << " in frame " << ulSfn.m_frameNum << " subframe " << (unsigned)ulSfn.m_sfNum <<
+                            " tbs " << dciInfoReTx.m_tbSize << " harqId " << (unsigned)dciInfoReTx.m_harqProcess << " rv " << (unsigned)dciInfoReTx.m_rv << " in frame " << ulSfn.m_frameNum << " subframe " << (unsigned)ulSfn.m_sfNum << " layer " << (unsigned) dciInfoReTx.m_layerInd <<
                             " RETX");
               //                  ret.m_sfAllocInfo.m_slotAllocInfo.push_back (slotInfo);
               tempUlslotAllocInfo[layerIdx].push_front (slotInfo); //remember we fill from
@@ -1161,6 +1165,7 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
             }
       }
 
+      NS_LOG_UNCOND("peta antes7");
 
       m_ulHarqInfoList.clear ();
       m_ulHarqInfoList = ulInfoListUntxed;

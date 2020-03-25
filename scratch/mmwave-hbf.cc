@@ -139,16 +139,20 @@ main (int argc, char *argv[])
 	RngSeedManager::SetSeed (1234);
 	RngSeedManager::SetRun (run);
 
-
+        Config::SetDefault ("ns3::MmWaveAsyncHbfMacScheduler::HarqEnabled", BooleanValue (false));
+        Config::SetDefault ("ns3::MmWaveAsyncHbfMacScheduler::CqiTimerThreshold", UintegerValue (1000));
+        Config::SetDefault ("ns3::MmWavePaddedHbfMacScheduler::HarqEnabled", BooleanValue (false));
+        Config::SetDefault ("ns3::MmWavePaddedHbfMacScheduler::CqiTimerThreshold", UintegerValue (1000));
+        Config::SetDefault ("ns3::MmWaveFlexTtiMacScheduler::HarqEnabled", BooleanValue (false));
 
 	Ptr<MmWaveHelper> mmwaveHelper = CreateObject<MmWaveHelper> ();
-        //      mmwaveHelper->SetSchedulerType ("ns3::MmWaveFlexTtiMacScheduler");
-        //      mmwaveHelper->SetSchedulerType ("ns3::MmWaveAsyncHbfMacScheduler");
+//              mmwaveHelper->SetSchedulerType ("ns3::MmWaveFlexTtiMacScheduler");
+//              mmwaveHelper->SetSchedulerType ("ns3::MmWaveAsyncHbfMacScheduler");
         mmwaveHelper->SetSchedulerType ("ns3::MmWavePaddedHbfMacScheduler");
 
-        //      mmwaveHelper->SetBeamformerType ("ns3::MmWaveDftBeamforming");
-        //      mmwaveHelper->SetBeamformerType ("ns3::MmWaveFFTCodebookBeamforming");
-        //      mmwaveHelper->SetBeamformerType ("ns3::MmWaveMMSEBeamforming");
+//              mmwaveHelper->SetBeamformerType ("ns3::MmWaveDftBeamforming");
+//              mmwaveHelper->SetBeamformerType ("ns3::MmWaveFFTCodebookBeamforming");
+//              mmwaveHelper->SetBeamformerType ("ns3::MmWaveMMSEBeamforming");
         mmwaveHelper->SetBeamformerType ("ns3::MmWaveMMSESpectrumBeamforming");
 
 	mmwaveHelper->SetPathlossModelType ("ns3::ThreeGppUmaPropagationLossModel");
