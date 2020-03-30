@@ -593,6 +593,14 @@ MmWavePaddedHbfMacScheduler::UpdateUlHarqProcessId (uint16_t rnti)
   std::map <uint16_t, UlHarqProcessesStatus_t>::iterator itStat = m_ulHarqProcessesStatus.find (rnti);
   if (itStat == m_ulHarqProcessesStatus.end ())
     {
+//      NS_LOG_ERROR("No Process Id Statusfound for this RNTI " << rnti<<" implementing temporary fix");
+//
+//      //this error occurs when the UE drops connection and the mac layer keeps receiving its BSRs and passing them to the scheduler
+//      MmWaveMacCschedSapProvider::CschedUeConfigReqParameters params;
+//      params.m_rnti = rnti;
+//      params.m_transmissionMode = 0;       // set to default value (SISO) for avoiding random initialization (valgrind error)
+//      m_macCschedSapProvider->CschedUeConfigReq (params);
+//      itStat = m_ulHarqProcessesStatus.find (rnti);
       NS_FATAL_ERROR ("No Process Id Statusfound for this RNTI " << rnti);
     }
 
@@ -701,9 +709,9 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
       symAvailLayer.push_back (m_phyMacConfig->GetSymbolsPerSubframe () - resvCtrl);
     }
   uint32_t nextSymAvail=m_phyMacConfig->GetDlCtrlSymbols ();
-  uint32_t lastSymAvail=m_phyMacConfig->GetSymbolsPerSubframe ()-m_phyMacConfig->GetUlCtrlSymbols ();
+  uint32_t lastSymAvail=m_phyMacConfig->GetSymbolsPerSubframe ()-m_phyMacConfig->GetDlCtrlSymbols ()-m_phyMacConfig->GetUlCtrlSymbols ();//last symbol is reserved for UL CTRL
   uint32_t futureNextSymAvail=m_phyMacConfig->GetDlCtrlSymbols ();
-  uint32_t futureLastSymAvail=m_phyMacConfig->GetSymbolsPerSubframe ()-m_phyMacConfig->GetUlCtrlSymbols ();
+  uint32_t futureLastSymAvail=m_phyMacConfig->GetSymbolsPerSubframe ()-m_phyMacConfig->GetDlCtrlSymbols ()-m_phyMacConfig->GetUlCtrlSymbols ();
   std::set<uint16_t> setUeInCurrentSymbolBlock;
   std::set<uint16_t>::iterator itSetUeQuery;
 
@@ -785,7 +793,7 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
             }
           if (m_dlHarqInfoList.at (i).m_harqStatus == DlHarqInfo::ACK || itStat->second.at (harqId) == 0)
             {             // acknowledgment or process timeout, reset process
-              //NS_LOG_DEBUG ("UE" << rnti << " DL harqId " << (unsigned)harqId << " HARQ-ACK received");
+              NS_LOG_DEBUG ("UE" << rnti << " DL harqId " << (unsigned)harqId << " HARQ-ACK received");
               itStat->second.at (harqId) = 0;                      // release process ID
               for (uint16_t k = 0; k < itRlcPdu->second.size (); k++)                           // clear RLC buffers
                 {
@@ -801,7 +809,7 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
                   NS_FATAL_ERROR ("No DCI/HARQ buffer entry found for UE " << rnti);
                 }
               DciInfoElementTdma dciInfoReTx = itHarq->second.at (harqId);
-              //NS_LOG_DEBUG ("UE" << rnti << " DL harqId " << (unsigned)harqId << " HARQ-NACK received, rv " << (unsigned)dciInfoReTx.m_rv);
+              NS_LOG_DEBUG ("UE" << rnti << " DL harqId " << (unsigned)harqId << " HARQ-NACK received, rv " << (unsigned)dciInfoReTx.m_rv);
               NS_ASSERT (harqId == dciInfoReTx.m_harqProcess);
               //NS_ASSERT(itStat->second.at (harqId) > 0);
               NS_ASSERT (itStat->second.at (harqId) - 1 == dciInfoReTx.m_rv);
@@ -884,7 +892,7 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
                 }
             }
         }
-
+      NS_LOG_UNCOND("Processed " <<  m_dlHarqInfoList.size () <<" DL harq processes, sorted "<< sortedDlHarqRetx.size() << " NACKs in descending size order ");
       // After we have sorted all DL-HARQ by TBsize, we allocate them in increasing sequential layer-time blocks (increasing layer first)
       layerIdx = 0;
       std::vector< std::pair <uint8_t,uint32_t> >::iterator itSortedHarq = sortedDlHarqRetx.begin();
@@ -927,7 +935,7 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
               break;                    // no symbols left to allocate
             }
           // allocate retx if enough symbols are available
-          if ( symAvailLayer[layerIdx] >= dciInfoReTx.m_numSym && (nextSymAvail + dciInfoReTx.m_numSym) < lastSymAvail )
+          if ( symAvailLayer[layerIdx] >= dciInfoReTx.m_numSym && (nextSymAvail + dciInfoReTx.m_numSym -1) <= lastSymAvail )
             {
               if ( layerIdx == 0 )
                 {//since harq processes are sorted, this update can always be performed at layer 0
@@ -1031,7 +1039,7 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
             }
           if (harqInfo.m_receptionStatus == UlHarqInfo::Ok || itStat->second.at (harqId) == 0)
             {
-              //NS_LOG_DEBUG ("UE" << rnti << " UL harqId " << (unsigned)harqInfo.m_harqProcessId << " HARQ-ACK received");
+              NS_LOG_DEBUG ("UE" << rnti << " UL harqId " << (unsigned)harqInfo.m_harqProcessId << " HARQ-ACK received");
               if (itStat != m_ulHarqProcessesStatus.end ())
                 {
                   itStat->second.at (harqId) = 0;                        // release process ID
@@ -1046,7 +1054,7 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
                 }
               // retx correspondent block: retrieve the UL-DCI
               DciInfoElementTdma dciInfoReTx = itHarq->second.at (harqId);
-              //NS_LOG_DEBUG ("UE" << rnti << " UL harqId " << (unsigned)harqInfo.m_harqProcessId << " HARQ-NACK received, rv " << (unsigned)dciInfoReTx.m_rv);
+              NS_LOG_DEBUG ("UE" << rnti << " UL harqId " << (unsigned)harqInfo.m_harqProcessId << " HARQ-NACK received, rv " << (unsigned)dciInfoReTx.m_rv);
               NS_ASSERT (harqId == dciInfoReTx.m_harqProcess);
               NS_ASSERT (itStat->second.at (harqId) > 0);
               NS_ASSERT (itStat->second.at (harqId) - 1 == dciInfoReTx.m_rv);
@@ -1056,21 +1064,23 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
                   itStat->second.at (harqId) = 0;
                   continue;
                 }
-
-              std::pair <uint8_t,uint32_t> cqiInfoToSort (dciInfoReTx.m_numSym , i); // i is used to access m_dlHarqInfoList.at(i)
-              sortedUlHarqRetx.insert(
-                  std::lower_bound( sortedUlHarqRetx.begin(), sortedUlHarqRetx.end(), cqiInfoToSort , std::greater< std::pair <uint8_t,uint32_t> >() ), //log(n) search
-                  cqiInfoToSort //vector insert
-              );
+              else
+                {
+                  std::pair <uint8_t,uint32_t> cqiInfoToSort (dciInfoReTx.m_numSym , i); // i is used to access m_dlHarqInfoList.at(i)
+                  sortedUlHarqRetx.insert(
+                      std::lower_bound( sortedUlHarqRetx.begin(), sortedUlHarqRetx.end(), cqiInfoToSort , std::greater< std::pair <uint8_t,uint32_t> >() ), //log(n) search
+                      cqiInfoToSort //vector insert
+                  );
+                }
             }
         }
 
+      NS_LOG_UNCOND("Processed " <<  m_ulHarqInfoList.size () <<" UL harq processes, sorted "<< sortedUlHarqRetx.size() << " NACKs in descending size order ");
       layerIdx = 0;
       itSortedHarq = sortedUlHarqRetx.begin();
       done = ( itSortedHarq == sortedUlHarqRetx.end() );
       while (! done ){
           uint32_t idxSortedHarq = itSortedHarq->second;
-          NS_LOG_UNCOND("peta antes6");
           uint16_t rnti = m_ulHarqInfoList.at ( idxSortedHarq ).m_rnti;
           //we must skip the harq items of UEs that already have other transmissions during the same symbol-time interval
           itSetUeQuery = setUeInCurrentSymbolBlock.find ( rnti );
@@ -1078,7 +1088,7 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
             {
               itSortedHarq++;
               if ( itSortedHarq == sortedUlHarqRetx.end() )
-                {//if the skipping process reaches the end, there are no harq processes we can add in the sime symbol-time interval than the previous
+                {//if the skipping process reaches the end, there are no harq processes we can add in the same symbol-time interval than the previous
                   //all symbols in the remaining layer-symbol 2D rectangle are "wasted" because we leave them empty
                   symAvail -= ( m_phyMacConfig->GetNumEnbLayers () - layerIdx ) * ( lastSymAvail - futureLastSymAvail );
                   for (uint8_t i=layerIdx; i < m_phyMacConfig->GetNumEnbLayers () ; i++)
@@ -1104,12 +1114,12 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
               done = true;
               break;                    // no symbols left to allocate
             }
-          if  ( symAvailLayer[layerIdx] >= dciInfoReTx.m_numSym && ( lastSymAvail - dciInfoReTx.m_numSym) > nextSymAvail)
+          if  ( symAvailLayer[layerIdx] >= dciInfoReTx.m_numSym && ( lastSymAvail - dciInfoReTx.m_numSym +1) >= nextSymAvail)
             {
               if ( layerIdx == 0 )
                 {//since harq processes are sorted, this update can always be performed at layer 0
-                  NS_ASSERT ( lastSymAvail >= 0 );
-                  futureLastSymAvail = lastSymAvail + dciInfoReTx.m_numSym;
+                  NS_ASSERT ( lastSymAvail >= dciInfoReTx.m_numSym );
+                  futureLastSymAvail = lastSymAvail - dciInfoReTx.m_numSym;
                 }
               else
                 {
@@ -1118,7 +1128,7 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
               symAvail -= lastSymAvail - futureLastSymAvail ; //we transmit dciInfoReTx.m_numSym, but the next "free" symbol is further away at the beginning of the next symbol-time block
               symAvailLayer[layerIdx] -= lastSymAvail - futureLastSymAvail ;
               dciInfoReTx.m_layerInd = layerIdx;
-              dciInfoReTx.m_symStart = futureLastSymAvail; //time alignment across all layers at the block start
+              dciInfoReTx.m_symStart = futureLastSymAvail + 1; //time alignment across all layers at the block start
               dciInfoReTx.m_rv++;
               dciInfoReTx.m_ndi = 0;
               itStat->second.at (harqId) = itStat->second.at (harqId) + 1;
@@ -1164,8 +1174,6 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
               break;
             }
       }
-
-      NS_LOG_UNCOND("peta antes7");
 
       m_ulHarqInfoList.clear ();
       m_ulHarqInfoList = ulInfoListUntxed;
@@ -1401,15 +1409,15 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
         }
 
       //Divide the HBF frame in DL and UL contiguous regions proportionally to the total demand for new TB allocations.
-      uint32_t dlUlBarrier = nextSymAvail + round ( ((double) lastSymAvail - (double) nextSymAvail) * ( (double) totDlSymReq) / ( (double) totDlSymReq + (double) totUlSymReq) );
+      uint32_t firstUlSymbol = nextSymAvail + round ( ((double) lastSymAvail - (double) nextSymAvail +1 ) * ( (double) totDlSymReq) / ( (double) totDlSymReq + (double) totUlSymReq) );
 
-      NS_LOG_LOGIC("Semiempty frame after HARQ alloc: Available symbols " << nextSymAvail << " to " << lastSymAvail << " UL start in symbol "<<dlUlBarrier);
+      NS_LOG_LOGIC("Semiempty frame after HARQ alloc: Available symbols " << nextSymAvail << " to " << lastSymAvail << " UL start in symbol "<<firstUlSymbol);
 
       //Run a (almost always) RR allocator on each Layer separately for the each DL UL portions
 
       //DL allocation part (we follow a RR policy without looking at buffer size, potentially wasting some resources when transmit buffers are short)
       uint8_t nDlFlowsPerLayer = ceil( ( (double ) nFlowsDl ) / ( (double ) m_phyMacConfig->GetNumEnbLayers () ) );
-      uint8_t nDlSymPerLayer = dlUlBarrier - nextSymAvail;
+      uint8_t nDlSymPerLayer = firstUlSymbol - nextSymAvail;
       uint8_t symPerDlBlock = floor( ( (double ) nDlSymPerLayer ) / ( (double ) nDlFlowsPerLayer ) );
       if (symPerDlBlock==0)
         {//if there are more UE than symbols not all ue get one and RR serves as many UE as possible
@@ -1424,7 +1432,7 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
 
       //UL allocation part
       uint8_t nUlFlowsPerLayer = ceil( ( (double ) nFlowsUl ) / ( (double ) m_phyMacConfig->GetNumEnbLayers () ) );
-      uint8_t nUlSymPerLayer = lastSymAvail - dlUlBarrier;
+      uint8_t nUlSymPerLayer = lastSymAvail - firstUlSymbol + 1;
       uint8_t symPerUlBlock = floor( ( (double ) nUlSymPerLayer ) / ( (double ) nUlFlowsPerLayer ) );
       if (symPerUlBlock==0)
         {//if there are more UE than symbols not all ue get one and RR serves as many UE as possible
@@ -1466,7 +1474,7 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
           itUeInfo->second.m_ulSymbols = std::min( symPerUlBlock ,  itUeInfo->second.m_maxUlSymbols );
 
 
-          if ( ( itUeInfo->second.m_dlSymbols > 0 ) & ( (nextSymAvail + symPerDlBlock) <= dlUlBarrier ) ) // If buffer_size is 0 this UE is not counted in nFlowsDl and no actual block is created
+          if ( ( itUeInfo->second.m_dlSymbols > 0 ) & ( (nextSymAvail + symPerDlBlock) <= firstUlSymbol ) ) // If buffer_size is 0 this UE is not counted in nFlowsDl and no actual block is created
             {
               NS_ASSERT( symAvail >= symPerDlBlock );
               NS_ASSERT( symAvailLayer[layerIdxDl]>= symPerDlBlock);
@@ -1564,11 +1572,11 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
                   blockIdxDl++;
                   NS_ASSERT (blockIdxDl <= nDlFlowsPerLayer);
                   nextSymAvail += symPerDlBlock;
-                  NS_ASSERT (nextSymAvail <= dlUlBarrier);
+                  NS_ASSERT (nextSymAvail <= firstUlSymbol);
                 }
             }
 
-          if ( ( ueSchedInfo.m_ulSymbols > 0 ) & ( (lastSymAvail - symPerUlBlock) >= dlUlBarrier ) )
+          if ( ( ueSchedInfo.m_ulSymbols > 0 ) & ( (lastSymAvail - symPerUlBlock + 1 ) >= firstUlSymbol ) )
             {
               NS_ASSERT( symAvail >= symPerUlBlock );
               NS_ASSERT_MSG( symAvailLayer[layerIdxUl]>= symPerUlBlock , "UL allocation problem: UE " << itUeInfo->first << " needs " << (int) symPerUlBlock  <<
@@ -1580,7 +1588,7 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
               dci.m_rnti = itUeInfo->first;
               dci.m_format = 1;
               dci.m_layerInd = layerIdxUl;
-              dci.m_symStart = lastSymAvail - symPerUlBlock;
+              dci.m_symStart = lastSymAvail - symPerUlBlock +1 ;
               dci.m_numSym = ueSchedInfo.m_ulSymbols;
               dci.m_mcs = ueSchedInfo.m_ulMcs;
               dci.m_ndi = 1;
@@ -1640,7 +1648,7 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
                   blockIdxUl++;
                   NS_ASSERT (blockIdxUl <= nUlFlowsPerLayer);
                   lastSymAvail -= symPerUlBlock;
-                  NS_ASSERT (lastSymAvail >= dlUlBarrier);
+                  NS_ASSERT (lastSymAvail + 1 >= firstUlSymbol);
                 }
             }
 

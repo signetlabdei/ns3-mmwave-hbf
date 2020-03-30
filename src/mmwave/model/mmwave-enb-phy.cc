@@ -1590,8 +1590,6 @@ MmWaveEnbPhy::StartSlot (void)
               bfCasted-> SetBeamformingVectorForSlotBundle ( vDevsInBundle, vLayersInBundle );
             }
 
-          ResetDataCqiReportLayerCounter (); //the UL cqi is counted in parallel in the allocator and the cqi reception, instead of passing layer info explicitly
-
           slotPeriod = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () * currSlotBundleInfo.m_minNumSym); //schedule for EndSlot()
 
 //          Time thisSlotStart = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () *
@@ -1798,12 +1796,6 @@ MmWaveEnbPhy::PhyDataPacketReceived (Ptr<Packet> p)
 }
 
 void
-MmWaveEnbPhy::ResetDataCqiReportLayerCounter ()
-{
-  m_layerCtrUlDataCqiReport = 0;
-}
-
-void
 MmWaveEnbPhy::GenerateDataCqiReport (const SpectrumValue& sinr, uint8_t layerInd)
 {
   NS_LOG_LOGIC ("Sinr from DataCqiReport = " << sinr);
@@ -1830,8 +1822,6 @@ MmWaveEnbPhy::GenerateDataCqiReport (const SpectrumValue& sinr, uint8_t layerInd
   SpectrumValue newSinr = sinr;
   m_ulSinrTrace (0, newSinr, newSinr);
   m_phySapUser->UlCqiReport (ulcqi);
-  m_layerCtrUlDataCqiReport++;
-  m_layerCtrUlDataCqiReport=m_layerCtrUlDataCqiReport % m_phyMacConfig->GetNumEnbLayers ();//this is a protection that should never occur if the reset function is used properly
 }
 
 

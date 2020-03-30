@@ -93,6 +93,18 @@ main (int argc, char *argv[])
 //	bool smallScale = false;
 //	double speed = 3;
 
+	std::string schedulerType =
+//	    "ns3::MmWaveFlexTtiMacScheduler"
+//	    "ns3::MmWaveAsyncHbfMacScheduler"
+	    "ns3::MmWavePaddedHbfMacScheduler"
+	    ;
+	std::string beamformerType =
+//	    "ns3::MmWaveDftBeamforming"
+//	    "ns3::MmWaveFFTCodebookBeamforming"
+            "ns3::MmWaveMMSEBeamforming"
+//	    "ns3::MmWaveMMSESpectrumBeamforming"
+	    ;
+
 	// Command line arguments
 	CommandLine cmd;
 	cmd.AddValue ("numEnb", "Number of eNBs", numEnb);
@@ -103,20 +115,25 @@ main (int argc, char *argv[])
 	cmd.AddValue ("rlcAm", "Enable RLC-AM", rlcAmEnabled);
 	cmd.AddValue ("symPerSf", "OFDM symbols per subframe", symPerSf);
 	cmd.AddValue ("sfPeriod", "Subframe period = 4.16 * symPerSf", sfPeriod);
-	cmd.AddValue ("fixedTti", "Fixed TTI scheduler", fixedTti);
-	cmd.AddValue ("run", "run for RNG (for generating different deterministic sequences for different drops)", fixedTti);
+	cmd.AddValue ("fixedTti", "Fixed TTI scheduler option", fixedTti);
+        cmd.AddValue ("run", "run for RNG (for generating different deterministic sequences for different drops)", fixedTti);
+        cmd.AddValue ("sched", "The type of scheduler algorithm", schedulerType);
+        cmd.AddValue ("bfmod", "The type of beamformer algorithm", beamformerType);
 	//cmd.AddValue ("useIdealRrc", "whether to use ideal RRC layer or not", useIdealRrc);
 	cmd.Parse (argc, argv);
 	symPeriod = sfPeriod/symPerSf;
 
+        NS_LOG_UNCOND("Scheduler: " << schedulerType << " Beamformer: " << beamformerType << " HARQ: " << harqEnabled);
+
+
 	Config::SetDefault ("ns3::MmWaveHelper::RlcAmEnabled", BooleanValue (rlcAmEnabled));
 	Config::SetDefault ("ns3::MmWaveHelper::HarqEnabled", BooleanValue (harqEnabled));
 //	Config::SetDefault ("ns3::MmWaveHelper::UseIdealRrc", BooleanValue (useIdealRrc));
-	Config::SetDefault ("ns3::MmWaveFlexTtiMacScheduler::HarqEnabled", BooleanValue (harqEnabled));
-	Config::SetDefault ("ns3::MmWaveFlexTtiMacScheduler::CqiTimerThreshold", UintegerValue (1000));
-	Config::SetDefault ("ns3::MmWaveFlexTtiMaxWeightMacScheduler::HarqEnabled", BooleanValue (harqEnabled));
-	Config::SetDefault ("ns3::MmWaveFlexTtiMaxWeightMacScheduler::FixedTti", BooleanValue (fixedTti));
-	Config::SetDefault ("ns3::MmWaveFlexTtiMaxWeightMacScheduler::SymPerSlot", UintegerValue (6));
+//	Config::SetDefault ("ns3::MmWaveFlexTtiMacScheduler::HarqEnabled", BooleanValue (harqEnabled));
+//	Config::SetDefault ("ns3::MmWaveFlexTtiMacScheduler::CqiTimerThreshold", UintegerValue (1000));
+//	Config::SetDefault ("ns3::MmWaveFlexTtiMaxWeightMacScheduler::HarqEnabled", BooleanValue (harqEnabled));
+//	Config::SetDefault ("ns3::MmWaveFlexTtiMaxWeightMacScheduler::FixedTti", BooleanValue (fixedTti));
+//	Config::SetDefault ("ns3::MmWaveFlexTtiMaxWeightMacScheduler::SymPerSlot", UintegerValue (6));
 	Config::SetDefault ("ns3::MmWavePhyMacCommon::ResourceBlockNum", UintegerValue (1));
 	Config::SetDefault ("ns3::MmWavePhyMacCommon::ChunkPerRB", UintegerValue (72));
 	Config::SetDefault ("ns3::MmWavePhyMacCommon::SymbolsPerSubframe", UintegerValue (symPerSf));
@@ -139,26 +156,17 @@ main (int argc, char *argv[])
 	RngSeedManager::SetSeed (1234);
 	RngSeedManager::SetRun (run);
 
-        Config::SetDefault ("ns3::MmWaveAsyncHbfMacScheduler::HarqEnabled", BooleanValue (false));
-        Config::SetDefault ("ns3::MmWaveAsyncHbfMacScheduler::CqiTimerThreshold", UintegerValue (1000));
-        Config::SetDefault ("ns3::MmWavePaddedHbfMacScheduler::HarqEnabled", BooleanValue (false));
-        Config::SetDefault ("ns3::MmWavePaddedHbfMacScheduler::CqiTimerThreshold", UintegerValue (1000));
-        Config::SetDefault ("ns3::MmWaveFlexTtiMacScheduler::HarqEnabled", BooleanValue (false));
+        Config::SetDefault (schedulerType+"::HarqEnabled", BooleanValue (harqEnabled));
+        Config::SetDefault (schedulerType+"::CqiTimerThreshold", UintegerValue (100));
 
 	Ptr<MmWaveHelper> mmwaveHelper = CreateObject<MmWaveHelper> ();
-//              mmwaveHelper->SetSchedulerType ("ns3::MmWaveFlexTtiMacScheduler");
-//              mmwaveHelper->SetSchedulerType ("ns3::MmWaveAsyncHbfMacScheduler");
-        mmwaveHelper->SetSchedulerType ("ns3::MmWavePaddedHbfMacScheduler");
-
-//              mmwaveHelper->SetBeamformerType ("ns3::MmWaveDftBeamforming");
-//              mmwaveHelper->SetBeamformerType ("ns3::MmWaveFFTCodebookBeamforming");
-//              mmwaveHelper->SetBeamformerType ("ns3::MmWaveMMSEBeamforming");
-        mmwaveHelper->SetBeamformerType ("ns3::MmWaveMMSESpectrumBeamforming");
+        mmwaveHelper->SetSchedulerType (schedulerType);
+        mmwaveHelper->SetBeamformerType (beamformerType);
 
 	mmwaveHelper->SetPathlossModelType ("ns3::ThreeGppUmaPropagationLossModel");
 	mmwaveHelper->SetChannelConditionModelType ("ns3::ThreeGppUmaChannelConditionModel");
 	mmwaveHelper->SetChannelModelType ("ns3::ThreeGppSpectrumPropagationLossModel");
-	mmwaveHelper->SetChannelModelAttribute("Scenario",StringValue( "UMa" ));
+	mmwaveHelper->SetChannelModelAttribute("Scenario",StringValue( "UMa" ));//TODO make this configurable in command line
 
 	Ptr<MmWavePointToPointEpcHelper>  epcHelper = CreateObject<MmWavePointToPointEpcHelper> ();
 	mmwaveHelper->SetEpcHelper (epcHelper);
