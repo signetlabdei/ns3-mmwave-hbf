@@ -296,6 +296,7 @@ public:
 
 protected:
   complex2DVector_t MmseCholesky (complex2DVector_t matrixH);
+  std::vector< Ptr<CodebookBFVectorCacheEntry>> GetBfCachesInSlotBundle(std::vector< Ptr<NetDevice> > vOtherDevs);
 
 private:
 

@@ -320,7 +320,7 @@ MmWaveUeMac::DoTransmitPdu (LteMacSapProvider::TransmitPduParameters params)
     {
       MmWaveMacPduTag tag;
       it->second.m_pdu->PeekPacketTag (tag);
-      //NS_LOG_UNCOND ("UE MAC: transmit PDU layer index: " << (int)tag.GetLayerInd());
+      NS_LOG_INFO ("UE MAC: transmit PDU layer index: " << (int)tag.GetLayerInd());
       
       if (tag.GetSfn ().m_frameNum < m_frameNum)
         {
@@ -356,7 +356,7 @@ MmWaveUeMac::DoTransmitPdu (LteMacSapProvider::TransmitPduParameters params)
               //NS_LOG_UNCOND(headerTst.GetSubheaders ().at (0).m_size);
             }
 
-          LteRadioBearerTag bearerTag (params.rnti, 0, 0);
+          LteRadioBearerTag bearerTag (params.rnti, 0, params.layer);
           it->second.m_pdu->AddPacketTag (bearerTag);
           m_miUlHarqProcessesPacket.at (params.harqProcessId).m_pktBurst->AddPacket (it->second.m_pdu);
           m_miUlHarqProcessesPacketTimer.at (params.harqProcessId) = m_phyMacConfig->GetHarqTimeout ();
@@ -585,6 +585,8 @@ MmWaveUeMac::DoReceivePhyPdu (Ptr<Packet> p)
                   rxPduParams.lcid = macSubheaders[ipdu].m_lcid;
                   user->ReceivePdu (rxPduParams);
                 }
+
+              NS_LOG_INFO ("MmWave UE Mac Rx Packet, Rnti:" << m_rnti << " lcid:" << (int) macSubheaders[ipdu].m_lcid << " size:" << (int) macSubheaders[ipdu].m_size);
             }
         }
     }
@@ -729,7 +731,7 @@ MmWaveUeMac::DoReceiveControlMessage  (Ptr<MmWaveControlMessage> msg)
                     header.AddSubheader (subheader);
                     emptyPdu->AddHeader (header);
                     emptyPdu->AddPacketTag (tag);
-                    LteRadioBearerTag bearerTag (dciInfoElem.m_rnti, 3, 0);
+                    LteRadioBearerTag bearerTag (dciInfoElem.m_rnti, 3, layerInd);
                     emptyPdu->AddPacketTag (bearerTag);
                     m_miUlHarqProcessesPacket.at (dciInfoElem.m_harqProcess).m_pktBurst->AddPacket (emptyPdu);
                     m_miUlHarqProcessesPacketTimer.at (dciInfoElem.m_harqProcess) = m_phyMacConfig->GetHarqTimeout ();
@@ -770,7 +772,7 @@ MmWaveUeMac::DoReceiveControlMessage  (Ptr<MmWaveControlMessage> msg)
                             MacSubheader subheader ((*lcIt).first,(*itBsr).second.statusPduSize);
 
                             txOpParams.bytes = (*itBsr).second.statusPduSize;
-                            txOpParams.layer = 0;
+                            txOpParams.layer = dciInfoElem.m_layerInd;
                             txOpParams.harqId = dciInfoElem.m_harqProcess;
                             txOpParams.componentCarrierId = m_componentCarrierId;
                             txOpParams.rnti = m_rnti;
@@ -793,7 +795,7 @@ MmWaveUeMac::DoReceiveControlMessage  (Ptr<MmWaveControlMessage> msg)
                                 //MacSubheader subheader((*lcIt).first,(*itBsr).second.statusPduSize);
 
                                 txOpParams.bytes = (*itBsr).second.statusPduSize;
-                                txOpParams.layer = 0;
+                                txOpParams.layer = dciInfoElem.m_layerInd;
                                 txOpParams.harqId = dciInfoElem.m_harqProcess;
                                 txOpParams.componentCarrierId = m_componentCarrierId;
                                 txOpParams.rnti = m_rnti;
@@ -821,7 +823,7 @@ MmWaveUeMac::DoReceiveControlMessage  (Ptr<MmWaveControlMessage> msg)
                                     MacSubheader subheader ((*lcIt).first, bytesForThisLc);
 
                                     txOpParams.bytes = (bytesForThisLc - subheader.GetSize () - 1);
-                                    txOpParams.layer = 0;
+                                    txOpParams.layer = dciInfoElem.m_layerInd;
                                     txOpParams.harqId = dciInfoElem.m_harqProcess;
                                     txOpParams.componentCarrierId = m_componentCarrierId;
                                     txOpParams.rnti = m_rnti;
@@ -857,7 +859,7 @@ MmWaveUeMac::DoReceiveControlMessage  (Ptr<MmWaveControlMessage> msg)
                                     MacSubheader subheader ((*lcIt).first, bytesForThisLc);
 
                                     txOpParams.bytes = (bytesForThisLc - subheader.GetSize () - 1);
-                                    txOpParams.layer = 0;
+                                    txOpParams.layer = dciInfoElem.m_layerInd;
                                     txOpParams.harqId = dciInfoElem.m_harqProcess;
                                     txOpParams.componentCarrierId = m_componentCarrierId;
                                     txOpParams.rnti = m_rnti;

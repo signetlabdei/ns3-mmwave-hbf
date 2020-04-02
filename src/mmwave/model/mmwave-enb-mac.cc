@@ -647,7 +647,7 @@ MmWaveEnbMac::DoReceivePhyPdu (Ptr<Packet> p)
           rxPduParams.lcid = macSubheaders[ipdu].m_lcid;
           (*lcidIt).second->ReceivePdu (rxPduParams);
         }
-      NS_LOG_INFO ("MmWave Enb Mac Rx Packet, Rnti:" << rnti << " lcid:" << (uint32_t)macSubheaders[ipdu].m_lcid << " size:" << macSubheaders[ipdu].m_size);
+      NS_LOG_INFO ("MmWave Enb Mac Rx Packet, Rnti:" << rnti << " lcid:" << (int)  macSubheaders[ipdu].m_lcid << " size:" << (int) macSubheaders[ipdu].m_size);
     }
 }
 
@@ -711,7 +711,16 @@ MmWaveEnbMac::DoUlCqiReport (MmWaveMacSchedSapProvider::SchedUlCqiInfoReqParamet
       NS_LOG_DEBUG (this << " eNB rxed an SRS UL-CQI");
     }
   //ulcqi.m_sfnSf = SfnSf(m_frameNum, m_sfNum, m_slotNum);
-  NS_LOG_INFO ("*** UL CQI report SINR " << LteFfConverter::fpS11dot3toDouble (ulcqi.m_ulCqi.m_sinr[0]) << " frame " << m_frameNum << " subframe " << m_sfNum << " slot " << m_slotNum );
+  double meanSINR = 0;
+  double minSINR = ulcqi.m_ulCqi.m_sinr[0];
+  for ( uint16_t ctr = 0; ctr < ulcqi.m_ulCqi.m_sinr.size() ; ctr++ ){
+      meanSINR += ulcqi.m_ulCqi.m_sinr[ctr] / ulcqi.m_ulCqi.m_sinr.size();
+      if ( ulcqi.m_ulCqi.m_sinr[ctr] < minSINR )
+        {
+          minSINR = ulcqi.m_ulCqi.m_sinr[ctr];
+        }
+  }
+  NS_LOG_INFO ("*** UL CQI report mean SINR " << meanSINR << " minSINR "<< minSINR <<" frame " << (int) ulcqi.m_sfnSf.m_frameNum << " subframe " << (int) ulcqi.m_sfnSf.m_sfNum << " slot " << (int) ulcqi.m_sfnSf.m_slotNum );
 
   m_ulCqiReceived.push_back (ulcqi);
 }
@@ -1018,7 +1027,7 @@ MmWaveEnbMac::DoSchedConfigIndication (MmWaveMacSchedSapUser::SchedConfigIndPara
                       MacSubheader subheader (rlcPduInfo[ipdu].m_lcid, rlcPduInfo[ipdu].m_size);
 
                       txOpParams.bytes = (rlcPduInfo[ipdu].m_size) - subheader.GetSize ();
-                      txOpParams.layer = 0;
+                      txOpParams.layer = dciElem.m_layerInd;
                       txOpParams.harqId = tbUid;
                       txOpParams.componentCarrierId = m_componentCarrierId;
                       txOpParams.rnti = rnti;
@@ -1038,7 +1047,7 @@ MmWaveEnbMac::DoSchedConfigIndication (MmWaveMacSchedSapUser::SchedConfigIndPara
                   pduMapIt->second.m_pdu->PeekHeader (hdrTst);
 
                   NS_ASSERT (pduMapIt->second.m_pdu->GetSize () > 0);
-                  LteRadioBearerTag bearerTag (rnti, pduMapIt->second.m_size, 0);
+                  LteRadioBearerTag bearerTag (rnti, pduMapIt->second.m_size, dciElem.m_layerInd);
                   pduMapIt->second.m_pdu->AddPacketTag (bearerTag);
                   NS_LOG_DEBUG ("eNB sending MAC pdu size " << pduMapIt->second.m_pdu->GetSize ());
                   for (unsigned i = 0; i < pduMapIt->second.m_macHeader.GetSubheaders ().size (); i++)

@@ -1869,6 +1869,9 @@ it->second->GetFfrAlgorithm ()->SetLteFfrRrcSapUser (rrc->GetLteFfrRrcSapUser (i
           (ccPhy->GetDlSpectrumPhyList ()).at(layerInd)->SetPhyRxDataEndOkCallback (MakeCallback (&MmWaveEnbPhy::PhyDataPacketReceived, ccPhy));
           (ccPhy->GetDlSpectrumPhyList ()).at(layerInd)->SetPhyRxCtrlEndOkCallback (MakeCallback (&MmWaveEnbPhy::PhyCtrlMessagesReceived, ccPhy));
           (ccPhy->GetDlSpectrumPhyList ()).at(layerInd)->SetPhyUlHarqFeedbackCallback (MakeCallback (&MmWaveEnbPhy::ReceiveUlHarqFeedback, ccPhy));
+//          (ccPhy->GetUlSpectrumPhyList ()).at(layerInd)->SetPhyRxDataEndOkCallback (MakeCallback (&MmWaveEnbPhy::PhyDataPacketReceived, ccPhy));
+//          (ccPhy->GetDlSpectrumPhyList ()).at(layerInd)->SetPhyRxCtrlEndOkCallback (MakeCallback (&MmWaveEnbPhy::PhyCtrlMessagesReceived, ccPhy));
+//          (ccPhy->GetUlSpectrumPhyList ()).at(layerInd)->SetPhyUlHarqFeedbackCallback (MakeCallback (&MmWaveEnbPhy::ReceiveUlHarqFeedback, ccPhy));
         }
       //ccPhy->GetUlSpectrumPhy ()->SetDevice (device);
       //ccPhy->GetDlSpectrumPhy ()->SetDevice (device);

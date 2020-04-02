@@ -1482,12 +1482,21 @@ MmWaveFlexTtiMaxRateMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSched
       itUeAllocMap->second->m_rlcPduInfo.clear ();
     }
 
+  NS_LOG_INFO ("Fr "<< (int)ret.m_sfnSf.m_frameNum<<" Sf "<<(int)ret.m_sfnSf.m_sfNum <<" DL slot no. "<< 0 << " DL CTRL sym range "<<(int) ret.m_sfAllocInfo.m_slotAllocInfo[0].m_dci.m_symStart << " to "<<(int) ret.m_sfAllocInfo.m_slotAllocInfo[0].m_dci.m_numSym+(int) ret.m_sfAllocInfo.m_slotAllocInfo[0].m_dci.m_symStart-1 << " of " << m_phyMacConfig->GetSymbolsPerSubframe ());
+  for (uint8_t islot = 1; islot < ret.m_sfAllocInfo.m_slotAllocInfo.size(); islot++)
+    {
+    NS_LOG_INFO ("Fr "<< (int)ret.m_sfnSf.m_frameNum<<" Sf "<<(int)ret.m_sfnSf.m_sfNum <<" "<< (  ret.m_sfAllocInfo.m_slotAllocInfo[islot].m_tddMode == SlotAllocInfo::DL_slotAllocInfo?"DL":"UL") <<" slot no. "<< (int) islot << " to UE "<< (int) ret.m_sfAllocInfo.m_slotAllocInfo[islot].m_dci.m_rnti <<" sym range "<<(int) ret.m_sfAllocInfo.m_slotAllocInfo[islot].m_dci.m_symStart << " to "<<(int) ret.m_sfAllocInfo.m_slotAllocInfo[islot].m_dci.m_numSym+(int) ret.m_sfAllocInfo.m_slotAllocInfo[islot].m_dci.m_symStart-1 << " of " << m_phyMacConfig->GetSymbolsPerSubframe ());
+    }
+
   // add slot for UL control
   SlotAllocInfo ulCtrlSlot (0xFF, SlotAllocInfo::UL_slotAllocInfo, SlotAllocInfo::CTRL, SlotAllocInfo::DIGITAL, 0);
   ulCtrlSlot.m_dci.m_numSym = 1;
   ulCtrlSlot.m_dci.m_symStart = m_phyMacConfig->GetSymbolsPerSubframe () - 1;
   //ret.m_ulSfAllocInfo.m_slotAllocInfo.push_back (ulCtrlSlot);
   ret.m_sfAllocInfo.m_slotAllocInfo.push_back (ulCtrlSlot);
+
+  NS_LOG_INFO ("Fr "<< (int)ret.m_sfnSf.m_frameNum<<" Sf "<<(int)ret.m_sfnSf.m_sfNum <<" UL slot no. "<< ret.m_sfAllocInfo.m_slotAllocInfo.size()-1 << " UL CTRL sym range "<<(int) ret.m_sfAllocInfo.m_slotAllocInfo.back().m_dci.m_symStart << " to "<<(int) ret.m_sfAllocInfo.m_slotAllocInfo.back().m_dci.m_numSym+(int) ret.m_sfAllocInfo.m_slotAllocInfo.back().m_dci.m_symStart-1 << " of " << m_phyMacConfig->GetSymbolsPerSubframe ());
+
 
   //m_ulSfAllocInfo.push_back (ret.m_ulSfAllocInfo); // add UL SF info for later calls to scheduler
 

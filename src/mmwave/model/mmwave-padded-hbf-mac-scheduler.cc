@@ -1666,7 +1666,7 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
         }
     }
 
-  NS_LOG_UNCOND ("Fr "<< (int)ret.m_sfnSf.m_frameNum<<" Sf "<<(int)ret.m_sfnSf.m_sfNum <<" DL slot no. "<< 0 << " DL CTRL sym range "<<(int) ret.m_sfAllocInfo.m_slotAllocInfo[0].m_dci.m_symStart << " to "<<(int) ret.m_sfAllocInfo.m_slotAllocInfo[0].m_dci.m_numSym+(int) ret.m_sfAllocInfo.m_slotAllocInfo[0].m_dci.m_symStart-1 << " of " << m_phyMacConfig->GetSymbolsPerSubframe () <<" layerIdx " << (int) ret.m_sfAllocInfo.m_slotAllocInfo[0].m_dci.m_layerInd <<" of "<< (int) ret.m_sfAllocInfo.m_numAllocLayers);
+  NS_LOG_INFO ("Fr "<< (int)ret.m_sfnSf.m_frameNum<<" Sf "<<(int)ret.m_sfnSf.m_sfNum <<" DL slot no. "<< 0 << " DL CTRL sym range "<<(int) ret.m_sfAllocInfo.m_slotAllocInfo[0].m_dci.m_symStart << " to "<<(int) ret.m_sfAllocInfo.m_slotAllocInfo[0].m_dci.m_numSym+(int) ret.m_sfAllocInfo.m_slotAllocInfo[0].m_dci.m_symStart-1 << " of " << m_phyMacConfig->GetSymbolsPerSubframe () <<" layerIdx " << (int) ret.m_sfAllocInfo.m_slotAllocInfo[0].m_dci.m_layerInd <<" of "<< (int) ret.m_sfAllocInfo.m_numAllocLayers);
 
   //pass the temporary SlotAllocInfo 2d lists to a single deque as expected by the PHY
   uint32_t finalSlotIdx = 1; //ctrl already inserted
@@ -1706,7 +1706,7 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
         }
       itSlotDl[layerIdx]->m_slotIdx = finalSlotIdx++;
       ret.m_sfAllocInfo.m_slotAllocInfo.push_back (*(itSlotDl[layerIdx]));
-      NS_LOG_UNCOND ("Fr "<< (int)ret.m_sfnSf.m_frameNum<<" Sf "<<(int)ret.m_sfnSf.m_sfNum <<" DL slot no. "<< finalSlotIdx -1 << " to UE "<< itSlotDl[layerIdx]->m_dci.m_rnti <<" sym range "<<(int) itSlotDl[layerIdx]->m_dci.m_symStart << " to "<<(int) itSlotDl[layerIdx]->m_dci.m_numSym+itSlotDl[layerIdx]->m_dci.m_symStart-1 << " of " << m_phyMacConfig->GetSymbolsPerSubframe () <<" layerIdx " << (int) itSlotDl[layerIdx]->m_dci.m_layerInd <<" of "<< (int) ret.m_sfAllocInfo.m_numAllocLayers);
+      NS_LOG_INFO ("Fr "<< (int)ret.m_sfnSf.m_frameNum<<" Sf "<<(int)ret.m_sfnSf.m_sfNum <<" DL slot no. "<< finalSlotIdx -1 << " to UE "<< itSlotDl[layerIdx]->m_dci.m_rnti <<" sym range "<<(int) itSlotDl[layerIdx]->m_dci.m_symStart << " to "<<(int) itSlotDl[layerIdx]->m_dci.m_numSym+itSlotDl[layerIdx]->m_dci.m_symStart-1 << " of " << m_phyMacConfig->GetSymbolsPerSubframe () <<" layerIdx " << (int) itSlotDl[layerIdx]->m_dci.m_layerInd <<" of "<< (int) ret.m_sfAllocInfo.m_numAllocLayers);
       itSlotDl[layerIdx]++;
 
       if (itSlotDl[layerIdx] == tempDlslotAllocInfo[layerIdx].end ())
@@ -1747,7 +1747,7 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
         }
       itSlotUl[layerIdx]->m_slotIdx = finalSlotIdx++;
       ret.m_sfAllocInfo.m_slotAllocInfo.push_back (*(itSlotUl[layerIdx]));
-      NS_LOG_UNCOND ("Fr "<< (int)ret.m_sfnSf.m_frameNum<<" Sf "<<(int)ret.m_sfnSf.m_sfNum <<" UL slot no. "<< finalSlotIdx -1 << " to UE "<< itSlotUl[layerIdx]->m_dci.m_rnti <<" sym range "<<(int) itSlotUl[layerIdx]->m_dci.m_symStart << " to "<<(int) itSlotUl[layerIdx]->m_dci.m_numSym+itSlotUl[layerIdx]->m_dci.m_symStart-1 << " of " << m_phyMacConfig->GetSymbolsPerSubframe () <<" layerIdx " << (int) itSlotUl[layerIdx]->m_dci.m_layerInd <<" of "<< (int) ret.m_sfAllocInfo.m_numAllocLayers);
+      NS_LOG_INFO ("Fr "<< (int)ret.m_sfnSf.m_frameNum<<" Sf "<<(int)ret.m_sfnSf.m_sfNum <<" UL slot no. "<< finalSlotIdx -1 << " to UE "<< itSlotUl[layerIdx]->m_dci.m_rnti <<" sym range "<<(int) itSlotUl[layerIdx]->m_dci.m_symStart << " to "<<(int) itSlotUl[layerIdx]->m_dci.m_numSym+itSlotUl[layerIdx]->m_dci.m_symStart-1 << " of " << m_phyMacConfig->GetSymbolsPerSubframe () <<" layerIdx " << (int) itSlotUl[layerIdx]->m_dci.m_layerInd <<" of "<< (int) ret.m_sfAllocInfo.m_numAllocLayers);
       itSlotUl[layerIdx]++;
 
 
@@ -1779,7 +1779,7 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
   ret.m_sfAllocInfo.m_slotAllocInfo.push_back (ulCtrlSlot);
 
   //	finalSlotIdx=ret.m_sfAllocInfo.m_slotAllocInfo.size()-1;
-  NS_LOG_UNCOND ("Fr "<< (int)ret.m_sfnSf.m_frameNum<<" Sf "<<(int)ret.m_sfnSf.m_sfNum <<" UL slot no. "<< finalSlotIdx << " UL CTRL sym range "<<(int) ret.m_sfAllocInfo.m_slotAllocInfo[finalSlotIdx].m_dci.m_symStart << " to "<<(int) ret.m_sfAllocInfo.m_slotAllocInfo[finalSlotIdx].m_dci.m_numSym+(int) ret.m_sfAllocInfo.m_slotAllocInfo[finalSlotIdx].m_dci.m_symStart-1 << " of " << m_phyMacConfig->GetSymbolsPerSubframe () <<" layerIdx " << (int) ret.m_sfAllocInfo.m_slotAllocInfo[finalSlotIdx].m_dci.m_layerInd <<" of "<< (int) ret.m_sfAllocInfo.m_numAllocLayers);
+  NS_LOG_INFO ("Fr "<< (int)ret.m_sfnSf.m_frameNum<<" Sf "<<(int)ret.m_sfnSf.m_sfNum <<" UL slot no. "<< finalSlotIdx << " UL CTRL sym range "<<(int) ret.m_sfAllocInfo.m_slotAllocInfo[finalSlotIdx].m_dci.m_symStart << " to "<<(int) ret.m_sfAllocInfo.m_slotAllocInfo[finalSlotIdx].m_dci.m_numSym+(int) ret.m_sfAllocInfo.m_slotAllocInfo[finalSlotIdx].m_dci.m_symStart-1 << " of " << m_phyMacConfig->GetSymbolsPerSubframe () <<" layerIdx " << (int) ret.m_sfAllocInfo.m_slotAllocInfo[finalSlotIdx].m_dci.m_layerInd <<" of "<< (int) ret.m_sfAllocInfo.m_numAllocLayers);
   //  for (std::deque <SlotAllocInfo>::iterator itSlot = tempUlslotAllocInfo.begin (); itSlot != tempUlslotAllocInfo.end() ; itSlot++){
   //	  itSlot->m_slotIdx=tempDlslotIdx++;
   //	  ret.m_sfAllocInfo.m_slotAllocInfo.push_back(*itSlot);

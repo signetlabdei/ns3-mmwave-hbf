@@ -1539,10 +1539,16 @@ MmWaveEnbPhy::StartSlot (void)
               /*m_downlinkSpectrumPhy->AddExpectedTb (currSlot.m_dci.m_rnti, currSlot.m_dci.m_ndi, currSlot.m_dci.m_tbSize,
                                             currSlot.m_dci.m_mcs, m_channelChunks, currSlot.m_dci.m_harqProcess, currSlot.m_dci.m_rv, false,
                                             currSlot.m_dci.m_symStart, currSlot.m_dci.m_numSym);*/
+
               m_downlinkSpectrumPhyList.at (currSlot.m_dci.m_layerInd)->AddExpectedTb (currSlot.m_dci.m_rnti, currSlot.m_dci.m_ndi,
                                    currSlot.m_dci.m_tbSize, currSlot.m_dci.m_mcs, m_channelChunks,
                                    currSlot.m_dci.m_harqProcess, currSlot.m_dci.m_rv, false,
                                    currSlot.m_dci.m_symStart, currSlot.m_dci.m_numSym);
+              //TODO should't we use the following instead? it appears that the downlink spectrum phy is used by mmwave-helper.cc and the two errors cancel-out, but this means we are puting all ul in the dl phy
+//              m_uplinkSpectrumPhyList.at (currSlot.m_dci.m_layerInd)->AddExpectedTb (currSlot.m_dci.m_rnti, currSlot.m_dci.m_ndi,
+//                                                 currSlot.m_dci.m_tbSize, currSlot.m_dci.m_mcs, m_channelChunks,
+//                                                 currSlot.m_dci.m_harqProcess, currSlot.m_dci.m_rv, false,
+//                                                 currSlot.m_dci.m_symStart, currSlot.m_dci.m_numSym);
 
               for (uint8_t i = 0; i < m_deviceMap.size (); i++)
                 {
@@ -1551,10 +1557,10 @@ MmWaveEnbPhy::StartSlot (void)
                   uint64_t ueRnti = (ueDev != 0) ? (ueDev->GetPhy ()->GetRnti ()) : (mcUeDev->GetMmWavePhy ()->GetRnti ());
                   Ptr<NetDevice> associatedEnb = (ueDev != 0) ? (ueDev->GetTargetEnb ()) : (mcUeDev->GetMmWaveTargetEnb ());
 
-                  NS_LOG_DEBUG ("Scheduled rnti: " << currSlot.m_rnti << " ue rnti: " << ueRnti << " layer Ind: " << (int)currSlot.m_dci.m_layerInd<< " target eNB " << associatedEnb << " this eNB " << m_netDevice);
-
                   if (currSlot.m_rnti == ueRnti && m_netDevice == associatedEnb)
                     {
+                      NS_LOG_DEBUG ("Configuring BF for rnti: " << currSlot.m_rnti << " ue rnti: " << ueRnti << " layer Ind: " << (int)currSlot.m_dci.m_layerInd<< " target eNB " << associatedEnb << " this eNB " << m_netDevice);
+
                       if ( bfCasted != 0)
                         {
                           vDevsInBundle.push_back(m_deviceMap.at (i));

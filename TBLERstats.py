@@ -67,6 +67,7 @@ for filename in filenames:
             else:
                 dlAllBFGain[key]=[gain]
         if ln.find('TBLER')>=0:
+            size=int(ln[ln.find('size')+5:ln.find(' ',ln.find('size')+5)])
             rnti=int(ln[ln.find('RNTI')+5:ln.find(' ',ln.find('RNTI')+5)])
             tbler=float(ln[ln.find('TBLER')+6:ln.find(' ',ln.find('TBLER')+6)])
             sinrdB=float(ln[ln.find('SINR')+5:ln.find(' ',ln.find('SINR')+5)])
@@ -79,54 +80,55 @@ for filename in filenames:
                     print(ln)
             else:
                 gtr=1;
-            if ln.find(' DL size')>=0:
-                if dAvgBlerDL.has_key(rnti):
-                    dAvgBlerDL[rnti] = (dAvgBlerDL[rnti] * dNBlerDL[rnti] + tbler)* 1.0 / (dNBlerDL[rnti] + 1)
-                    dAvgCorrDL[rnti] = (dAvgCorrDL[rnti] * dNBlerDL[rnti] + corrupted)* 1.0 / (dNBlerDL[rnti] + 1)
-                    dAvgGtrDL[rnti] = (dAvgGtrDL[rnti] * dNBlerDL[rnti] + gtr)* 1.0 / (dNBlerDL[rnti] + 1)
-                    dAvgSINRDL[rnti] = (dAvgSINRDL[rnti] * dNBlerDL[rnti] + 10.0**(sinrdB/10.0))* 1.0 / (dNBlerDL[rnti] + 1)
-                    dlAllSINRDL[rnti].append(sinrdB)
-                    dlAllMCSreqDl[rnti].append(mcsreq)
-                    dlAllMCSactDl[rnti].append(mcsact)
-                    dNBlerDL[rnti] = dNBlerDL[rnti] + 1
+            if (size>200):
+                if ln.find(' DL size')>=0:
+                    if dAvgBlerDL.has_key(rnti):
+                        dAvgBlerDL[rnti] = (dAvgBlerDL[rnti] * dNBlerDL[rnti] + tbler)* 1.0 / (dNBlerDL[rnti] + 1)
+                        dAvgCorrDL[rnti] = (dAvgCorrDL[rnti] * dNBlerDL[rnti] + corrupted)* 1.0 / (dNBlerDL[rnti] + 1)
+                        dAvgGtrDL[rnti] = (dAvgGtrDL[rnti] * dNBlerDL[rnti] + gtr)* 1.0 / (dNBlerDL[rnti] + 1)
+                        dAvgSINRDL[rnti] = (dAvgSINRDL[rnti] * dNBlerDL[rnti] + 10.0**(sinrdB/10.0))* 1.0 / (dNBlerDL[rnti] + 1)
+                        dlAllSINRDL[rnti].append(sinrdB)
+                        dlAllMCSreqDl[rnti].append(mcsreq)
+                        dlAllMCSactDl[rnti].append(mcsact)
+                        dNBlerDL[rnti] = dNBlerDL[rnti] + 1
+                    else:
+                        dNBlerDL[rnti]=1
+                        dAvgBlerDL[rnti]=tbler
+                        dAvgCorrDL[rnti]=corrupted
+                        dAvgGtrDL[rnti]=gtr
+                        dAvgSINRDL[rnti]=10.0**(sinrdB/10.0)
+                        dlAllSINRDL[rnti]=[sinrdB]
+                        dlAllMCSreqDl[rnti]=[mcsreq]
+                        dlAllMCSactDl[rnti]=[mcsact]
+                elif ln.find(' UL size')>=0:
+                    if dAvgBlerUL.has_key(rnti):
+                        dAvgBlerUL[rnti] = (dAvgBlerUL[rnti] * dNBlerUL[rnti] + tbler)* 1.0 / (dNBlerUL[rnti] + 1)
+                        dAvgCorrUL[rnti] = (dAvgCorrUL[rnti] * dNBlerUL[rnti] + corrupted)* 1.0 / (dNBlerUL[rnti] + 1)
+                        dAvgGtrUL[rnti] = (dAvgGtrUL[rnti] * dNBlerUL[rnti] + gtr)* 1.0 / (dNBlerUL[rnti] + 1)
+                        dAvgSINRUL[rnti] = (dAvgSINRUL[rnti] * dNBlerUL[rnti] + 10.0**(sinrdB/10.0))* 1.0 / (dNBlerUL[rnti] + 1)
+                        dlAllSINRUL[rnti].append(sinrdB)
+                        dlAllMCSreqUl[rnti].append(mcsreq)
+                        dlAllMCSactUl[rnti].append(mcsact)
+                        dNBlerUL[rnti] = dNBlerUL[rnti] + 1
+                    else:
+                        dNBlerUL[rnti]=1
+                        dAvgBlerUL[rnti]=tbler
+                        dAvgCorrUL[rnti]=corrupted
+                        dAvgGtrUL[rnti]=gtr
+                        dAvgSINRUL[rnti]=10.0**(sinrdB/10.0)
+                        dlAllSINRUL[rnti]=[sinrdB]
+                        dlAllMCSreqUl[rnti]=[mcsreq]
+                        dlAllMCSactUl[rnti]=[mcsact]
                 else:
-                    dNBlerDL[rnti]=1
-                    dAvgBlerDL[rnti]=tbler
-                    dAvgCorrDL[rnti]=corrupted
-                    dAvgGtrDL[rnti]=gtr
-                    dAvgSINRDL[rnti]=10.0**(sinrdB/10.0)
-                    dlAllSINRDL[rnti]=[sinrdB]
-                    dlAllMCSreqDl[rnti]=[mcsreq]
-                    dlAllMCSactDl[rnti]=[mcsact]
-            elif ln.find(' UL size')>=0:
-                if dAvgBlerUL.has_key(rnti):
-                    dAvgBlerUL[rnti] = (dAvgBlerUL[rnti] * dNBlerUL[rnti] + tbler)* 1.0 / (dNBlerUL[rnti] + 1)
-                    dAvgCorrUL[rnti] = (dAvgCorrUL[rnti] * dNBlerUL[rnti] + corrupted)* 1.0 / (dNBlerUL[rnti] + 1)
-                    dAvgGtrUL[rnti] = (dAvgGtrUL[rnti] * dNBlerUL[rnti] + gtr)* 1.0 / (dNBlerUL[rnti] + 1)
-                    dAvgSINRUL[rnti] = (dAvgSINRUL[rnti] * dNBlerUL[rnti] + 10.0**(sinrdB/10.0))* 1.0 / (dNBlerUL[rnti] + 1)
-                    dlAllSINRUL[rnti].append(sinrdB)
-                    dlAllMCSreqUl[rnti].append(mcsreq)
-                    dlAllMCSactUl[rnti].append(mcsact)
-                    dNBlerUL[rnti] = dNBlerUL[rnti] + 1
-                else:
-                    dNBlerUL[rnti]=1
-                    dAvgBlerUL[rnti]=tbler
-                    dAvgCorrUL[rnti]=corrupted
-                    dAvgGtrUL[rnti]=gtr
-                    dAvgSINRUL[rnti]=10.0**(sinrdB/10.0)
-                    dlAllSINRUL[rnti]=[sinrdB]
-                    dlAllMCSreqUl[rnti]=[mcsreq]
-                    dlAllMCSactUl[rnti]=[mcsact]
-            else:
-                print "found a TBLER with unknown DL/UL attribution"
-        if ln.find('The number of DL received packets for UE ')>=0:
+                    print "found a TBLER with unknown DL/UL attribution"
+        if ln.find('The number of DL received bytes for UE ')>=0:
             rnti=int(ln[ln.find('UE')+3:ln.find(':',ln.find('UE')+3)])
             pkts=int(ln[ln.find(':')+2:])
             if dRecPktsDl.has_key(rnti):
                 dRecPktsDl[rnti]+=pkts#should never reach this point
             else:
                 dRecPktsDl[rnti]=pkts
-        if ln.find('The number of UL received packets for UE ')>=0:
+        if ln.find('The number of UL received bytes for UE ')>=0:
             rnti=int(ln[ln.find('UE')+3:ln.find(':',ln.find('UE')+3)])
             pkts=int(ln[ln.find(':')+2:])
             if dRecPktsUl.has_key(rnti):
@@ -175,12 +177,18 @@ plt.bar(resultsDic.keys(),[np.mean(x.dAvgBlerDL.values()) for x in resultsDic.va
 plt.figure(2)
 plt.bar(resultsDic.keys(),[np.sum(x.dRecPktsDl.values()) for x in resultsDic.values()],)
 plt.figure(3)
+plt.bar(resultsDic.keys(),[np.mean(x.dAvgBlerUL.values()) for x in resultsDic.values()],)
+plt.figure(4)
 plt.bar(resultsDic.keys(),[np.sum(x.dRecPktsUl.values()) for x in resultsDic.values()],)
 
 for file in resultsDic:
     ## PER SIMULATION STATISTICS
     plt.figure(10)
     lAux = sorted(sum(resultsDic[file].dlAllSINRDL.values(), []))
+    plt.plot(lAux,np.arange(0.0,float(len(lAux)),1)/len(lAux),marker=allMarkers[markCtr],label='%s'%(file))
+    plt.legend()
+    plt.figure(11)
+    lAux = sorted(sum(resultsDic[file].dlAllSINRUL.values(), []))
     plt.plot(lAux,np.arange(0.0,float(len(lAux)),1)/len(lAux),marker=allMarkers[markCtr],label='%s'%(file))
     plt.legend()
     # plt.figure(3)

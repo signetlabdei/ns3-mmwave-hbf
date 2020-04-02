@@ -317,6 +317,8 @@ MmWaveSpectrumPhy::AddExpectedTb (uint16_t rnti, uint8_t ndi, uint32_t tbSize, u
   //ExpectedTbInfo_t tbInfo = {ndi, tbSize, mcs, chunkMap, harqId, rv, 0.0, downlink, false, false, 0};
   ExpectedTbInfo_t tbInfo = {ndi, tbSize, mcs, chunkMap, harqId, rv, 0.0, downlink, false, false, 0, symStart, numSym};
   m_expectedTbs.insert (std::pair<uint16_t, ExpectedTbInfo_t> (rnti,tbInfo));
+
+  NS_LOG_DEBUG("Added expected TB " << (downlink?"DL":"UL") << " startSym " << (int) symStart << " numSym " << (int) numSym << " layer " << (int) m_layerInd << " RNTI " << (int) rnti);
 }
 
 void
@@ -464,7 +466,7 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
     		  NS_LOG_INFO("Computed the BF gain at UE allocated layer " << (int ) ueRx->GetPhy (m_componentCarrierId)->GetAllocLayerInd() << " SpectrumPhy::StartRx for signal of layer " << (int) layerInd << " the UE m_layerInd is "<<(int)  m_layerInd);
     	  }
     	  NS_LOG_INFO("Node "<<  GetDevice()->GetAddress() <<" detected in layer " << (int) m_layerInd << " a signal with power "<<Sum (*(mmwaveDataRxParams->psd)));
-    	  m_interferenceData->AddSignal (mmwaveDataRxParams->psd, mmwaveDataRxParams->duration);
+          m_interferenceData->AddSignal (mmwaveDataRxParams->psd, mmwaveDataRxParams->duration);
     	  if (mmwaveDataRxParams->cellId == m_cellId && isMyLayer)
     	  {
     		  NS_LOG_INFO ("Data is for this UE/Layer, StartRxData");
@@ -552,6 +554,7 @@ MmWaveSpectrumPhy::StartRxData (Ptr<MmwaveSpectrumSignalParametersDataFrame> par
             ChangeState (RX_DATA);
             if (params->packetBurst && !params->packetBurst->GetPackets ().empty ())
               {
+                NS_LOG_UNCOND("RX Packet burst of layer " << (int) params->layerInd);
                 m_rxPacketBurstList.push_back (params->packetBurst);
               }
             //NS_LOG_DEBUG (this << " insert msgs " << params->ctrlMsgList.size ());
@@ -832,6 +835,7 @@ MmWaveSpectrumPhy::EndRxData ()
                           //" size " << itTb->second.size << " mcs " << (unsigned)itTb->second.mcs <<
                           //" mi " << itTb->second.mi << " tbler " << itTb->second.tbler << " SINRavg " << sinrAvg);
                           m_harqPhyModule->ResetUlHarqProcessStatus (rnti, itTb->second.harqProcessId);
+                          NS_LOG_DEBUG ("UE" << rnti << " send UL-HARQ-ACK" << " harqId " << (unsigned)itTb->second.harqProcessId << " size " << itTb->second.size << " mcs " << (unsigned)itTb->second.mcs << " mi " << itTb->second.mi << " tbler " << itTb->second.tbler << " SINRavg " << sinrAvg);
                         }
 
                       if (!m_phyUlHarqFeedbackCallback.IsNull ())
@@ -862,6 +866,7 @@ MmWaveSpectrumPhy::EndRxData ()
                               //															" size " << itTb->second.size << " mcs " << (unsigned)itTb->second.mcs <<
                               //															" mi " << itTb->second.mi << " tbler " << itTb->second.tbler << " SINRavg " << sinrAvg);
                               m_harqPhyModule->ResetDlHarqProcessStatus (rnti, itTb->second.harqProcessId);
+                              NS_LOG_DEBUG ("UE" << rnti << " send DL-HARQ-ACK" << " harqId " << (unsigned)itTb->second.harqProcessId << " size " << itTb->second.size << " mcs " << (unsigned)itTb->second.mcs << " mi " << itTb->second.mi << " tbler " << itTb->second.tbler << " SINRavg " << sinrAvg);
                             }
                           harqDlInfoMap.insert (std::pair <uint16_t, DlHarqInfo> (rnti, harqDlInfo));
                         }

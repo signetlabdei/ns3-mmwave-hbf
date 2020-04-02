@@ -691,10 +691,9 @@ MmWaveMMSEBeamforming::MmseSolve (complex2DVector_t matrixH, complexVector_t v)
   return( x );
 }
 
-void
-MmWaveMMSEBeamforming::SetBeamformingVectorForSlotBundle(std::vector< Ptr<NetDevice> > vOtherDevs , std::vector<uint16_t> vLayerInds)
+std::vector< Ptr<CodebookBFVectorCacheEntry>>
+MmWaveMMSEBeamforming::GetBfCachesInSlotBundle(std::vector< Ptr<NetDevice> > vOtherDevs)
 {
-  //this segment builds a list of all Nb analog beams in use in this slot
   std::vector< Ptr<CodebookBFVectorCacheEntry>> bfCachesInSlot;
   std::set< uint16_t > txBeamsCollection;
   for (std::vector< Ptr<NetDevice> >::iterator itDev = vOtherDevs.begin() ; itDev != vOtherDevs.end() ; itDev++ )
@@ -721,26 +720,27 @@ MmWaveMMSEBeamforming::SetBeamformingVectorForSlotBundle(std::vector< Ptr<NetDev
       }
       if (txBeamsCollection.find(bCacheEntry->txBeamInd)!=txBeamsCollection.end())
         {//if two users employ the same tx beam we have a matrix rank problem and the SINR suffers a lot, hence we adopt an alternative second-best beam
-              Ptr<CodebookBFVectorCacheEntry> auxBfRecord = Create<CodebookBFVectorCacheEntry> (); //we must create a temporary single-use copy of the bfCache struct
-              auxBfRecord->m_beamId = bCacheEntry->m_beamId;
-              auxBfRecord->rxBeamInd = bCacheEntry->rxBeamInd;
-              auxBfRecord->m_equivalentChanCoefs = bCacheEntry->m_equivalentChanCoefs;
-              complex2DVector_t oneColumnAuxChan;
-              oneColumnAuxChan.push_back(auxBfRecord->m_equivalentChanCoefs.at(auxBfRecord->rxBeamInd));//this auxiliary vector reduces the following lookup dimensions in rx side
-              std::pair<uint16_t,uint16_t> bfPairSelection = bfGainLookup(auxBfRecord->m_equivalentChanCoefs,txBeamsCollection);
-              //the first component of this pair is actually garbage (always 1) because we used the AuxChan variable in the function call
-              uint16_t altBeam = bfPairSelection.second;
-              uint16_t antennaNum [2];
-              antennaNum[0] = m_antenna->GetAntennaNumDim1 ();
-              antennaNum[1] = m_antenna->GetAntennaNumDim2 ();
-              auxBfRecord->txBeamInd=altBeam;
-              auxBfRecord->m_antennaWeights=bfVector2DFFT(altBeam,antennaNum);
-              bfCachesInSlot.push_back( auxBfRecord );
-              txBeamsCollection.insert(auxBfRecord->txBeamInd);
-              NS_LOG_DEBUG("MMSE BF beam conflict, node " << m_mobility->GetObject<Node> ()->GetId ()<< " pointing at node " << (*itDev )->GetNode ()->GetId () <<
-                           " may not use beamID " << bCacheEntry->txBeamInd << " fall back to beamID " << auxBfRecord->txBeamInd <<
-                           " BFgain penalty 1/"<< std::norm(auxBfRecord->m_equivalentChanCoefs.at(auxBfRecord->rxBeamInd).at(bCacheEntry->txBeamInd)) / std::norm(auxBfRecord->m_equivalentChanCoefs.at(auxBfRecord->rxBeamInd).at(auxBfRecord->txBeamInd))
-                           );
+          //TODO this conflict resolution is greedy, we can design better conflict resolution by going back and trying to substitute ALL repeated beams.
+          Ptr<CodebookBFVectorCacheEntry> auxBfRecord = Create<CodebookBFVectorCacheEntry> (); //we must create a temporary single-use copy of the bfCache struct
+          auxBfRecord->rxBeamInd = bCacheEntry->rxBeamInd;
+          auxBfRecord->m_equivalentChanCoefs = bCacheEntry->m_equivalentChanCoefs;
+          complex2DVector_t oneColumnAuxChan;
+          oneColumnAuxChan.push_back(auxBfRecord->m_equivalentChanCoefs.at(auxBfRecord->rxBeamInd));//this auxiliary vector reduces the following lookup dimensions in rx side
+          std::pair<uint16_t,uint16_t> bfPairSelection = bfGainLookup(oneColumnAuxChan,txBeamsCollection);
+          //the first component of this pair is actually garbage (always 1) because we used the oneColumnAuxChan variable in the function call
+          uint16_t altBeam = bfPairSelection.second;
+          uint16_t antennaNum [2];
+          antennaNum[0] = m_antenna->GetAntennaNumDim1 ();
+          antennaNum[1] = m_antenna->GetAntennaNumDim2 ();
+          auxBfRecord->txBeamInd=altBeam;
+          auxBfRecord->m_beamId=altBeam;//the analog beam ID is the txBeamInd
+          auxBfRecord->m_antennaWeights=bfVector2DFFT(altBeam,antennaNum);
+          bfCachesInSlot.push_back( auxBfRecord );
+          txBeamsCollection.insert(auxBfRecord->txBeamInd);
+          NS_LOG_DEBUG("MMSE BF beam conflict, node " << m_mobility->GetObject<Node> ()->GetId ()<< " pointing at node " << (*itDev )->GetNode ()->GetId () <<
+                       " may not use beamID " << bCacheEntry->txBeamInd << " fall back to beamID " << auxBfRecord->txBeamInd <<
+                       " BFgain penalty 1/"<< std::norm(auxBfRecord->m_equivalentChanCoefs.at(auxBfRecord->rxBeamInd).at(bCacheEntry->txBeamInd)) / std::norm(auxBfRecord->m_equivalentChanCoefs.at(auxBfRecord->rxBeamInd).at(auxBfRecord->txBeamInd))
+          );
         }
       else
         {
@@ -748,6 +748,14 @@ MmWaveMMSEBeamforming::SetBeamformingVectorForSlotBundle(std::vector< Ptr<NetDev
           txBeamsCollection.insert(bCacheEntry->txBeamInd);
         }
     }
+
+  return(bfCachesInSlot);
+}
+void
+MmWaveMMSEBeamforming::SetBeamformingVectorForSlotBundle(std::vector< Ptr<NetDevice> > vOtherDevs , std::vector<uint16_t> vLayerInds)
+{
+  //this segment builds a list of all Nb analog beams in use in this slot
+  std::vector< Ptr<CodebookBFVectorCacheEntry>> bfCachesInSlot = GetBfCachesInSlotBundle(vOtherDevs);
 
   NS_LOG_DEBUG("Started MMSE slot bundle processing. Detected " << bfCachesInSlot.size() << " simultaneous analog beams");
 
@@ -967,59 +975,7 @@ MmWaveMMSESpectrumBeamforming::SetBeamformingVectorForSlotBundle(std::vector< Pt
   Ptr<SpectrumValue> dummyPsd = Create <SpectrumValue> (spectrumModel);
 
   //this segment builds a list of all Nb analog beams in use in this slot
-  std::vector< Ptr<CodebookBFVectorCacheEntry>> bfCachesInSlot;
-  std::set< uint16_t > txBeamsCollection;
-  for (std::vector< Ptr<NetDevice> >::iterator itDev = vOtherDevs.begin() ; itDev != vOtherDevs.end() ; itDev++ )
-    {//retrieve the analog BF cache items, while making sure that the analog BF part is up to date
-      bool update = false;
-      bool notFound = false;
-      uint32_t beamKey = GetKey(m_mobility->GetObject<Node> ()->GetId (), (*itDev )->GetNode ()->GetId ());
-      std::map< uint32_t, Ptr<BFVectorCacheEntry> >::iterator itVectorCache = m_vectorCache.find(beamKey);
-      Ptr<CodebookBFVectorCacheEntry> bCacheEntry;
-      if ( itVectorCache != m_vectorCache.end() )
-        {
-          NS_LOG_DEBUG ("MMSE retrieved a beam from the map");
-          bCacheEntry = DynamicCast<CodebookBFVectorCacheEntry>(itVectorCache->second);
-          update = CheckBfCacheExpiration( (*itDev ),  bCacheEntry);
-        }
-      else
-        {
-          notFound = true;
-        }
-      if ( notFound | update ){
-          NS_LOG_DEBUG ("MMSE could not retreive beam from map or it has expired, generating new analog beam");
-          DoDesignBeamformingVectorForDevice ( (*itDev ) ); //we do not use the output value directly in this call
-          bCacheEntry=DynamicCast<CodebookBFVectorCacheEntry>( m_vectorCache[beamKey] );
-      }
-      if (txBeamsCollection.find(bCacheEntry->txBeamInd)!=txBeamsCollection.end())
-        {//if two users employ the same tx beam we have a matrix rank problem and the SINR suffers a lot, hence we adopt an alternative second-best beam
-              Ptr<CodebookBFVectorCacheEntry> auxBfRecord = Create<CodebookBFVectorCacheEntry> (); //we must create a temporary single-use copy of the bfCache struct
-              auxBfRecord->m_beamId = bCacheEntry->m_beamId;
-              auxBfRecord->rxBeamInd = bCacheEntry->rxBeamInd;
-              auxBfRecord->m_equivalentChanCoefs = bCacheEntry->m_equivalentChanCoefs;
-              complex2DVector_t oneColumnAuxChan;
-              oneColumnAuxChan.push_back(auxBfRecord->m_equivalentChanCoefs.at(auxBfRecord->rxBeamInd));//this auxiliary vector reduces the following lookup dimensions in rx side
-              std::pair<uint16_t,uint16_t> bfPairSelection = bfGainLookup(auxBfRecord->m_equivalentChanCoefs,txBeamsCollection);
-              //the first component of this pair is actually garbage (always 1) because we used the AuxChan variable in the function call
-              uint16_t altBeam = bfPairSelection.second;
-              uint16_t antennaNum [2];
-              antennaNum[0] = m_antenna->GetAntennaNumDim1 ();
-              antennaNum[1] = m_antenna->GetAntennaNumDim2 ();
-              auxBfRecord->txBeamInd=altBeam;
-              auxBfRecord->m_antennaWeights=bfVector2DFFT(altBeam,antennaNum);
-              bfCachesInSlot.push_back( auxBfRecord );
-              txBeamsCollection.insert(auxBfRecord->txBeamInd);
-              NS_LOG_DEBUG("MMSE BF beam conflict, node " << m_mobility->GetObject<Node> ()->GetId ()<< " pointing at node " << (*itDev )->GetNode ()->GetId () <<
-                           " may not use beamID " << bCacheEntry->txBeamInd << " fall back to beamID " << auxBfRecord->txBeamInd <<
-                           " BFgain penalty 1/"<< std::norm(auxBfRecord->m_equivalentChanCoefs.at(auxBfRecord->rxBeamInd).at(bCacheEntry->txBeamInd)) / std::norm(auxBfRecord->m_equivalentChanCoefs.at(auxBfRecord->rxBeamInd).at(auxBfRecord->txBeamInd))
-                           );
-        }
-      else
-        {
-          bfCachesInSlot.push_back( bCacheEntry );
-          txBeamsCollection.insert(bCacheEntry->txBeamInd);
-        }
-    }
+  std::vector< Ptr<CodebookBFVectorCacheEntry>> bfCachesInSlot = GetBfCachesInSlotBundle( vOtherDevs );
 
   NS_LOG_DEBUG("Started MMSE slot bundle processing. Detected " << bfCachesInSlot.size() << " simultaneous analog beams");
 

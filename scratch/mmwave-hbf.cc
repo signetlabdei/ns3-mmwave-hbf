@@ -72,11 +72,14 @@ main (int argc, char *argv[])
 	//      LogComponentEnable ("MmwaveHbfSpectrumChannel", LOG_LEVEL_INFO);
         LogComponentEnable ("MmWavePaddedHbfMacScheduler", LOG_LEVEL_LOGIC);
         LogComponentEnable ("MmWaveFlexTtiMacScheduler", LOG_LEVEL_LOGIC);
+//        LogComponentEnable ("MmWavePhy", LOG_LEVEL_INFO);
+//        LogComponentEnable ("MmWaveEnbMac", LOG_LEVEL_INFO);
+//        LogComponentEnable ("MmWaveUeMac", LOG_LEVEL_INFO);
 
 	uint16_t numEnb = 1;
 	uint16_t numUe = 7;
 	uint16_t numEnbLayers = 4;
-	double startTime = 1;
+	double startTime = 0.4;
 	double simTime = 1.2;
 	double packetSize = 1460; // packet size in byte
 	double interPacketInterval = 5000; // 500 microseconds
@@ -101,8 +104,8 @@ main (int argc, char *argv[])
 	std::string beamformerType =
 //	    "ns3::MmWaveDftBeamforming"
 //	    "ns3::MmWaveFFTCodebookBeamforming"
-            "ns3::MmWaveMMSEBeamforming"
-//	    "ns3::MmWaveMMSESpectrumBeamforming"
+//            "ns3::MmWaveMMSEBeamforming"
+	    "ns3::MmWaveMMSESpectrumBeamforming"
 	    ;
 
 	// Command line arguments
@@ -119,6 +122,7 @@ main (int argc, char *argv[])
         cmd.AddValue ("run", "run for RNG (for generating different deterministic sequences for different drops)", fixedTti);
         cmd.AddValue ("sched", "The type of scheduler algorithm", schedulerType);
         cmd.AddValue ("bfmod", "The type of beamformer algorithm", beamformerType);
+        cmd.AddValue ("nLayers", "The number of HBF layers per eNB", numEnbLayers);
 	//cmd.AddValue ("useIdealRrc", "whether to use ideal RRC layer or not", useIdealRrc);
 	cmd.Parse (argc, argv);
 	symPeriod = sfPeriod/symPerSf;
@@ -290,11 +294,11 @@ main (int argc, char *argv[])
 	{
 		Ptr<PacketSink> sink = serverApps.Get (2*(u+1)-2)->GetObject<PacketSink> ();
 		//double nrThroughput = sink->GetTotalRx () * 8.0 / (1000000.0*(simTime - 0.01));
-		NS_LOG_UNCOND ("The number of DL received packets for UE " << u+1 << ": " << sink->GetTotalRx ()/packetSize);
+		NS_LOG_UNCOND ("The number of DL received bytes for UE " << u+1 << ": " << sink->GetTotalRx ());
 		//NS_LOG_UNCOND ("UE(" << ueIpIface.GetAddress(0) <<") NR throughput: " << nrThroughput << " Mbps");
 		sink = serverApps.Get (2*(u+1)-1)->GetObject<PacketSink> ();
 //		//double nrThroughput = sink->GetTotalRx () * 8.0 / (1000000.0*(simTime - 0.01));
-		NS_LOG_UNCOND ("The number of UL received packets for UE " << u+1 << ": " << sink->GetTotalRx ()/packetSize);
+		NS_LOG_UNCOND ("The number of UL received bytes for UE " << u+1 << ": " << sink->GetTotalRx ());
 //		//NS_LOG_UNCOND ("UE(" << ueIpIface.GetAddress(0) <<") NR throughput: " << nrThroughput << " Mbps");
 	}
 
