@@ -166,6 +166,8 @@ private:
   void QueueUlTbAlloc (TbAllocInfo tbAllocInfo);
   std::list<TbAllocInfo> DequeueUlTbAlloc ();
 
+  void IncrSlotCtrAndStartSlot();
+
   struct SlotBundleInfo
   {
     SlotBundleInfo ()
@@ -226,6 +228,7 @@ private:
 
   uint8_t m_currSymStart;
   uint8_t m_currNumAllocLayers;
+  std::list<uint8_t> m_allActiveSlotNums;//TODO consider replacing this with an array of fixed size with the active slot num in each layer
 
   bool m_receptionEnabled;
 

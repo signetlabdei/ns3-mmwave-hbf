@@ -6,9 +6,19 @@ import numpy as np
 import collections as cl
 
 if len(sys.argv)>1:
-    filenames = sys.argv[1:]
+    if (sys.argv[1].find('-t=')==0):
+        firstFileName=2
+        outputFileTag=sys.argv[1][ sys.argv[1].find('-t=')+3: ]
+    if (sys.argv[2].find('-l=')==0):
+        firstFileName=3
+        listOfLabels=sys.argv[2][ sys.argv[2].find('-l=')+3: ].split(',')
+        print(listOfLabels)
+    else:
+        outputFileTag=""
+    filenames = sys.argv[firstFileName:]
 else:
     filenames = ['logHBF.txt']
+    outputFileTag=""
 
 resultsDic={}
 ResDicStruct=cl.namedtuple('ResDicStruct',[
@@ -33,6 +43,7 @@ ResDicStruct=cl.namedtuple('ResDicStruct',[
                                             'dRecPktsUl'
                                             ])
 for filename in filenames:
+
     f=open(filename)
 
     dAvgBlerDL={}
@@ -173,15 +184,15 @@ barWidth=1.0/(1+len(resultsDic));
 
 ## PER SIMULATION BAR PLOTS
 plt.figure(1)
-plt.bar(resultsDic.keys(),[np.mean(x.dAvgBlerDL.values()) for x in resultsDic.values()],)
+plt.bar(listOfLabels,[np.mean(resultsDic[x].dAvgBlerDL.values()) for x in filenames],)
 plt.figure(2)
-plt.bar(resultsDic.keys(),[np.sum(x.dRecPktsDl.values()) for x in resultsDic.values()],)
+plt.bar(listOfLabels,[np.sum(resultsDic[x].dRecPktsDl.values()) for x in filenames],)
 plt.figure(3)
-plt.bar(resultsDic.keys(),[np.mean(x.dAvgBlerUL.values()) for x in resultsDic.values()],)
+plt.bar(listOfLabels,[np.mean(resultsDic[x].dAvgBlerUL.values()) for x in filenames],)
 plt.figure(4)
-plt.bar(resultsDic.keys(),[np.sum(x.dRecPktsUl.values()) for x in resultsDic.values()],)
+plt.bar(listOfLabels,[np.sum(resultsDic[x].dRecPktsUl.values()) for x in filenames],)
 
-for file in resultsDic:
+for file in filenames:
     ## PER SIMULATION STATISTICS
     plt.figure(10)
     lAux = sorted(sum(resultsDic[file].dlAllSINRDL.values(), []))
@@ -204,7 +215,6 @@ for file in resultsDic:
         print "File %s User %d downlink TBLER %.3f AvgSINR %.2f dB CRPT %.2f MGTR %.2f"%(file,usr,resultsDic[file].dAvgBlerDL[usr],10.0*np.log10(resultsDic[file].dAvgSINRDL[usr]),dAvgCorrDL[usr],dAvgGtrDL[usr])
         lAux=sorted(resultsDic[file].dlAllSINRDL[usr])
         plt.plot(lAux,np.arange(0.0,float(len(lAux)),1)/len(lAux),marker=allMarkers[markCtr],label='%s RNTI %s'%(file,usr))
-    plt.legend()
     # plt.figure(2)
     for usr in resultsDic[file].dAvgBlerUL:
         print "File %s User %d uplink   TBLER %.3f AvgSINR %.2f dB CRPT %.2f MGTR %.2f"%(file,usr,resultsDic[file].dAvgBlerUL[usr],10.0*np.log10(resultsDic[file].dAvgSINRUL[usr]),resultsDic[file].dAvgCorrUL[usr],dAvgGtrUL[usr])
@@ -221,4 +231,33 @@ for file in resultsDic:
 
 # plt.figure(5)
 # plt.bar([x+barWidth*markCtr for x in resultsDic[file].dAvgBlerUL.keys()],resultsDic[file].dAvgBlerUL.values(), width=barWidth)
-plt.show()
+
+plt.figure(1)
+plt.ylabel('BLER')
+plt.gca().set_xticklabels(listOfLabels)
+plt.savefig( 'BLER_DL_plot%s.eps' %(outputFileTag), format='eps')
+plt.figure(2)
+plt.ylabel('Received Data (bits)')
+plt.gca().set_xticklabels(listOfLabels)
+plt.savefig('PKTS_DL_plot%s.eps' %(outputFileTag), format='eps')
+plt.figure(3)
+plt.ylabel('BLER')
+plt.gca().set_xticklabels(listOfLabels)
+plt.savefig('BLER_UL_plot%s.eps' %(outputFileTag), format='eps')
+plt.figure(4)
+plt.ylabel('Received Data (bits)')
+plt.gca().set_xticklabels(listOfLabels)
+plt.savefig('PKTS_UL_plot%s.eps' %(outputFileTag), format='eps')
+
+plt.figure(10)
+plt.legend(listOfLabels)
+plt.xlabel('SINR (dB)')
+plt.ylabel('C.D.F.')
+plt.savefig('SINR_DL_plot%s.eps' %(outputFileTag), format='eps')
+plt.figure(11)
+plt.legend(listOfLabels)
+plt.xlabel('SINR (dB)')
+plt.ylabel('C.D.F.')
+plt.savefig('SINR_UL_plot%s.eps' %(outputFileTag), format='eps')
+
+# plt.show()

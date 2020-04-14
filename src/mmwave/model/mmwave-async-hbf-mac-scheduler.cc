@@ -685,7 +685,7 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
   //these cursors track the "free region" on each HBF layer
   std::vector<uint32_t> symAvailLayer, nextSymAvailLayer, lastSymAvailLayer, numDlUeLayer, numUlUeLayer;
   uint32_t maxNextSymAvailLayer=m_phyMacConfig->GetDlCtrlSymbols ();
-  uint32_t minLastSymAvailLayer=m_phyMacConfig->GetSymbolsPerSubframe ()-m_phyMacConfig->GetUlCtrlSymbols ();
+  uint32_t minLastSymAvailLayer=m_phyMacConfig->GetSymbolsPerSubframe ()-m_phyMacConfig->GetUlCtrlSymbols () -1;
   std::map<uint16_t,uint8_t> ueToLayerMapDl, ueToLayerMapUl;
   std::map<uint16_t,uint8_t>::iterator itUeToLayerMap;
   uint8_t layerIdx = 0;
@@ -697,7 +697,7 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
     {
       symAvailLayer.push_back (m_phyMacConfig->GetSymbolsPerSubframe () - resvCtrl);
       nextSymAvailLayer.push_back (m_phyMacConfig->GetDlCtrlSymbols ());
-      lastSymAvailLayer.push_back (m_phyMacConfig->GetSymbolsPerSubframe ()-m_phyMacConfig->GetUlCtrlSymbols ());
+      lastSymAvailLayer.push_back (m_phyMacConfig->GetSymbolsPerSubframe ()-m_phyMacConfig->GetUlCtrlSymbols () -1);
       numDlUeLayer.push_back (0); //does not count Rtx
       numUlUeLayer.push_back (0); //does not count Rtx
       tempDlslotAllocInfo.push_back (std::deque<SlotAllocInfo>());
@@ -870,7 +870,7 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
                       //TODO study other layer assignment rules
                       //TODO put layer-assign in a function with selection-function as argument
                       //lower pointer, there are symbs available, and it does not exceed the highest possible DL/UL barrier
-                      if ( val > nextSymAvailLayer[lay] && symAvailLayer[lay] >= dciInfoReTx.m_numSym && (nextSymAvailLayer[lay] + dciInfoReTx.m_numSym) < minLastSymAvailLayer)
+                      if ( val > nextSymAvailLayer[lay] && symAvailLayer[lay] >= dciInfoReTx.m_numSym && (nextSymAvailLayer[lay] + dciInfoReTx.m_numSym -1) <= minLastSymAvailLayer)
                 	{
                           layerIdx = lay;
                           val = nextSymAvailLayer[lay];
@@ -883,7 +883,7 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
                 }
 
               // allocate retx if enough symbols are available
-              if ( symAvailLayer[layerIdx] >= dciInfoReTx.m_numSym && (nextSymAvailLayer[layerIdx] + dciInfoReTx.m_numSym) < minLastSymAvailLayer )
+              if ( symAvailLayer[layerIdx] >= dciInfoReTx.m_numSym && (nextSymAvailLayer[layerIdx] + dciInfoReTx.m_numSym -1) <= minLastSymAvailLayer )
                 {
                   symAvail -= dciInfoReTx.m_numSym;
                   symAvailLayer[layerIdx] -= dciInfoReTx.m_numSym;
@@ -997,7 +997,7 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
                       //TODO study other layer assignment rules
                       //TODO put layer-assign in a function with selection-function as argument
                       //lower pointer, there are symbs available, and it does not exceed the highest possible DL/UL barrier
-                      if ( val < lastSymAvailLayer[lay] && symAvailLayer[lay] >= dciInfoReTx.m_numSym && (lastSymAvailLayer[lay] - dciInfoReTx.m_numSym) > maxNextSymAvailLayer)
+                      if ( val < lastSymAvailLayer[lay] && symAvailLayer[lay] >= dciInfoReTx.m_numSym && (lastSymAvailLayer[lay] - dciInfoReTx.m_numSym + 1) >= maxNextSymAvailLayer)
                 	{
                           layerIdx = lay;
                           val = lastSymAvailLayer[lay];
@@ -1011,12 +1011,12 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
                   layerIdx = itUeToLayerMap->second;
                 }
 
-              if  (symAvailLayer[layerIdx] >= dciInfoReTx.m_numSym && (lastSymAvailLayer[layerIdx] - dciInfoReTx.m_numSym) > maxNextSymAvailLayer)
+              if  (symAvailLayer[layerIdx] >= dciInfoReTx.m_numSym && (lastSymAvailLayer[layerIdx] - dciInfoReTx.m_numSym + 1) >= maxNextSymAvailLayer)
                 {
                   symAvail -= dciInfoReTx.m_numSym;
                   symAvailLayer[layerIdx] -= dciInfoReTx.m_numSym;
                   dciInfoReTx.m_layerInd = layerIdx;
-                  dciInfoReTx.m_symStart = (lastSymAvailLayer[layerIdx] - dciInfoReTx.m_numSym);
+                  dciInfoReTx.m_symStart = (lastSymAvailLayer[layerIdx] - dciInfoReTx.m_numSym +1 );
                   lastSymAvailLayer[layerIdx] -= dciInfoReTx.m_numSym;
                   NS_ASSERT (lastSymAvailLayer[layerIdx] >= 0 );
                   dciInfoReTx.m_rv++;
@@ -1270,34 +1270,39 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
       //ASSIGN UES TO LAYERS
 
       //Divide the HBF frame in DL and UL contiguous regions with fairness and taking into account the existing HARQ allocations
-      int midDlSymReq = totDlSymReq;
-      std::vector<int> totDlSymReqLayer;
-      for (uint8_t lay = 0; lay < nextSymAvailLayer.size (); lay++)
-	{
-          if (midDlSymReq > (int) maxNextSymAvailLayer - (int) nextSymAvailLayer[lay])
+      int midDlSymRequested = totDlSymReq;
+      int midUlSymRequested = totUlSymReq;
+      //TODO improve the requested computation taking into account asymmetry between layers
+      uint32_t firstUlSymbol = maxNextSymAvailLayer + round ( ((double) minLastSymAvailLayer - (double) maxNextSymAvailLayer + 1) * ( (double) midDlSymRequested) / ( (double) midDlSymRequested + (double)midUlSymRequested) );
+
+      //cound the demand of symbols in each layer before new allocations
+      std::vector<int> totDlSymReqLayer ( nextSymAvailLayer.size (), 0); //numLayer zeros vector initialization
+      std::vector<int> totUlSymReqLayer ( lastSymAvailLayer.size (), 0);
+      for (itUeToLayerMap = ueToLayerMapDl.begin (); itUeToLayerMap != ueToLayerMapDl.end (); itUeToLayerMap++)
+        {
+          itUeInfo = ueInfo.find( itUeToLayerMap->first );//key is rnti in both
+          if ( itUeInfo != ueInfo.end())
             {
-              midDlSymReq -= maxNextSymAvailLayer - nextSymAvailLayer[lay];
+              if ( itUeInfo->second.m_maxDlSymbols > 0 )
+                {
+                  numDlUeLayer[itUeToLayerMap->second]++;
+                  totDlSymReqLayer[itUeToLayerMap->second] += itUeInfo->second.m_maxDlSymbols;
+                }
             }
-          else
-            {
-              midDlSymReq = 0;
-            }
-          totDlSymReqLayer.push_back (0);
         }
-      int midUlSymReq = totUlSymReq;
-      std::vector<int> totUlSymReqLayer;
-      for (uint8_t lay=0; lay<lastSymAvailLayer.size (); lay++)
-	{
-          if (midUlSymReq > (int) (lastSymAvailLayer[lay] - (int) minLastSymAvailLayer))
+      for (itUeToLayerMap = ueToLayerMapUl.begin (); itUeToLayerMap != ueToLayerMapUl.end (); itUeToLayerMap++)
+        {
+          itUeInfo = ueInfo.find( itUeToLayerMap->first );//key is rnti in both
+          if ( itUeInfo != ueInfo.end())
             {
-              midUlSymReq -= lastSymAvailLayer[lay]-minLastSymAvailLayer;
-            }else{
-              midUlSymReq = 0;
+              if ( itUeInfo->second.m_maxUlSymbols > 0 )
+                {
+                  numUlUeLayer[itUeToLayerMap->second]++;
+                  totUlSymReqLayer[itUeToLayerMap->second] += itUeInfo->second.m_maxUlSymbols;
+                }
             }
-          totUlSymReqLayer.push_back (0);
         }
-      uint32_t dlUlBarrier = maxNextSymAvailLayer + ceil ( ((double) minLastSymAvailLayer - (double) maxNextSymAvailLayer) * ( (double) midDlSymReq) / ( (double) midDlSymReq + (double)midUlSymReq) );
-      std::vector<int> nFlowDlLayer,nFlowUlLayer; // number of UE with fresh info, u
+
       for (itUeInfo = ueInfo.begin (); itUeInfo != ueInfo.end (); itUeInfo++)
 	{
 	  if (itUeInfo->second.m_maxDlSymbols > 0)
@@ -1311,13 +1316,14 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
 		  double bestSymPerUE = 0.0;
 		  for (uint8_t lay = 0; lay < nextSymAvailLayer.size (); lay++)
 		    {
-		      if ( bestSymPerUE < ( (double ) dlUlBarrier - (double )nextSymAvailLayer[lay] ) / (double ) ( 1 + numDlUeLayer[lay] ) )
+		      if ( bestSymPerUE < ( (double ) firstUlSymbol - (double )nextSymAvailLayer[lay] ) / (double ) ( 1 + numDlUeLayer[lay] ) )
 			{
 			  layerIdx = lay;
-			  bestSymPerUE = ( (double ) dlUlBarrier - (double )nextSymAvailLayer[lay] ) / (double ) ( 1 + numDlUeLayer[lay] );
+			  bestSymPerUE = ( (double ) firstUlSymbol - (double )nextSymAvailLayer[lay] ) / (double ) ( 1 + numDlUeLayer[lay] );
 			}
 		    }
 		  numDlUeLayer[layerIdx]++;
+                  totDlSymReqLayer[layerIdx] += itUeInfo->second.m_maxDlSymbols;
 		  ueToLayerMapDl.insert ( std::pair<uint32_t, uint8_t> ( itUeInfo->first, layerIdx ) ); // key is the rnti
 		}
 	      else
@@ -1325,7 +1331,6 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
 		  layerIdx = itUeToLayerMap->second;
 		}
 	      itUeInfo->second.m_dlHbfLayer = layerIdx;
-	      totDlSymReqLayer[layerIdx] += itUeInfo->second.m_maxDlSymbols;
 	    }
 	  if (itUeInfo->second.m_maxUlSymbols > 0)
 	    { //if this user wants UL allocation
@@ -1338,15 +1343,16 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
 		  double bestSymPerUE = 0.0;
 		  for (uint8_t lay = 0; lay < lastSymAvailLayer.size (); lay++)
 		    {
-		      if ( bestSymPerUE < ( (double )lastSymAvailLayer[lay] - (double ) dlUlBarrier ) / (double ) ( 1 + numUlUeLayer[lay] ) )
+		      if ( bestSymPerUE < ( (double )lastSymAvailLayer[lay] - (double ) firstUlSymbol + 1) / (double ) ( 1 + numUlUeLayer[lay] ) )
 			{
 			  layerIdx = lay;
-			  bestSymPerUE = ( (double )lastSymAvailLayer[lay] - (double ) dlUlBarrier ) / (double ) ( 1 + numUlUeLayer[lay] );
+			  bestSymPerUE = ( (double )lastSymAvailLayer[lay] - (double ) firstUlSymbol + 1) / (double ) ( 1 + numUlUeLayer[lay] );
 			}
 		    }
 		  //TODO this disables HBF in UL. comment out when startRx bug is fixed
-		  layerIdx = 0;
+//		  layerIdx = 0;
 		  numUlUeLayer[layerIdx]++;
+	              totUlSymReqLayer[layerIdx]+=itUeInfo->second.m_maxUlSymbols;
 		  ueToLayerMapUl.insert ( std::pair<uint32_t, uint8_t> ( itUeInfo->first, layerIdx ) ); // key is the rnti
 		}
 	      else
@@ -1354,7 +1360,6 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
 		  layerIdx = itUeToLayerMap->second;
 		}
 	      itUeInfo->second.m_ulHbfLayer=layerIdx;
-	      totUlSymReqLayer[layerIdx]+=itUeInfo->second.m_maxUlSymbols;
 	    }
 	}
 
@@ -1378,7 +1383,7 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
       for (uint8_t layerIdx=0; layerIdx<lastSymAvailLayer.size (); layerIdx++)
 	{
 	  //DL allocation part
-	  if (totDlSymReqLayer[layerIdx] > 0)
+	  if ( ( totDlSymReqLayer[layerIdx] > 0 ) & ( firstUlSymbol - nextSymAvailLayer[layerIdx] > 0) )
 	    {
 	      itUeInfo = itUeInfoStart; // pick up the RR from the last user served
 	      //search for the first user in the list that has DL data and belongs to this layer
@@ -1402,9 +1407,9 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
 
 	      // divide OFDM symbols evenly between active UEs, which are then evenly divided between DL and UL flows
 	      int remSym = totDlSymReqLayer[layerIdx];
-	      if (remSym > (int) ( dlUlBarrier - nextSymAvailLayer[layerIdx]))
+	      if (remSym > (int) ( firstUlSymbol - nextSymAvailLayer[layerIdx]))
 		{
-		  remSym = (dlUlBarrier - nextSymAvailLayer[layerIdx]);
+		  remSym = (firstUlSymbol - nextSymAvailLayer[layerIdx]);
 		}
 
 	      int nSymPerFlow0 = remSym / numDlUeLayer[layerIdx]; // initial average symbols per non-retx flow
@@ -1419,7 +1424,8 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
 
 	      bool allocated = true;           // someone got allocated
 	      int numRemDlUe = numDlUeLayer[layerIdx];
-	      while (remSym > 0 && allocated)
+
+	      while ( ( remSym > 0 ) && allocated  && ( numRemDlUe > 0 ))
 		{
 		  allocated = false;                // additional symbols allocated to this RNTI in this iteration
 		  int nRemSymPerFlow = remSym / numRemDlUe;
@@ -1431,6 +1437,8 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
 		    {
 		      nRemSymPerFlow = ceil ((double)nRemSymPerFlow / (double)m_symPerSlot) * m_symPerSlot;                  // round up to nearest sym per TTI
 		    }
+
+                  std::map <uint16_t, struct UeSchedInfo>::iterator itUeInfoStartThisLayer = itUeInfo;
 		  while (remSym > 0)
 		    {
 		      int addSym = 0;
@@ -1454,9 +1462,12 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
 				  addSym = deficit;
 				  // add remaining symbols to average
 				  numRemDlUe--;
-				  int extra = (nRemSymPerFlow - addSym) / numRemDlUe;
-				  nSymPerFlow0 += extra;                                // add extra to average symbols
-				  nRemSymPerFlow += extra;                                // add extra to average symbols
+				  if (numRemDlUe > 0)
+				    {
+				      int extra = (nRemSymPerFlow - addSym) / numRemDlUe;
+				      nSymPerFlow0 += extra;                                // add extra to average symbols
+				      nRemSymPerFlow += extra;                                // add extra to average symbols
+				    }
 				}
 			    }
 			  else
@@ -1473,6 +1484,8 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
 			  allocated = true;
 			}
 		      itUeInfo->second.m_dlSymbols += addSym;
+		      // ret.m_sfAllocInfo.m_sfnSf.m_frameNum == 41
+		      NS_LOG_LOGIC("UE " << itUeInfo->first << " RR assigned "<< (int) itUeInfo->second.m_dlSymbols <<" symbols DL. remSym "<<(int)remSym<<" addSym "<<(int)addSym<<" nRemSymPerFlow "<<(int)nRemSymPerFlow<<" deficit "<<(int)deficit<<" numRemDlUe "<<(int)numRemDlUe);
 		      remSym -= addSym;
 		      NS_ASSERT (remSym >= 0);
 
@@ -1484,6 +1497,7 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
 		      while(itUeInfo->second.m_dlHbfLayer!=layerIdx || itUeInfo->second.m_maxDlSymbols == 0)
 			{
 			  itUeInfo++;
+			  NS_LOG_LOGIC("Next UE in layer loop step");
 			  if (itUeInfo == ueInfo.end ())
 			    {                 // loop around to first RNTI in map
 			      itUeInfo = ueInfo.begin ();
@@ -1493,19 +1507,30 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
 			      break;
 			    }
 		      }
-		      if (itUeInfo == itUeInfoStart)
-			{                 // break RR loop when looped back to initial RNTI or no symbols remain
-			  break;
-			}
+                      if ( (itUeInfo == itUeInfoStart) || (itUeInfoStartThisLayer == itUeInfo))
+                        {                 // break RR sub-loop when looped back to initial RNTI or looped back to the same ue of this layer
+                          break;
+                        }
+		    }
+                  NS_LOG_LOGIC("Next UE in layer loop2");
+		  if (itUeInfo == itUeInfoStart)
+		    {                 // break RR loop when looped back to initial RNTI or no symbols remain
+		      break;
 		    }
 		}
+              NS_LOG_LOGIC("Next UE in layer loop3");
+	      if (itUeInfo == itUeInfoStart && itUeInfo->second.m_dlHbfLayer!=layerIdx)
+	        {
+	          NS_LOG_INFO ("Skipping DL RR allocation in layer "<< layerIdx<<". Required count is "<<totDlSymReqLayer[layerIdx]<<" symbols but no UE Info found in the list");
+	          continue;
+	        } //this skips DL allocation if this layer is used only for UL. This is detected when we end the while search above with the break
 	    }
 	}
 
       for (uint8_t layerIdx=0; layerIdx<lastSymAvailLayer.size (); layerIdx++)
 	{
 	  //UL allocation part
-	  if (totUlSymReqLayer[layerIdx] > 0)
+	  if ( (totUlSymReqLayer[layerIdx] > 0) & ( lastSymAvailLayer[layerIdx] - firstUlSymbol + 1 > 0) )
 	    {
 	      itUeInfo = itUeInfoStart; // pick up the RR from the last user served
 	      //search for the first user in the list that has DL data and belongs to this layer
@@ -1523,16 +1548,16 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
 		}
 	      if (itUeInfo == itUeInfoStart && itUeInfo->second.m_ulHbfLayer!=layerIdx)
 		{
-		  NS_LOG_UNCOND ("Skipping UL RR allocation in layer "<< layerIdx<<". Required count is "<<totUlSymReqLayer[layerIdx]<<" symbols but no UE Info found in the list");
+		  NS_LOG_INFO ("Skipping UL RR allocation in layer "<< layerIdx<<". Required count is "<<totUlSymReqLayer[layerIdx]<<" symbols but no UE Info found in the list");
 		  continue;
 		} //this skips UL allocation if this layer is used only for DL. This is detected when we end the while search above with the break
 
 
 	      // divide OFDM symbols evenly between active UEs, which are then evenly divided between DL and UL flows
 	      uint32_t remSym = totUlSymReqLayer[layerIdx];
-	      if (remSym > (lastSymAvailLayer[layerIdx]-dlUlBarrier))
+	      if (remSym > (lastSymAvailLayer[layerIdx]-firstUlSymbol + 1))
 		{
-		  remSym = (lastSymAvailLayer[layerIdx]-dlUlBarrier);
+		  remSym = (lastSymAvailLayer[layerIdx]-firstUlSymbol + 1);
 		}
 	      int nSymPerFlow0 = remSym / numUlUeLayer[layerIdx]; // initial average symbols per non-retx flow
 	      if (nSymPerFlow0 == 0)            // minimum of 1
@@ -1545,7 +1570,7 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
 		}
 	      bool allocated = true;           // someone got allocated
 	      int numRemUlUe = numUlUeLayer[layerIdx];
-	      while (remSym > 0 && allocated)
+	      while (( remSym > 0 ) && allocated && ( numRemUlUe > 0 ))
 		{
 		  allocated = false;                // additional symbols allocated to this RNTI in this iteration
 		  int nRemSymPerFlow = remSym / numRemUlUe;
@@ -1557,6 +1582,8 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
 		    {
 		      nRemSymPerFlow = ceil ((double)nRemSymPerFlow / (double)m_symPerSlot) * m_symPerSlot;                  // round up to nearest sym per TTI
 		    }
+
+                  std::map <uint16_t, struct UeSchedInfo>::iterator itUeInfoStartThisLayer = itUeInfo;
 		  while (remSym > 0)
 		    {
 		      int addSym = 0;
@@ -1585,9 +1612,12 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
 				  addSym = deficit;
 				  // add remaining symbols to average
 				  numRemUlUe--;
-				  int extra = (nRemSymPerFlow - addSym) / numRemUlUe;
-				  nSymPerFlow0 += extra;                                // add extra to average symbols
-				  nRemSymPerFlow += extra;                                // add extra to average symbols
+				  if (numRemUlUe > 0)
+				    {
+                                      int extra = (nRemSymPerFlow - addSym) / numRemUlUe;
+                                      nSymPerFlow0 += extra;                                // add extra to average symbols
+                                      nRemSymPerFlow += extra;                                // add extra to average symbols
+				    }
 				}
 			    }
 			  else
@@ -1604,6 +1634,7 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
 			  allocated = true;
 			}
 		      itUeInfo->second.m_ulSymbols += addSym;
+		      NS_LOG_LOGIC("UE " << itUeInfo->first << " RR assigned "<< (int) itUeInfo->second.m_ulSymbols <<" symbols UL. remSym "<<(int)remSym<<" addSym "<<(int)addSym<<" nRemSymPerFlow "<<(int)nRemSymPerFlow<<" deficit "<<(int)deficit<<" numRemDlUe "<<(int)numRemUlUe);
 		      remSym -= addSym;
 		      NS_ASSERT (remSym >= 0);
 
@@ -1615,6 +1646,7 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
 		      while(itUeInfo->second.m_ulHbfLayer!=layerIdx || itUeInfo->second.m_maxUlSymbols == 0)
 			{
 			  itUeInfo++;
+                          NS_LOG_LOGIC("Next UE in layer loop step");
 			  if (itUeInfo == ueInfo.end ())
 			    {                 // loop around to first RNTI in map
 			      itUeInfo = ueInfo.begin ();
@@ -1624,12 +1656,18 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
 			      break;
 			    }
 		      }
-		      if (itUeInfo == itUeInfoStart)
-			{                 // break RR loop when looped back to initial RNTI or no symbols remain
-			  break;
-			}
-		    }
-		}
+                      NS_LOG_LOGIC("Next UE in layer loop 2");
+                      if ( (itUeInfo == itUeInfoStart) || (itUeInfoStartThisLayer == itUeInfo))
+                        {                 // break RR sub-loop when looped back to initial RNTI or looped back to all the same ue of this layer
+                          break;
+                        }
+                    }
+                  NS_LOG_LOGIC("Next UE in layer loop 3");
+                  if (itUeInfo == itUeInfoStart)
+                    {                 // break RR loop when looped back to initial RNTI or no symbols remain
+                      break;
+                    }
+                }
 	    }
 	  //remember next UE in list to be served
 	  if (layerIdx==0) {
@@ -1646,7 +1684,7 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
 
       for (uint8_t layerIdx = 0; layerIdx < lastSymAvailLayer.size (); layerIdx++)
 	{
-          NS_ASSERT (nextSymAvailLayer[layerIdx] > 0);
+          NS_ASSERT (nextSymAvailLayer[layerIdx] >= 0);
           NS_ASSERT (lastSymAvailLayer[layerIdx] <= m_phyMacConfig->GetSymbolsPerSubframe ()-m_phyMacConfig->GetUlCtrlSymbols ());
         }
       do
@@ -1669,7 +1707,7 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
                   dci.m_mcs--;
                   dci.m_tbSize = m_amc->GetTbSizeFromMcsSymbols (dci.m_mcs, dci.m_numSym) / 8;
           }*/
-              NS_ASSERT (nextSymAvailLayer[ueSchedInfo.m_dlHbfLayer] <= dlUlBarrier);
+              NS_ASSERT (nextSymAvailLayer[ueSchedInfo.m_dlHbfLayer] <= firstUlSymbol + 1);
               NS_ASSERT (dci.m_layerInd == ueToLayerMapDl.find (dci.m_rnti)->second);
               dci.m_rv = 0;
               dci.m_harqProcess = UpdateDlHarqProcessId (itUeInfo->first);
@@ -1788,10 +1826,10 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
               dci.m_rnti = itUeInfo->first;
               dci.m_format = 1;
               dci.m_layerInd = ueSchedInfo.m_ulHbfLayer;
-              dci.m_symStart = lastSymAvailLayer[ueSchedInfo.m_ulHbfLayer] - ueSchedInfo.m_ulSymbols;
+              dci.m_symStart = lastSymAvailLayer[ueSchedInfo.m_ulHbfLayer] - ueSchedInfo.m_ulSymbols + 1;
               dci.m_numSym = ueSchedInfo.m_ulSymbols;
               lastSymAvailLayer[ueSchedInfo.m_ulHbfLayer] -= ueSchedInfo.m_ulSymbols;
-              NS_ASSERT (lastSymAvailLayer[ueSchedInfo.m_ulHbfLayer] >= dlUlBarrier);
+              NS_ASSERT (lastSymAvailLayer[ueSchedInfo.m_ulHbfLayer] >= firstUlSymbol - 1);
               NS_ASSERT (dci.m_layerInd == ueToLayerMapUl.find (dci.m_rnti)->second);
               dci.m_mcs = ueSchedInfo.m_ulMcs;
               dci.m_ndi = 1;
@@ -1818,8 +1856,11 @@ MmWaveAsyncHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPro
                   ueChunkMap.push_back (dci.m_rnti);
                 }
               SfnSf slotSfn = ret.m_sfAllocInfo.m_sfnSf;
-              slotSfn.m_slotNum = dci.m_symStart;                // use the start symbol index of the slot because the absolute UL slot index depends on the future DL allocation
-              // insert into allocation map to recall previous allocations upon receiving UL-CQI
+
+//              slotSfn.m_slotNum = dci.m_symStart;                // use the start symbol index of the slot because the absolute UL slot index depends on the future DL allocation
+//              // insert into allocation map to recall previous allocations upon receiving UL-CQI
+              slotSfn.m_slotNum = dci.m_symStart * m_phyMacConfig->GetNumEnbLayers () + ueSchedInfo.m_ulHbfLayer;                // use the start symbol index of the slot because the absolute UL slot index depends on the future DL allocation
+                            // insert into allocation map to recall previous allocations upon receiving UL-CQI
               m_ulAllocationMap.insert ( std::pair<uint32_t, struct AllocMapElem> (slotSfn.Encode (), AllocMapElem (ueChunkMap, dci.m_numSym, dci.m_tbSize)) );
 
               if (m_harqOn == true)

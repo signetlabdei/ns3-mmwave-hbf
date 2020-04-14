@@ -92,7 +92,7 @@ MmWaveEnbPhy::MmWaveEnbPhy (Ptr<MmWaveSpectrumPhy> dlPhy, Ptr<MmWaveSpectrumPhy>
   m_roundFromLastUeSinrUpdate = 0;
   Simulator::ScheduleNow (&MmWaveEnbPhy::StartSubFrame, this);
 }
-  
+
 MmWaveEnbPhy::MmWaveEnbPhy (std::vector<Ptr<MmWaveSpectrumPhy> > dlPhyList, std::vector<Ptr<MmWaveSpectrumPhy> > ulPhyList)
   : MmWavePhy (dlPhyList, ulPhyList),
     m_prevSlot (0),
@@ -618,7 +618,7 @@ MmWaveEnbPhy::GetUlSpectrumPhy () const
   return m_uplinkSpectrumPhy;
 }
 
-std::vector <Ptr<MmWaveSpectrumPhy> > 
+std::vector <Ptr<MmWaveSpectrumPhy> >
 MmWaveEnbPhy::GetDlSpectrumPhyList () const
 {
   return m_downlinkSpectrumPhyList;
@@ -1194,7 +1194,7 @@ MmWaveEnbPhy::StartSubFrame (void)
           NS_LOG_INFO ("Start symbol index: " << (int) m_slotBundleList[ind].m_symStart);
           NS_LOG_INFO ("Minimum no. of symbols: " << (int) m_slotBundleList[ind].m_minNumSym);
         }
-      
+
 //    }
 
   NS_ASSERT ((m_currSfAllocInfo.m_sfnSf.m_frameNum == m_frameNum) && (m_currSfAllocInfo.m_sfnSf.m_sfNum == m_sfNum));
@@ -1269,7 +1269,7 @@ MmWaveEnbPhy::StartSlot (void)
   Time guardPeriod;
   Time slotPeriod;
   m_receptionEnabled = false;
-  
+
   if (m_slotNum == 0)       // DL control slot
     {
       // get control messages to be transmitted in DL-Control period
@@ -1452,6 +1452,8 @@ MmWaveEnbPhy::StartSlot (void)
               NS_LOG_DEBUG ("ENB " << m_cellId << " TXing DL DATA frame " << m_frameNum << " subframe " << (unsigned) m_sfNum << " symbols "
                             << (unsigned) currSlot.m_dci.m_symStart << "-" << (unsigned) (currSlot.m_dci.m_symStart + currSlot.m_dci.m_numSym - 1)
                             << "\t start " << Simulator::Now () + NanoSeconds (1.0) << " end " << Simulator::Now () + slotPeriod - NanoSeconds (2.0));
+
+              m_allActiveSlotNums.push_back(m_slotNum);
               Simulator::Schedule (NanoSeconds (1), &MmWaveEnbPhy::SendDataChannels, this, pktBurst, slotPeriod - NanoSeconds (2.0), currSlot);
             }
 
@@ -1582,6 +1584,7 @@ MmWaveEnbPhy::StartSlot (void)
                             << "\t start " << Simulator::Now () << " end "
                             << Simulator::Now () + slotPeriod << " layer "
                             << (int) currSlot.m_dci.m_layerInd);
+              m_allActiveSlotNums.push_back(m_slotNum);
             }
 
           if ( bfCasted != 0)
@@ -1597,17 +1600,6 @@ MmWaveEnbPhy::StartSlot (void)
             }
 
           slotPeriod = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () * currSlotBundleInfo.m_minNumSym); //schedule for EndSlot()
-
-//          Time thisSlotStart = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () *
-//					    m_currSfAllocInfo.m_slotAllocInfo[m_slotNum].m_dci.m_symStart);
-//          Time nextSlotStart = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () *
-//					    m_currSfAllocInfo.m_slotAllocInfo[1+m_slotNum].m_dci.m_symStart);
-//          Time difSlotStart = nextSlotStart - thisSlotStart;
-//          if ( difSlotStart < slotPeriod )
-//            {//the case when we start slot A at time t1, then slot B must start at time t2>t1, before end of slot A at time t3>t2>t1.
-//              Simulator::Schedule ( difSlotStart + m_lastSfStart - Simulator::Now (), &MmWaveEnbPhy::StartSlot, this);
-//            }
-//        }
     }
 
   m_prevSlotDir = currSlot.m_tddMode;
@@ -1615,6 +1607,26 @@ MmWaveEnbPhy::StartSlot (void)
   m_phySapUser->SubframeIndication (SfnSf (m_frameNum, m_sfNum, m_slotNum));        // trigger MAC
 
   Simulator::Schedule (slotPeriod, &MmWaveEnbPhy::EndSlot, this);
+
+  if (m_slotNum < m_currSfNumSlots - 1)
+    {
+      Time thisSlotStart = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () *
+                                        m_currSfAllocInfo.m_slotAllocInfo[m_slotNum].m_dci.m_symStart);
+
+      Time nextSlotStart = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () *
+                                        m_currSfAllocInfo.m_slotAllocInfo[1+m_slotNum].m_dci.m_symStart);
+      Time difSlotStart = nextSlotStart - thisSlotStart;
+      NS_LOG_INFO ("Next slot [early scheduling] number:" << (int)1+m_slotNum  << ", nextSlotStart:" << nextSlotStart << ", m_lastSfStart:" << m_lastSfStart << ", difSlotStart: " << difSlotStart );
+      Simulator::Schedule ( difSlotStart , &MmWaveEnbPhy::IncrSlotCtrAndStartSlot, this); // +1ns to call startSlot after all endSlot events
+    }
+}
+
+
+void
+MmWaveEnbPhy::IncrSlotCtrAndStartSlot()
+{//TODO the addition of this function is a cheap tactic, we can possibly solve this problem more elegantly
+  m_slotNum++;
+  StartSlot();
 }
 
 void
@@ -1624,51 +1636,77 @@ MmWaveEnbPhy::EndSlot (void)
 
   //Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhy ()->GetRxAntenna());
   //antennaArray->ChangeToOmniTx ();
-  if (m_currNumAllocLayers > 1)
-  {
-    Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhyList ().at(0)->GetRxAntenna());
-      if (antennaArray != 0)
-      {
-        antennaArray->SetCurrNumLayers (1); //intialization
-      }
-  }
 
-  if (m_slotNum == m_currSfNumSlots - 1)
+  std::list<uint8_t>::iterator itActiveSlots = m_allActiveSlotNums.begin();
+  while ( itActiveSlots != m_allActiveSlotNums.end() )
     {
-      m_slotNum = 0;
-      EndSubFrame ();
-    }
-  else
-    {
-      Time nextSlotStart;
-      //uint8_t slotInd = m_slotNum+1;
-      /*if (slotInd >= m_currSfAllocInfo.m_slotAllocInfo.size ())
-      {
-              if (m_currSfAllocInfo.m_slotAllocInfo.size () > 0)
-              {
-                      slotInd = slotInd - m_currSfAllocInfo.m_slotAllocInfo.size ();
-                      nextSlotStart = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () *
-                                                   m_currSfAllocInfo.m_ulSlotAllocInfo[slotInd].m_dci.m_symStart);
-              }
-      }
+      Time slotEndTime = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () *
+                                      (m_currSfAllocInfo.m_slotAllocInfo[ *itActiveSlots ].m_dci.m_symStart + m_currSfAllocInfo.m_slotAllocInfo[ *itActiveSlots ].m_dci.m_numSym ) );
+      if ( slotEndTime <= Simulator::Now () )
+        {
+          NS_LOG_LOGIC("eNB PHY deleted formerly active slot no. " << (int) *itActiveSlots);
+          m_allActiveSlotNums.erase(itActiveSlots);
+          itActiveSlots = m_allActiveSlotNums.begin();//TODO perhaps there is a more efficient restart of the search after this match
+        }
       else
-      {
-              if (m_currSfAllocInfo.m_slotAllocInfo.size () > 0)
-              {
-                      nextSlotStart = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () *
-                                                   m_currSfAllocInfo.m_slotAllocInfo[slotInd].m_dci.m_symStart);
-              }
-      }*/
-      m_slotNum++;
-      nextSlotStart = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () *
-                                   m_currSfAllocInfo.m_slotAllocInfo[m_slotNum].m_dci.m_symStart);
-      NS_LOG_INFO ("Next slot number:" << (int)m_slotNum << ", nextSlotStart:" << nextSlotStart << ", m_lastSfStart:" << m_lastSfStart << ", time-gap: " << nextSlotStart + m_lastSfStart - Simulator::Now ());
-      Simulator::Schedule (nextSlotStart + m_lastSfStart - Simulator::Now (), &MmWaveEnbPhy::StartSlot, this);
+        {
+          itActiveSlots++;
+          NS_LOG_LOGIC("eNB PHY still active slot no. " << (int) *itActiveSlots);
+        }
     }
-  
-  if (m_receptionEnabled)
+
+  if (m_allActiveSlotNums.size()==0)
     {
-      m_receptionEnabled = false;
+    if (m_currNumAllocLayers > 1)
+    {
+      Ptr<AntennaArrayModel> antennaArray = DynamicCast<AntennaArrayModel> (GetDlSpectrumPhyList ().at(0)->GetRxAntenna());
+        if (antennaArray != 0)
+        {
+          antennaArray->SetCurrNumLayers (1); //intialization
+        }
+    }
+
+    if (m_slotNum == m_currSfNumSlots - 1)
+      {
+        m_slotNum = 0;
+        EndSubFrame ();
+      }
+  //  else
+  //    {
+  //      Time nextSlotStart;
+        //uint8_t slotInd = m_slotNum+1;
+        /*if (slotInd >= m_currSfAllocInfo.m_slotAllocInfo.size ())
+        {
+                if (m_currSfAllocInfo.m_slotAllocInfo.size () > 0)
+                {
+                        slotInd = slotInd - m_currSfAllocInfo.m_slotAllocInfo.size ();
+                        nextSlotStart = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () *
+                                                     m_currSfAllocInfo.m_ulSlotAllocInfo[slotInd].m_dci.m_symStart);
+                }
+        }
+        else
+        {
+                if (m_currSfAllocInfo.m_slotAllocInfo.size () > 0)
+                {
+                        nextSlotStart = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () *
+                                                     m_currSfAllocInfo.m_slotAllocInfo[slotInd].m_dci.m_symStart);
+                }
+        }*/
+  //      if ( m_slotNum + 1 < (int) m_currSfAllocInfo.m_slotAllocInfo.size() )
+  //        {
+  //          m_slotNum++;
+  //          nextSlotStart = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () *
+  //                                       m_currSfAllocInfo.m_slotAllocInfo[m_slotNum].m_dci.m_symStart);
+  //          Time timeGap = nextSlotStart + m_lastSfStart - Simulator::Now ();
+  //          NS_LOG_INFO ("Next slot number:" << (int)m_slotNum << ", nextSlotStart:" << nextSlotStart << ", m_lastSfStart:" << m_lastSfStart << ", time-gap (s): " << timeGap.GetSeconds() );
+  //          Simulator::Schedule ( timeGap , &MmWaveEnbPhy::StartSlot, this);
+  //        }
+  //    }
+
+    if (m_receptionEnabled)
+      {
+        m_receptionEnabled = false;
+      }
     }
 }
 

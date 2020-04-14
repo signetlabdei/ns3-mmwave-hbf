@@ -61,7 +61,7 @@ main (int argc, char *argv[])
 	//LogComponentEnable("EpcUeNas",LOG_LEVEL_ALL);
 	LogComponentEnable ("MmWaveSpectrumPhy", LOG_LEVEL_INFO);
 	LogComponentEnable ("MmWaveUePhy", LOG_LEVEL_INFO);
-	LogComponentEnable ("MmWaveEnbPhy", LOG_LEVEL_INFO);
+	LogComponentEnable ("MmWaveEnbPhy", LOG_LEVEL_LOGIC);
 	LogComponentEnable ("MmWaveBeamformingModel", LOG_LEVEL_DEBUG);
 	//LogComponentEnable ("MmWaveUeMac", LOG_LEVEL_LOGIC);
 	//LogComponentEnable ("UdpClient", LOG_LEVEL_INFO);
@@ -71,6 +71,7 @@ main (int argc, char *argv[])
 	//LogComponentEnable("PropagationLossModel",LOG_LEVEL_ALL);
 	//      LogComponentEnable ("MmwaveHbfSpectrumChannel", LOG_LEVEL_INFO);
         LogComponentEnable ("MmWavePaddedHbfMacScheduler", LOG_LEVEL_LOGIC);
+        LogComponentEnable ("MmWaveAsyncHbfMacScheduler", LOG_LEVEL_LOGIC);
         LogComponentEnable ("MmWaveFlexTtiMacScheduler", LOG_LEVEL_LOGIC);
 //        LogComponentEnable ("MmWavePhy", LOG_LEVEL_INFO);
 //        LogComponentEnable ("MmWaveEnbMac", LOG_LEVEL_INFO);
@@ -98,8 +99,8 @@ main (int argc, char *argv[])
 
 	std::string schedulerType =
 //	    "ns3::MmWaveFlexTtiMacScheduler"
-//	    "ns3::MmWaveAsyncHbfMacScheduler"
-	    "ns3::MmWavePaddedHbfMacScheduler"
+	    "ns3::MmWaveAsyncHbfMacScheduler"
+//	    "ns3::MmWavePaddedHbfMacScheduler"
 	    ;
 	std::string beamformerType =
 //	    "ns3::MmWaveDftBeamforming"
