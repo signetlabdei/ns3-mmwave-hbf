@@ -59,20 +59,20 @@ main (int argc, char *argv[])
 	//LogComponentEnable ("LteEnbRrc", LOG_LEVEL_ALL);
 	//LogComponentEnable("MmWavePointToPointEpcHelper",LOG_LEVEL_ALL);
 	//LogComponentEnable("EpcUeNas",LOG_LEVEL_ALL);
-	LogComponentEnable ("MmWaveSpectrumPhy", LOG_LEVEL_INFO);
-	LogComponentEnable ("MmWaveUePhy", LOG_LEVEL_INFO);
-	LogComponentEnable ("MmWaveEnbPhy", LOG_LEVEL_LOGIC);
-	LogComponentEnable ("MmWaveBeamformingModel", LOG_LEVEL_DEBUG);
+	LogComponentEnable ("MmWaveSpectrumPhy", LOG_LEVEL_DEBUG);
+//	LogComponentEnable ("MmWaveUePhy", LOG_LEVEL_INFO);
+//	LogComponentEnable ("MmWaveEnbPhy", LOG_LEVEL_INFO);
+//	LogComponentEnable ("MmWaveBeamformingModel", LOG_LEVEL_DEBUG);
 	//LogComponentEnable ("MmWaveUeMac", LOG_LEVEL_LOGIC);
 	//LogComponentEnable ("UdpClient", LOG_LEVEL_INFO);
 	//LogComponentEnable ("PacketSink", LOG_LEVEL_INFO);
-	LogComponentEnable ("ThreeGppSpectrumPropagationLossModel", LOG_LEVEL_INFO);
-	LogComponentEnable ("ThreeGppChannel", LOG_LEVEL_DEBUG);
+	LogComponentEnable ("ThreeGppSpectrumPropagationLossModel", LOG_LEVEL_DEBUG);
+//	LogComponentEnable ("ThreeGppChannel", LOG_LEVEL_DEBUG);
 	//LogComponentEnable("PropagationLossModel",LOG_LEVEL_ALL);
 	//      LogComponentEnable ("MmwaveHbfSpectrumChannel", LOG_LEVEL_INFO);
-        LogComponentEnable ("MmWavePaddedHbfMacScheduler", LOG_LEVEL_LOGIC);
-        LogComponentEnable ("MmWaveAsyncHbfMacScheduler", LOG_LEVEL_LOGIC);
-        LogComponentEnable ("MmWaveFlexTtiMacScheduler", LOG_LEVEL_LOGIC);
+        LogComponentEnable ("MmWavePaddedHbfMacScheduler", LOG_LEVEL_INFO);
+        LogComponentEnable ("MmWaveAsyncHbfMacScheduler", LOG_LEVEL_INFO);
+        LogComponentEnable ("MmWaveFlexTtiMacScheduler", LOG_LEVEL_INFO);
 //        LogComponentEnable ("MmWavePhy", LOG_LEVEL_INFO);
 //        LogComponentEnable ("MmWaveEnbMac", LOG_LEVEL_INFO);
 //        LogComponentEnable ("MmWaveUeMac", LOG_LEVEL_INFO);
@@ -81,7 +81,7 @@ main (int argc, char *argv[])
 	uint16_t numUe = 7;
 	uint16_t numEnbLayers = 4;
 	double startTime = 0.4;
-	double simTime = 1.2;
+        double simTime = 1.2;
 	double packetSize = 1460; // packet size in byte
 	double interPacketInterval = 5000; // 500 microseconds
 	double minDistance = 40.0;           // eNB-UE distance in meters
@@ -94,6 +94,7 @@ main (int argc, char *argv[])
 	double sfPeriod = 1000.0; //micro second unit
 	double symPeriod = sfPeriod/symPerSf; //micro second unit
 	unsigned run = 0;
+        bool tcpApp = false;
 //	bool smallScale = false;
 //	double speed = 3;
 
@@ -124,6 +125,7 @@ main (int argc, char *argv[])
         cmd.AddValue ("sched", "The type of scheduler algorithm", schedulerType);
         cmd.AddValue ("bfmod", "The type of beamformer algorithm", beamformerType);
         cmd.AddValue ("nLayers", "The number of HBF layers per eNB", numEnbLayers);
+        cmd.AddValue ("useTCP", "Use TCP BulkSendApplication instead of UDPClient", tcpApp);
 	//cmd.AddValue ("useIdealRrc", "whether to use ideal RRC layer or not", useIdealRrc);
 	cmd.Parse (argc, argv);
 	symPeriod = sfPeriod/symPerSf;
@@ -261,26 +263,44 @@ main (int argc, char *argv[])
 	ApplicationContainer clientApps;
 	ApplicationContainer serverApps;
 	for (uint32_t u = 0; u < ueNodes.GetN (); ++u)
-	{
-	    ulPort++;
-	    PacketSinkHelper dlPacketSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), dlPort));
-	    PacketSinkHelper ulPacketSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), ulPort));
-	    serverApps.Add (dlPacketSinkHelper.Install (ueNodes.Get (u)));
-	    serverApps.Add (ulPacketSinkHelper.Install (remoteHost));
+	  {
+	    if ( tcpApp )
+	      {
+	        NS_LOG_UNCOND("Building TCP apps for UE "<< (int) u << " with infinite Buffer");
+                ulPort++;
+	        PacketSinkHelper dlPacketSinkHelper ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), dlPort));
+	        PacketSinkHelper ulPacketSinkHelper ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), ulPort));
+	        serverApps.Add (dlPacketSinkHelper.Install (ueNodes.Get (u)));
+	        serverApps.Add (ulPacketSinkHelper.Install (remoteHost));
+	        Config::Set ("/NodeList/*/$ns3::TcpL4Protocol/SocketList/*/> SegmentSize", UintegerValue (packetSize-40));
+	        BulkSendHelper dlClient ("ns3::TcpSocketFactory", InetSocketAddress ( ueIpIface.GetAddress (u), dlPort) );
+	        dlClient.SetAttribute ("MaxBytes", UintegerValue ( 0 ));//this means send an infinite data stream
+	        BulkSendHelper ulClient ("ns3::TcpSocketFactory", InetSocketAddress (remoteHostAddr, ulPort ) );
+	        ulClient.SetAttribute ("MaxBytes", UintegerValue ( 0 ));//this means send an infinite data stream
+	        clientApps.Add (dlClient.Install (remoteHost));
+	        clientApps.Add (ulClient.Install (ueNodes.Get(u)));
 
-	    UdpClientHelper dlClient (ueIpIface.GetAddress (u), dlPort);
-	    dlClient.SetAttribute ("Interval", TimeValue (MicroSeconds (interPacketInterval)));
-	    dlClient.SetAttribute ("PacketSize", UintegerValue (packetSize));
-	    //dlClient.SetAttribute ("MaxPackets", UintegerValue (100));
-
-
-	    UdpClientHelper ulClient (remoteHostAddr, ulPort);
-	    ulClient.SetAttribute ("Interval", TimeValue (MicroSeconds (interPacketInterval)));
-	    ulClient.SetAttribute ("PacketSize", UintegerValue (packetSize));
-
-	    clientApps.Add (dlClient.Install (remoteHost));
-	    clientApps.Add (ulClient.Install (ueNodes.Get(u)));
-	}
+	      }
+	    else
+	      {
+	        NS_LOG_UNCOND("Building UDP apps for UE "<<(int) u<<" with packet period " << interPacketInterval << " us ");
+	        ulPort++;
+	        PacketSinkHelper dlPacketSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), dlPort));
+	        PacketSinkHelper ulPacketSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), ulPort));
+	        serverApps.Add (dlPacketSinkHelper.Install (ueNodes.Get (u)));
+	        serverApps.Add (ulPacketSinkHelper.Install (remoteHost));
+	        UdpClientHelper dlClient (ueIpIface.GetAddress (u), dlPort);
+	        dlClient.SetAttribute ("Interval", TimeValue (MicroSeconds (interPacketInterval)));
+	        dlClient.SetAttribute ("PacketSize", UintegerValue (packetSize));
+	        dlClient.SetAttribute ("MaxPackets", UintegerValue (1+std::ceil(simTime*1000000/interPacketInterval)));//make sure app does not end prematurely
+	        UdpClientHelper ulClient (remoteHostAddr, ulPort);
+	        ulClient.SetAttribute ("Interval", TimeValue (MicroSeconds (interPacketInterval)));
+	        ulClient.SetAttribute ("PacketSize", UintegerValue (packetSize));
+	        ulClient.SetAttribute ("MaxPackets", UintegerValue (1+std::ceil(simTime*1000000/interPacketInterval)));//make sure app does not end prematurely
+	        clientApps.Add (dlClient.Install (remoteHost));
+	        clientApps.Add (ulClient.Install (ueNodes.Get(u)));
+	      }
+	  }
 	serverApps.Start (Seconds (startTime));
 	clientApps.Start (Seconds (startTime));
 	//mmwaveHelper->EnableTraces ();

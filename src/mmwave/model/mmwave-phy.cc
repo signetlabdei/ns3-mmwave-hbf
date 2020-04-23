@@ -279,7 +279,6 @@ MmWavePhy::SetMacPdu (Ptr<Packet> p)
 //        }
 //      else
 //        {
-    	    NS_LOG_UNCOND ("Code " << tag.Encode());
           std::map<uint64_t, Ptr<PacketBurst>>::iterator it = m_packetBurstLayerMap.find (tag.Encode());
           if (it == m_packetBurstLayerMap.end ())
             {

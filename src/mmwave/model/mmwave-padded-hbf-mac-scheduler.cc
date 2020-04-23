@@ -422,7 +422,7 @@ MmWavePaddedHbfMacScheduler::DoSchedUlCqiInfoReq (const struct MmWaveMacSchedSap
                     if (chunkInd == j)
                       {
                         newCqi.push_back (params.m_ulCqi.m_sinr.at (i));
-                        NS_LOG_INFO ("UL CQI report for RNTI " << itMap->second.m_rntiPerChunk.at (i) << " chunk " << i << " SINR " << params.m_ulCqi.m_sinr.at (i) << \
+                        NS_LOG_LOGIC ("UL CQI report for RNTI " << itMap->second.m_rntiPerChunk.at (i) << " chunk " << i << " SINR " << params.m_ulCqi.m_sinr.at (i) << \
                                      " frame " << frameNum << " subframe " << subframeNum << " startSym " << startSymIdx);
                       }
                     else
@@ -447,7 +447,7 @@ MmWavePaddedHbfMacScheduler::DoSchedUlCqiInfoReq (const struct MmWaveMacSchedSap
                 itTimers = m_ueCqiTimers.find (itMap->second.m_rntiPerChunk.at (i));
                 (*itTimers).second = m_cqiTimersThreshold;
 
-                NS_LOG_INFO ("UL CQI report for RNTI " << itMap->second.m_rntiPerChunk.at (i) << " chunk " << i << " SINR " << params.m_ulCqi.m_sinr.at (i) << \
+                NS_LOG_LOGIC ("UL CQI report for RNTI " << itMap->second.m_rntiPerChunk.at (i) << " chunk " << i << " SINR " << params.m_ulCqi.m_sinr.at (i) << \
                              " frame " << frameNum << " subframe " << subframeNum << " startSym " << startSymIdx);
 
               }
@@ -892,7 +892,7 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
                 }
             }
         }
-      NS_LOG_UNCOND("Processed " <<  m_dlHarqInfoList.size () <<" DL harq processes, sorted "<< sortedDlHarqRetx.size() << " NACKs in descending size order ");
+      NS_LOG_LOGIC("Processed " <<  m_dlHarqInfoList.size () <<" DL harq processes, sorted "<< sortedDlHarqRetx.size() << " NACKs in descending size order ");
       // After we have sorted all DL-HARQ by TBsize, we allocate them in increasing sequential layer-time blocks (increasing layer first)
       layerIdx = 0;
       std::vector< std::pair <uint8_t,uint32_t> >::iterator itSortedHarq = sortedDlHarqRetx.begin();
@@ -957,7 +957,7 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
               //                  SlotAllocInfo slotInfo (slotIdx++, SlotAllocInfo::DL_slotAllocInfo, SlotAllocInfo::CTRL_DATA, SlotAllocInfo::DIGITAL, itUeInfo->first, layerIdx);
               SlotAllocInfo slotInfo (tempDlslotIdx++, SlotAllocInfo::DL_slotAllocInfo, SlotAllocInfo::CTRL_DATA, SlotAllocInfo::DIGITAL, itUeInfo->first, layerIdx);
               slotInfo.m_dci = dciInfoReTx;
-              NS_LOG_DEBUG ("UE" << dciInfoReTx.m_rnti << " gets DL slots " << (unsigned)dciInfoReTx.m_symStart << "-" << (unsigned)(dciInfoReTx.m_symStart + dciInfoReTx.m_numSym - 1) <<
+              NS_LOG_LOGIC ("UE" << dciInfoReTx.m_rnti << " gets DL slots " << (unsigned)dciInfoReTx.m_symStart << "-" << (unsigned)(dciInfoReTx.m_symStart + dciInfoReTx.m_numSym - 1) <<
                             " tbs " << dciInfoReTx.m_tbSize << " harqId " << (unsigned)dciInfoReTx.m_harqProcess << " harqId " << (unsigned)dciInfoReTx.m_harqProcess <<
                             " rv " << (unsigned)dciInfoReTx.m_rv << " in frame " << ret.m_sfnSf.m_frameNum << " subframe " << (unsigned)ret.m_sfnSf.m_sfNum << " layer " << (unsigned) dciInfoReTx.m_layerInd << " RETX");
               std::map <uint16_t, DlHarqRlcPduList_t>::iterator itRlcList =  m_dlHarqProcessesRlcPduMap.find (rnti);
@@ -1075,7 +1075,7 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
             }
         }
 
-      NS_LOG_UNCOND("Processed " <<  m_ulHarqInfoList.size () <<" UL harq processes, sorted "<< sortedUlHarqRetx.size() << " NACKs in descending size order ");
+      NS_LOG_LOGIC("Processed " <<  m_ulHarqInfoList.size () <<" UL harq processes, sorted "<< sortedUlHarqRetx.size() << " NACKs in descending size order ");
       layerIdx = 0;
       itSortedHarq = sortedUlHarqRetx.begin();
       done = ( itSortedHarq == sortedUlHarqRetx.end() );
@@ -1135,7 +1135,7 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
               itHarq->second.at (harqId) = dciInfoReTx;
               SlotAllocInfo slotInfo (tempUlSlotIdx++, SlotAllocInfo::UL_slotAllocInfo, SlotAllocInfo::CTRL_DATA, SlotAllocInfo::DIGITAL, rnti, layerIdx);
               slotInfo.m_dci = dciInfoReTx;
-              NS_LOG_DEBUG ("UE" << dciInfoReTx.m_rnti << " gets UL slots " << (unsigned)dciInfoReTx.m_symStart << "-" << (unsigned)(dciInfoReTx.m_symStart + dciInfoReTx.m_numSym - 1) <<
+              NS_LOG_LOGIC ("UE" << dciInfoReTx.m_rnti << " gets UL slots " << (unsigned)dciInfoReTx.m_symStart << "-" << (unsigned)(dciInfoReTx.m_symStart + dciInfoReTx.m_numSym - 1) <<
                             " tbs " << dciInfoReTx.m_tbSize << " harqId " << (unsigned)dciInfoReTx.m_harqProcess << " rv " << (unsigned)dciInfoReTx.m_rv << " in frame " << ulSfn.m_frameNum << " subframe " << (unsigned)ulSfn.m_sfNum << " layer " << (unsigned) dciInfoReTx.m_layerInd <<
                             " RETX");
               //                  ret.m_sfAllocInfo.m_slotAllocInfo.push_back (slotInfo);
@@ -1493,11 +1493,11 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
               dci.m_rv = 0;
               dci.m_harqProcess = UpdateDlHarqProcessId (itUeInfo->first);
               NS_ASSERT (dci.m_harqProcess < m_phyMacConfig->GetNumHarqProcess ());
-              NS_LOG_DEBUG ("UE " << itUeInfo->first << " DL harqId " << (unsigned)dci.m_harqProcess << " HARQ process assigned");
+              NS_LOG_LOGIC ("UE " << itUeInfo->first << " DL harqId " << (unsigned)dci.m_harqProcess << " HARQ process assigned");
 
               SlotAllocInfo slotInfo (tempDlslotIdx++, SlotAllocInfo::DL_slotAllocInfo, SlotAllocInfo::CTRL_DATA, SlotAllocInfo::DIGITAL, itUeInfo->first, layerIdxDl);
               slotInfo.m_dci = dci;
-              NS_LOG_DEBUG ("UE " << dci.m_rnti << " gets DL slots " << (unsigned)dci.m_symStart << "-" << (unsigned)(dci.m_symStart + dci.m_numSym - 1) <<
+              NS_LOG_LOGIC ("UE " << dci.m_rnti << " gets DL slots " << (unsigned)dci.m_symStart << "-" << (unsigned)(dci.m_symStart + dci.m_numSym - 1) <<
                             " tbs " << dci.m_tbSize << " mcs " << (unsigned)dci.m_mcs << " harqId " << (unsigned)dci.m_harqProcess << " rv " << (unsigned)dci.m_rv <<
                             " in frame " << ret.m_sfnSf.m_frameNum << " subframe " << (unsigned)ret.m_sfnSf.m_sfNum<< " layer " << (unsigned) dci.m_layerInd);
 
@@ -1599,11 +1599,11 @@ MmWavePaddedHbfMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapPr
                                    dci.m_tbSize = m_amc->GetTbSizeFromMcsSymbols (dci.m_mcs, dci.m_numSym) / 8;
                            }*/
               dci.m_harqProcess = UpdateUlHarqProcessId (itUeInfo->first);
-              NS_LOG_DEBUG ("UE " << itUeInfo->first << " UL harqId " << (unsigned)dci.m_harqProcess << " HARQ process assigned");
+              NS_LOG_LOGIC ("UE " << itUeInfo->first << " UL harqId " << (unsigned)dci.m_harqProcess << " HARQ process assigned");
               NS_ASSERT (dci.m_harqProcess < m_phyMacConfig->GetNumHarqProcess ());
               SlotAllocInfo slotInfo (tempUlSlotIdx++, SlotAllocInfo::UL_slotAllocInfo, SlotAllocInfo::CTRL_DATA, SlotAllocInfo::DIGITAL, itUeInfo->first, layerIdxUl);
               slotInfo.m_dci = dci;
-              NS_LOG_DEBUG ("UE " << dci.m_rnti << " gets UL slots " << (unsigned)dci.m_symStart << "-" << (unsigned)(dci.m_symStart + dci.m_numSym - 1) <<
+              NS_LOG_LOGIC ("UE " << dci.m_rnti << " gets UL slots " << (unsigned)dci.m_symStart << "-" << (unsigned)(dci.m_symStart + dci.m_numSym - 1) <<
                             " tbs " << dci.m_tbSize << " mcs " << (unsigned)dci.m_mcs << " harqId " << (unsigned)dci.m_harqProcess << " rv " << (unsigned)dci.m_rv <<
                             " in frame " << ulSfn.m_frameNum << " subframe " << (unsigned)ulSfn.m_sfNum << " layer " << (unsigned) dci.m_layerInd );
               UpdateUlRlcBufferInfo (itUeInfo->first, dci.m_tbSize - m_subHdrSize);

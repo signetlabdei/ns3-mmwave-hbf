@@ -278,9 +278,7 @@ ThreeGppSpectrumPropagationLossModel::CalBeamformingComplexCoef (Ptr<SpectrumVal
     {
       std::complex<double> subsbandGain (0.0,0.0);
 
-//      double fsb = GetFrequency (); //TODO this is a temporary fix to test MMSE beamforming in a frequency-flat channel. We must restore the behavior on next line and implement frequency-selective MMSE beamforming in the future
       double fsb = (*sbit).fc;
-      //          NS_LOG_UNCOND("fsb: "<<fsb);
       for (uint8_t cIndex = 0; cIndex < numCluster; cIndex++)
         {
           double delay = -2 * M_PI * fsb * (params->m_delay.at (cIndex));
@@ -430,7 +428,6 @@ ThreeGppSpectrumPropagationLossModel::GetFrequencyFlatChannelMatrixAtDeltaFreque
   complexVector_t delay_doppler;
   double slotTime = Simulator::Now ().GetSeconds ();
   double fsb = deltaFc + GetFrequency (); //we assume the reference signal is Deltafc distant from the center frequency of the channel model
-  NS_LOG_UNCOND("fsb estim: "<<fsb);
   for (uint8_t cIndex = 0; cIndex < numCluster; cIndex++)
     {
       //cluster angle angle[direction][n],where, direction = 0(aoa), 1(zoa).

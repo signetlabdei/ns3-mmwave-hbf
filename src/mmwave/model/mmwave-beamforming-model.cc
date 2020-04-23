@@ -757,7 +757,7 @@ MmWaveMMSEBeamforming::SetBeamformingVectorForSlotBundle(std::vector< Ptr<NetDev
   //this segment builds a list of all Nb analog beams in use in this slot
   std::vector< Ptr<CodebookBFVectorCacheEntry>> bfCachesInSlot = GetBfCachesInSlotBundle(vOtherDevs);
 
-  NS_LOG_DEBUG("Started MMSE slot bundle processing. Detected " << bfCachesInSlot.size() << " simultaneous analog beams");
+  NS_LOG_LOGIC("Started MMSE slot bundle processing. Detected " << bfCachesInSlot.size() << " simultaneous analog beams");
 
   //this segment builds and equivalent channel Nb x Nb matrix with coefficients Heq_{i,j} = wa_i^H H_j^h b_j g_j
     // wa_i are my analog beamforming vectors, 1 x Nant, hermitian when we are receiving
@@ -787,7 +787,7 @@ MmWaveMMSEBeamforming::SetBeamformingVectorForSlotBundle(std::vector< Ptr<NetDev
 
     }
   matrixline<<"]";
-  NS_LOG_DEBUG("Built the equivalent channel matrix Heq with size " << equivalentH.size() << " x " << equivalentH.at(0).size()<<" : "<<matrixline.str());
+  NS_LOG_LOGIC("Built the equivalent channel matrix Heq with size " << equivalentH.size() << " x " << equivalentH.at(0).size()<<" : "<<matrixline.str());
 
   // this segment builds the matrix Wa^H from the antenna array weights in my beamforming vectors. The conjugate is used in reception
   complex2DVector_t analogWtransposed;
@@ -816,7 +816,7 @@ MmWaveMMSEBeamforming::SetBeamformingVectorForSlotBundle(std::vector< Ptr<NetDev
       rowctr ++ ;
       }
   matrixline<<"]";
-  NS_LOG_DEBUG("Built the analog beam matrix Wa^T with size " << analogWtransposed.size() << " x " << analogWtransposed.at(0).size()<<" : "<<matrixline.str());
+  NS_LOG_LOGIC("Built the analog beam matrix Wa^T with size " << analogWtransposed.size() << " x " << analogWtransposed.at(0).size()<<" : "<<matrixline.str());
 
   //this segment computes a MMSE beamforming-refinement.
   // We want to design W^T = (Heq^HHeq+NoI)^{-1}Heq^H and we want to load Wh^T = W^TWa^T in the array weights
@@ -860,7 +860,7 @@ MmWaveMMSEBeamforming::SetBeamformingVectorForSlotBundle(std::vector< Ptr<NetDev
       rowctr ++ ;
     }
   matrixline<<"]";
-  NS_LOG_DEBUG("Built the equivalent hybrid beam matrix Wh=WaW with size " << hybridW.size() << " x " << hybridW.at(0).size()<<" : "<<matrixline.str());
+  NS_LOG_LOGIC("Built the equivalent hybrid beam matrix Wh=WaW with size " << hybridW.size() << " x " << hybridW.at(0).size()<<" : "<<matrixline.str());
   // configure the antenna to use the new beamforming vector
   Ptr<AntennaArrayModel> castAntenna = DynamicCast<AntennaArrayModel>(m_antenna);
   std::vector< Ptr<NetDevice> >::iterator itDev = vOtherDevs.begin();
@@ -870,7 +870,7 @@ MmWaveMMSEBeamforming::SetBeamformingVectorForSlotBundle(std::vector< Ptr<NetDev
     {
       AntennaArrayBasicModel::BeamId bId = 100+(*itBf)->txBeamInd;//TODO design a beam id value convention for this beamforming technique, possibly based on the cache key value
 
-      NS_LOG_UNCOND("Setting up MMSE antenna weights for UE "<< (*itDev )->GetNode ()->GetId () );
+      NS_LOG_LOGIC("Setting up MMSE antenna weights for UE "<< (*itDev )->GetNode ()->GetId () );
 
       NS_ASSERT_MSG( castAntenna != 0 , "ERROR: Tried to apply hybrid beamforming to an antenna model without multilayer support");
 
@@ -1053,7 +1053,7 @@ MmWaveMMSESpectrumBeamforming::SetBeamformingVectorForSlotBundle(std::vector< Pt
   std::vector< uint16_t >::iterator itLId = vLayerInds.begin();
   for (std::vector< Ptr<CodebookBFVectorCacheEntry>>::iterator itBf = bfCachesInSlot.begin() ; itBf != bfCachesInSlot.end() ; itBf++ )
     {
-      NS_LOG_UNCOND("Setting up MMSE antenna weights for UE "<< (*itDev )->GetNode ()->GetId () );
+      NS_LOG_LOGIC("Setting up MMSE antenna weights for UE "<< (*itDev )->GetNode ()->GetId () );
 
       NS_ASSERT_MSG( castAntenna != 0 , "ERROR: Tried to apply hybrid beamforming to an antenna model without multilayer support");
       castAntenna->SetBeamformingVectorMultilayers ( (*itBf)->m_antennaWeights, (*itBf)->txBeamInd, (*itDev), (*itLId));

@@ -465,7 +465,7 @@ MmWaveSpectrumPhy::StartRx (Ptr<SpectrumSignalParameters> params)
     		  mmwaveDataRxParams->psd = pathlossmodel->CalcRxPowerSpectralDensityMultiLayers(mmwaveDataRxParams->psd,txMobility,this->GetMobility (),layerInd,m_layerInd);//tx layer ind is one from BS indicated in TXparam (not necessarily my GetAllocLayerInd()), I am a receiving UE and rx layer is always 0
     		  NS_LOG_INFO("Computed the BF gain at UE allocated layer " << (int ) ueRx->GetPhy (m_componentCarrierId)->GetAllocLayerInd() << " SpectrumPhy::StartRx for signal of layer " << (int) layerInd << " the UE m_layerInd is "<<(int)  m_layerInd);
     	  }
-    	  NS_LOG_INFO("Node "<<  GetDevice()->GetAddress() <<" detected in layer " << (int) m_layerInd << " a signal with power "<<Sum (*(mmwaveDataRxParams->psd)));
+    	  NS_LOG_DEBUG("Node "<<  GetDevice()->GetAddress() <<" detected in layer " << (int) m_layerInd << " a signal with power "<<Sum (*(mmwaveDataRxParams->psd)));
           m_interferenceData->AddSignal (mmwaveDataRxParams->psd, mmwaveDataRxParams->duration);
     	  if (mmwaveDataRxParams->cellId == m_cellId && isMyLayer)
     	  {
@@ -554,7 +554,7 @@ MmWaveSpectrumPhy::StartRxData (Ptr<MmwaveSpectrumSignalParametersDataFrame> par
             ChangeState (RX_DATA);
             if (params->packetBurst && !params->packetBurst->GetPackets ().empty ())
               {
-                NS_LOG_UNCOND("RX Packet burst of layer " << (int) params->layerInd);
+                NS_LOG_LOGIC("RX Packet burst of layer " << (int) params->layerInd);
                 m_rxPacketBurstList.push_back (params->packetBurst);
               }
             //NS_LOG_DEBUG (this << " insert msgs " << params->ctrlMsgList.size ());
@@ -719,7 +719,7 @@ MmWaveSpectrumPhy::EndRxData ()
 	        {
 	          mcsShould--;
 	        }
-	      NS_LOG_INFO (this << " RNTI " << itTb->first << " " << ( (itTb->second.downlink)?"DL":"UL") << " size " << itTb->second.size << " mcs " << (uint32_t)itTb->second.mcs << " bitmap " << itTb->second.rbBitmap.size () << " rv " << (int)rv << " SINR "<< 10 * std::log10 (sinrAvg) << " dB TBLER " << tbStats.tbler << " corrupted " << itTb->second.corrupt
+	      NS_LOG_DEBUG (this << " RNTI " << itTb->first << " " << ( (itTb->second.downlink)?"DL":"UL") << " size " << itTb->second.size << " mcs " << (uint32_t)itTb->second.mcs << " bitmap " << itTb->second.rbBitmap.size () << " rv " << (int)rv << " SINR "<< 10 * std::log10 (sinrAvg) << " dB TBLER " << tbStats.tbler << " corrupted " << itTb->second.corrupt
 	                   <<". MCS for 10% BLER should be " << mcsShould<< " instead");
             }
         }

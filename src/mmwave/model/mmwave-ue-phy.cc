@@ -326,7 +326,7 @@ MmWaveUePhy::RegisterToEnb (uint16_t cellId, Ptr<MmWavePhyMacCommon> config)
     {
       DynamicCast<McUeNetDevice> (m_netDevice)->SetMmWaveTargetEnb (enbNetDevice);
     }
-  NS_LOG_UNCOND ("UE register to enb " << m_cellId);
+  NS_LOG_INFO ("UE register to enb " << m_cellId);
   
   // TODO why do I need to set the beamforming vector now?
   // I will set it when StartSlot is called
