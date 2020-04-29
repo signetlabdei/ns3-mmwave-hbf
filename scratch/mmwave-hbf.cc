@@ -46,6 +46,52 @@
 using namespace ns3;
 using namespace mmwave;
 
+// traces for TCP
+static void
+CwndChange (Ptr<OutputStreamWrapper> stream, uint32_t oldCwnd, uint32_t newCwnd)
+{
+  *stream->GetStream () << Simulator::Now ().GetSeconds () << "\t" << oldCwnd << "\t" << newCwnd << std::endl;
+}
+
+static void
+RttChange (Ptr<OutputStreamWrapper> stream, Time oldRtt, Time newRtt)
+{
+  *stream->GetStream () << Simulator::Now ().GetSeconds () << "\t" << oldRtt.GetSeconds () << "\t" << newRtt.GetSeconds () << std::endl;
+}
+
+// server side traces
+static void
+Traces(uint32_t serverId, uint32_t ueId, std::string pathVersion, std::string finalPart)
+{
+  AsciiTraceHelper asciiTraceHelper;
+
+  std::ostringstream pathCW;
+  pathCW<<"/NodeList/"<< serverId <<"/$ns3::TcpL4Protocol/SocketList/0/CongestionWindow";
+
+  std::ostringstream fileCW;
+  fileCW << pathVersion << "tcp-cwnd-change"  << ueId+1 << "_" << finalPart;
+
+  std::ostringstream pathRTT;
+  pathRTT << "/NodeList/"<< serverId <<"/$ns3::TcpL4Protocol/SocketList/0/RTT";
+
+  std::ostringstream fileRTT;
+  fileRTT << pathVersion << "tcp-rtt"  << ueId+1 << "_" << finalPart;
+
+  Ptr<OutputStreamWrapper> stream1 = asciiTraceHelper.CreateFileStream (fileCW.str ().c_str ());
+  *stream1->GetStream () << "Time" << "\t" << "oldCwnd" << "\t" << "newCwnd" << std::endl;
+  Config::ConnectWithoutContext (pathCW.str ().c_str (), MakeBoundCallback(&CwndChange, stream1));
+
+  Ptr<OutputStreamWrapper> stream2 = asciiTraceHelper.CreateFileStream (fileRTT.str ().c_str ());
+  *stream2->GetStream () << "Time" << "\t" << "oldRtt" << "\t" << "newRtt" << std::endl;
+  Config::ConnectWithoutContext (pathRTT.str ().c_str (), MakeBoundCallback(&RttChange, stream2));
+}
+
+// client side trace
+static void Rx (Ptr<OutputStreamWrapper> stream, Ptr<const Packet> packet, const Address &from)
+{
+  *stream->GetStream () << Simulator::Now ().GetSeconds () << "\t" << packet->GetSize()<< std::endl;
+}
+
 /**
  * Sample simulation script for LTE+EPC. It instantiates several eNodeB,
  * attaches one UE per eNodeB starts a flow for each UE to  and from a remote host.
@@ -159,12 +205,31 @@ main (int argc, char *argv[])
 	//Config::SetDefault ("ns3::MmWaveBeamforming::FixSpeed", BooleanValue (true));
 	//Config::SetDefault ("ns3::MmWaveBeamforming::UeSpeed", DoubleValue (speed));
 
-//	Config::SetDefault ("ns3::ThreeGppChannel::Scenario",StringValue( "UMa" ));//why not working?
+	// configs for TCP
+	if(tcpApp)
+	{
+		// enable RLC AM
+		Config::SetDefault ("ns3::MmWaveHelper::RlcAmEnabled", BooleanValue (true));
+		Config::SetDefault ("ns3::LteRlcAm::PollRetransmitTimer", TimeValue(MilliSeconds(2.0)));
+		Config::SetDefault ("ns3::LteRlcAm::ReorderingTimer", TimeValue(MilliSeconds(1.0)));
+		Config::SetDefault ("ns3::LteRlcAm::StatusProhibitTimer", TimeValue(MilliSeconds(1.0)));
+		Config::SetDefault ("ns3::LteRlcAm::ReportBufferStatusTimer", TimeValue(MilliSeconds(2.0)));
+		// the following may need to be adjusted
+		Config::SetDefault ("ns3::LteRlcAm::MaxTxBufferSize", UintegerValue (10 * 1024 * 1024));
+
+		Config::SetDefault ("ns3::TcpSocketBase::MinRto", TimeValue (MilliSeconds (200)));
+		Config::SetDefault ("ns3::Ipv4L3Protocol::FragmentExpirationTimeout", TimeValue (Seconds (0.2)));
+		Config::SetDefault ("ns3::TcpSocket::SegmentSize", UintegerValue (packetSize-40));
+		Config::SetDefault ("ns3::TcpSocket::DelAckCount", UintegerValue (1));
+		Config::SetDefault ("ns3::TcpSocket::SndBufSize", UintegerValue (131072*400));
+		Config::SetDefault ("ns3::TcpSocket::RcvBufSize", UintegerValue (131072*400));
+	}
+
 	RngSeedManager::SetSeed (1234);
 	RngSeedManager::SetRun (run);
 
-        Config::SetDefault (schedulerType+"::HarqEnabled", BooleanValue (harqEnabled));
-        Config::SetDefault (schedulerType+"::CqiTimerThreshold", UintegerValue (100));
+    Config::SetDefault (schedulerType+"::HarqEnabled", BooleanValue (harqEnabled));
+    Config::SetDefault (schedulerType+"::CqiTimerThreshold", UintegerValue (100));
 
 	Ptr<MmWaveHelper> mmwaveHelper = CreateObject<MmWaveHelper> ();
         mmwaveHelper->SetSchedulerType (schedulerType);
@@ -266,19 +331,37 @@ main (int argc, char *argv[])
 	  {
 	    if ( tcpApp )
 	      {
-	        NS_LOG_UNCOND("Building TCP apps for UE "<< (int) u << " with infinite Buffer");
+	        NS_LOG_UNCOND("Building TCP apps for UE "<< (int) u << " with infinite app Buffer");
                 ulPort++;
 	        PacketSinkHelper dlPacketSinkHelper ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), dlPort));
 	        PacketSinkHelper ulPacketSinkHelper ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), ulPort));
 	        serverApps.Add (dlPacketSinkHelper.Install (ueNodes.Get (u)));
 	        serverApps.Add (ulPacketSinkHelper.Install (remoteHost));
-	        Config::Set ("/NodeList/*/$ns3::TcpL4Protocol/SocketList/*/> SegmentSize", UintegerValue (packetSize-40));
 	        BulkSendHelper dlClient ("ns3::TcpSocketFactory", InetSocketAddress ( ueIpIface.GetAddress (u), dlPort) );
 	        dlClient.SetAttribute ("MaxBytes", UintegerValue ( 0 ));//this means send an infinite data stream
 	        BulkSendHelper ulClient ("ns3::TcpSocketFactory", InetSocketAddress (remoteHostAddr, ulPort ) );
 	        ulClient.SetAttribute ("MaxBytes", UintegerValue ( 0 ));//this means send an infinite data stream
 	        clientApps.Add (dlClient.Install (remoteHost));
 	        clientApps.Add (ulClient.Install (ueNodes.Get(u)));
+
+	        // with a single remote host it is not possible to easily distinguish traces
+			uint32_t serverId = remoteHost->GetId();
+			uint32_t ueId = ueNodes.Get(u)->GetId();
+
+			NS_LOG_UNCOND("ueId " << ueId << " serverId " << serverId);
+
+			std::ostringstream fileName;
+			fileName << "tcp-rx-data"  << ueId+1 << ".txt";
+
+			AsciiTraceHelper asciiTraceHelper;
+			// connect RX trace
+			Ptr<OutputStreamWrapper> stream = asciiTraceHelper.CreateFileStream (fileName.str ().c_str ());
+			*stream->GetStream () << "Time" << "\t" << "PacketSize" << std::endl;
+			serverApps.Get(2 * u)->TraceConnectWithoutContext("Rx", MakeBoundCallback (&Rx, stream));
+
+			// connect the other traces (need to connect after the socket is created, see below)
+			Simulator::Schedule (Seconds (startTime + 0.001 * u), &Traces, serverId, ueId, 
+			    "", ".txt");
 
 	      }
 	    else
