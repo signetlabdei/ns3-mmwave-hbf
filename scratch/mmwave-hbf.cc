@@ -250,31 +250,39 @@ main (int argc, char *argv[])
 	// parse again so you can override default values from the command line
 	cmd.Parse (argc, argv);
 
+	// Create multiple RemoteHost
 	Ptr<Node> pgw = epcHelper->GetPgwNode ();
-
-	// Create a single RemoteHost
 	NodeContainer remoteHostContainer;
-	remoteHostContainer.Create (1);
-	Ptr<Node> remoteHost = remoteHostContainer.Get (0);
+	remoteHostContainer.Create (numUe);
 	InternetStackHelper internet;
 	internet.Install (remoteHostContainer);
+	std::vector<Ipv4Address> remoteHostAddresses;
+	Ipv4StaticRoutingHelper ipv4RoutingHelper;
 
 	// Create the Internet
-	PointToPointHelper p2ph;
-	p2ph.SetDeviceAttribute ("DataRate", DataRateValue (DataRate ("100Gb/s")));
-	p2ph.SetDeviceAttribute ("Mtu", UintegerValue (1500));
-	p2ph.SetChannelAttribute ("Delay", TimeValue (Seconds (0.00001)));
-	NetDeviceContainer internetDevices = p2ph.Install (pgw, remoteHost);
-	Ipv4AddressHelper ipv4h;
-	ipv4h.SetBase ("1.0.0.0", "255.0.0.0");
-	Ipv4InterfaceContainer internetIpIfaces = ipv4h.Assign (internetDevices);
-	//interface 0 is localhost, 1 is the p2p device
-	Ipv4Address remoteHostAddr = internetIpIfaces.GetAddress (1);
+	for (uint16_t hostId = 0; hostId < remoteHostContainer.GetN(); ++hostId)
+	{
+		Ipv4InterfaceContainer internetIpIfaces;
+		
+		auto remoteHost = remoteHostContainer.Get(hostId);
 
-	Ipv4StaticRoutingHelper ipv4RoutingHelper;
-	Ptr<Ipv4StaticRouting> remoteHostStaticRouting = ipv4RoutingHelper.GetStaticRouting (remoteHost->GetObject<Ipv4> ());
-	remoteHostStaticRouting->AddNetworkRouteTo (Ipv4Address ("7.0.0.0"), Ipv4Mask ("255.0.0.0"), 1);
-
+		PointToPointHelper p2ph;
+		p2ph.SetDeviceAttribute ("DataRate", DataRateValue (DataRate ("100Gb/s")));
+		p2ph.SetDeviceAttribute ("Mtu", UintegerValue (1500));
+		p2ph.SetChannelAttribute ("Delay", TimeValue (Seconds (0.010)));
+		NetDeviceContainer internetDevices = p2ph.Install (pgw, remoteHost);
+		Ipv4AddressHelper ipv4h;
+		std::ostringstream subnet;
+		subnet << hostId << ".1.0.0";
+		ipv4h.SetBase (subnet.str ().c_str (), "255.255.0.0");    
+		internetIpIfaces = ipv4h.Assign (internetDevices);
+		// interface 0 is localhost, 1 is the p2p device
+		Ipv4Address remoteHostAddr = internetIpIfaces.GetAddress (1);
+		remoteHostAddresses.push_back(remoteHostAddr);
+		NS_LOG_UNCOND(remoteHostAddr);
+		Ptr<Ipv4StaticRouting> remoteHostStaticRouting = ipv4RoutingHelper.GetStaticRouting (remoteHost->GetObject<Ipv4> ());
+		remoteHostStaticRouting->AddNetworkRouteTo (Ipv4Address ("7.0.0.0"), Ipv4Mask ("255.0.0.0"), 1);
+	}
 	NodeContainer ueNodes;
 	NodeContainer enbNodes;
 	enbNodes.Create (numEnb);
@@ -336,16 +344,16 @@ main (int argc, char *argv[])
 	        PacketSinkHelper dlPacketSinkHelper ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), dlPort));
 	        PacketSinkHelper ulPacketSinkHelper ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), ulPort));
 	        serverApps.Add (dlPacketSinkHelper.Install (ueNodes.Get (u)));
-	        serverApps.Add (ulPacketSinkHelper.Install (remoteHost));
+	        serverApps.Add (ulPacketSinkHelper.Install (remoteHostContainer.Get (u)));
 	        BulkSendHelper dlClient ("ns3::TcpSocketFactory", InetSocketAddress ( ueIpIface.GetAddress (u), dlPort) );
 	        dlClient.SetAttribute ("MaxBytes", UintegerValue ( 0 ));//this means send an infinite data stream
-	        BulkSendHelper ulClient ("ns3::TcpSocketFactory", InetSocketAddress (remoteHostAddr, ulPort ) );
+	        BulkSendHelper ulClient ("ns3::TcpSocketFactory", InetSocketAddress (remoteHostAddresses.at(u), ulPort ) );
 	        ulClient.SetAttribute ("MaxBytes", UintegerValue ( 0 ));//this means send an infinite data stream
-	        clientApps.Add (dlClient.Install (remoteHost));
+	        clientApps.Add (dlClient.Install (remoteHostContainer.Get(u)));
 	        clientApps.Add (ulClient.Install (ueNodes.Get(u)));
 
 	        // with a single remote host it is not possible to easily distinguish traces
-			uint32_t serverId = remoteHost->GetId();
+			uint32_t serverId = remoteHostContainer.Get(u)->GetId();
 			uint32_t ueId = ueNodes.Get(u)->GetId();
 
 			NS_LOG_UNCOND("ueId " << ueId << " serverId " << serverId);
@@ -371,16 +379,16 @@ main (int argc, char *argv[])
 	        PacketSinkHelper dlPacketSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), dlPort));
 	        PacketSinkHelper ulPacketSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), ulPort));
 	        serverApps.Add (dlPacketSinkHelper.Install (ueNodes.Get (u)));
-	        serverApps.Add (ulPacketSinkHelper.Install (remoteHost));
+	        serverApps.Add (ulPacketSinkHelper.Install (remoteHostContainer.Get(u)));
 	        UdpClientHelper dlClient (ueIpIface.GetAddress (u), dlPort);
 	        dlClient.SetAttribute ("Interval", TimeValue (MicroSeconds (interPacketInterval)));
 	        dlClient.SetAttribute ("PacketSize", UintegerValue (packetSize));
 	        dlClient.SetAttribute ("MaxPackets", UintegerValue (1+std::ceil(simTime*1000000/interPacketInterval)));//make sure app does not end prematurely
-	        UdpClientHelper ulClient (remoteHostAddr, ulPort);
+	        UdpClientHelper ulClient (remoteHostAddresses.at(u), ulPort);
 	        ulClient.SetAttribute ("Interval", TimeValue (MicroSeconds (interPacketInterval)));
 	        ulClient.SetAttribute ("PacketSize", UintegerValue (packetSize));
 	        ulClient.SetAttribute ("MaxPackets", UintegerValue (1+std::ceil(simTime*1000000/interPacketInterval)));//make sure app does not end prematurely
-	        clientApps.Add (dlClient.Install (remoteHost));
+	        clientApps.Add (dlClient.Install (remoteHostContainer.Get(u)));
 	        clientApps.Add (ulClient.Install (ueNodes.Get(u)));
 	      }
 	  }
