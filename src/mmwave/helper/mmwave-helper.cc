@@ -2701,10 +2701,11 @@ void
 MmWaveHelper::EnableUlPhyTrace (void)
 {
   NS_LOG_FUNCTION_NOARGS ();
-  Config::Connect ("/NodeList/*/DeviceList/*/ComponentCarrierMap/*/MmWaveEnbPhy/DlSpectrumPhy/RxPacketTraceEnb",
+  Config::Connect ("/NodeList/*/DeviceList/*/ComponentCarrierMap/*/MmWaveEnbPhy/DlSpectrumPhyList/*/RxPacketTraceEnb",
                    MakeBoundCallback (&MmWavePhyRxTrace::RxPacketTraceEnbCallback, m_phyStats));
-  //TODO: when the appropiate TypeIDs are added, use the following path instead
-//  Config::Connect ("/NodeList/*/DeviceList/*/ComponentCarrierMap/*/MmWaveEnbPhy/DlSpectrumPhyList/*/RxPacketTraceEnb",
+  //TODO: in principle we have removed all instances where the eNB phy uses the variable DlSpectrumPhy, using DlSpectrumPhyList/0 instead.
+  // The following line is commented-out but left in the code for future reference in case we need to revise this change
+//  Config::Connect ("/NodeList/*/DeviceList/*/ComponentCarrierMap/*/MmWaveEnbPhy/DlSpectrumPhy/RxPacketTraceEnb",
 //                   MakeBoundCallback (&MmWavePhyRxTrace::RxPacketTraceEnbCallback, m_phyStats));
 }
 

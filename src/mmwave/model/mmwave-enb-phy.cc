@@ -45,6 +45,8 @@
 #include <ns3/attribute-accessor-helper.h>
 #include <ns3/double.h>
 
+#include "ns3/object-vector.h"
+
 #include "mmwave-enb-phy.h"
 #include "mmwave-ue-phy.h"
 #include "mmwave-net-device.h"
@@ -165,19 +167,19 @@ MmWaveEnbPhy::GetTypeId (void)
                    PointerValue (),
                    MakePointerAccessor (&MmWaveEnbPhy::GetUlSpectrumPhy),
                    MakePointerChecker <MmWaveSpectrumPhy> ())
-// TODO: add the following attributes to enable traces using ns3 object-path syntax, the spectrumPhyList may need to be declared as a typeID or class in ns3
-//    .AddAttribute ("DlSpectrumPhyList",
-//                    "The list of downlink MmWaveSpectrumPhy associated to this MmWavePhy",
-//                    TypeId::ATTR_GET,
-//                    PointerValue (),
-//                    MakePointerAccessor (&MmWaveEnbPhy::GetDlSpectrumPhyList),
-//                    MakePointerChecker <std::vector <Ptr<MmWaveSpectrumPhy> >> ())
-//    .AddAttribute ("UlSpectrumPhyList",
-//                   "The  list of uplink MmWaveSpectrumPhy associated to this MmWavePhy",
-//                   TypeId::ATTR_GET,
-//                   PointerValue (),
-//                   MakePointerAccessor (&MmWaveEnbPhy::GetUlSpectrumPhyList),
-//                   MakePointerChecker <std::vector <Ptr<MmWaveSpectrumPhy> >> ())
+// TODO: in principle we have removed all instances where the eNB phy uses the variable DlSpectrumPhy, using DlSpectrumPhyList/0 instead. Consider removing the single-layer attributes above in the future.
+    .AddAttribute ("DlSpectrumPhyList",
+                    "The list of downlink MmWaveSpectrumPhy associated to this MmWavePhy",
+                    TypeId::ATTR_GET,
+                    ObjectVectorValue (),
+                    MakeObjectVectorAccessor (&MmWaveEnbPhy::m_downlinkSpectrumPhyList),
+                    MakeObjectVectorChecker < MmWaveSpectrumPhy > ())
+    .AddAttribute ("UlSpectrumPhyList",
+                   "The  list of uplink MmWaveSpectrumPhy associated to this MmWavePhy",
+                   TypeId::ATTR_GET,
+                   ObjectVectorValue (),
+                   MakeObjectVectorAccessor (&MmWaveEnbPhy::m_uplinkSpectrumPhyList),
+                   MakeObjectVectorChecker < MmWaveSpectrumPhy > ())
     .AddTraceSource ("UlSinrTrace",
                      "UL SINR statistics.",
                      MakeTraceSourceAccessor (&MmWaveEnbPhy::m_ulSinrTrace),

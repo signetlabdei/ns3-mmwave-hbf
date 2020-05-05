@@ -394,7 +394,7 @@ main (int argc, char *argv[])
 	  }
 	serverApps.Start (Seconds (startTime));
 	clientApps.Start (Seconds (startTime));
-	//mmwaveHelper->EnableTraces ();
+	mmwaveHelper->EnableTraces ();
 	//Uncomment to enable PCAP tracing
 	//p2ph.EnablePcapAll ("mmwave-epc-simple");
 
