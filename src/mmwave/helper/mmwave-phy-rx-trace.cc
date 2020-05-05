@@ -201,7 +201,7 @@ MmWavePhyRxTrace::RxPacketTraceUeCallback (Ptr<MmWavePhyRxTrace> phyStats, std::
   if (!m_rxPacketTraceFile.is_open ())
     {
       m_rxPacketTraceFile.open (m_rxPacketTraceFilename.c_str ());
-      m_rxPacketTraceFile << "\ttime\tframe\tsubF\t1stSym\tsymbol#\tcellId\trnti\tccId\ttbSize\tmcs\trv\tSINR(dB)\tcorrupt\tTBler" << std::endl;
+      m_rxPacketTraceFile << "\ttime\tframe\tsubF\t1stSym\tsymbol#\tcellId\trnti\tccId\ttbSize\tmcs\trv\tSINR(dB)\tcorrupt\tTBler\tTxLayer\tRxLayer" << std::endl;
       if (!m_rxPacketTraceFile.is_open ())
         {
           NS_FATAL_ERROR ("Could not open tracefile");
@@ -210,7 +210,7 @@ MmWavePhyRxTrace::RxPacketTraceUeCallback (Ptr<MmWavePhyRxTrace> phyStats, std::
   m_rxPacketTraceFile << "DL\t" << Simulator::Now ().GetSeconds () << "\t" << params.m_frameNum << "\t" << (unsigned)params.m_sfNum << "\t" << (unsigned)params.m_symStart
                       << "\t" << (unsigned)params.m_numSym << "\t" << params.m_cellId
                       << "\t" << params.m_rnti << "\t" << (unsigned)params.m_ccId << "\t" << params.m_tbSize << "\t" << (unsigned)params.m_mcs << "\t" << (unsigned)params.m_rv << "\t"
-                      << 10 * std::log10 (params.m_sinr) << "\t" << " \t" << params.m_corrupt << "\t" <<  params.m_tbler << std::endl;
+                      << 10 * std::log10 (params.m_sinr) << "\t" << " \t" << params.m_corrupt << "\t" <<  params.m_tbler <<"\t" <<  (unsigned)params.m_txLayerInd <<"\t" <<  (unsigned)params.m_rxLayerInd << std::endl;
 
   if (params.m_corrupt)
     {
@@ -226,7 +226,7 @@ MmWavePhyRxTrace::RxPacketTraceEnbCallback (Ptr<MmWavePhyRxTrace> phyStats, std:
   if (!m_rxPacketTraceFile.is_open ())
     {
       m_rxPacketTraceFile.open (m_rxPacketTraceFilename.c_str ());
-      m_rxPacketTraceFile << "\ttime\tframe\tsubF\t1stSym\tsymbol#\tcellId\trnti\tccId\ttbSize\tmcs\trv\tSINR(dB)\tcorrupt\tTBler" << std::endl;
+      m_rxPacketTraceFile << "\ttime\tframe\tsubF\t1stSym\tsymbol#\tcellId\trnti\tccId\ttbSize\tmcs\trv\tSINR(dB)\tcorrupt\tTBler\tTxLayer\tRxLayer" << std::endl;
       if (!m_rxPacketTraceFile.is_open ())
         {
           NS_FATAL_ERROR ("Could not open tracefile");
@@ -235,7 +235,7 @@ MmWavePhyRxTrace::RxPacketTraceEnbCallback (Ptr<MmWavePhyRxTrace> phyStats, std:
   m_rxPacketTraceFile << "UL\t" << Simulator::Now ().GetSeconds () << "\t" << params.m_frameNum << "\t" << (unsigned)params.m_sfNum << "\t" << (unsigned)params.m_symStart
                       << "\t" << (unsigned)params.m_numSym << "\t" << params.m_cellId
                       << "\t" << params.m_rnti << "\t" << (unsigned)params.m_ccId << "\t" << params.m_tbSize << "\t" << (unsigned)params.m_mcs << "\t" << (unsigned)params.m_rv << "\t"
-                      << 10 * std::log10 (params.m_sinr) << " \t" << params.m_corrupt << "\t" << params.m_tbler << std::endl;
+                      << 10 * std::log10 (params.m_sinr) << " \t" << params.m_corrupt << "\t" << params.m_tbler << (unsigned)params.m_txLayerInd <<"\t" <<  (unsigned)params.m_rxLayerInd << std::endl;
 
   if (params.m_corrupt)
     {

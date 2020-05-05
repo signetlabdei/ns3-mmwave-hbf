@@ -77,6 +77,8 @@ struct ExpectedTbInfo_t
   double tbler;
   uint8_t               symStart;
   uint8_t               numSym;
+  uint8_t               txLayerInd;
+  uint8_t               rxLayerInd;
 };
 
 typedef std::map<uint16_t, ExpectedTbInfo_t> ExpectedTbMap_t;
@@ -192,7 +194,7 @@ public:
    * \param numSym the number of symbols of the TB
    */
   void AddExpectedTb (uint16_t rnti, uint8_t ndi, uint32_t tbSize, uint8_t mcs, std::vector<int> map, uint8_t harqId,
-                      uint8_t rv, bool downlink, uint8_t symStart, uint8_t numSym);
+                      uint8_t rv, bool downlink, uint8_t symStart, uint8_t numSym, uint8_t txLayerInd = 0, uint8_t rxLayerInd = 0);
 
   void SetHarqPhyModule (Ptr<MmWaveHarqPhy> harq);
 

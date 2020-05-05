@@ -509,13 +509,15 @@ struct RxPacketTraceParams
   uint8_t  m_slotNum;
   uint8_t  m_symStart;
   uint8_t  m_numSym;
+  uint8_t  m_txLayerInd;
+  uint8_t  m_rxLayerInd;
   uint32_t m_tbSize;
   uint8_t  m_mcs;
   uint8_t  m_rv;
   double   m_sinr;
   double   m_sinrMin;
   double   m_tbler;
-  bool             m_corrupt;
+  bool     m_corrupt;
 };
 
 struct DlHarqInfo

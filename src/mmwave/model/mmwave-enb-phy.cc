@@ -165,6 +165,19 @@ MmWaveEnbPhy::GetTypeId (void)
                    PointerValue (),
                    MakePointerAccessor (&MmWaveEnbPhy::GetUlSpectrumPhy),
                    MakePointerChecker <MmWaveSpectrumPhy> ())
+// TODO: add the following attributes to enable traces using ns3 object-path syntax, the spectrumPhyList may need to be declared as a typeID or class in ns3
+//    .AddAttribute ("DlSpectrumPhyList",
+//                    "The list of downlink MmWaveSpectrumPhy associated to this MmWavePhy",
+//                    TypeId::ATTR_GET,
+//                    PointerValue (),
+//                    MakePointerAccessor (&MmWaveEnbPhy::GetDlSpectrumPhyList),
+//                    MakePointerChecker <std::vector <Ptr<MmWaveSpectrumPhy> >> ())
+//    .AddAttribute ("UlSpectrumPhyList",
+//                   "The  list of uplink MmWaveSpectrumPhy associated to this MmWavePhy",
+//                   TypeId::ATTR_GET,
+//                   PointerValue (),
+//                   MakePointerAccessor (&MmWaveEnbPhy::GetUlSpectrumPhyList),
+//                   MakePointerChecker <std::vector <Ptr<MmWaveSpectrumPhy> >> ())
     .AddTraceSource ("UlSinrTrace",
                      "UL SINR statistics.",
                      MakeTraceSourceAccessor (&MmWaveEnbPhy::m_ulSinrTrace),
@@ -1545,7 +1558,8 @@ MmWaveEnbPhy::StartSlot (void)
               m_downlinkSpectrumPhyList.at (currSlot.m_dci.m_layerInd)->AddExpectedTb (currSlot.m_dci.m_rnti, currSlot.m_dci.m_ndi,
                                    currSlot.m_dci.m_tbSize, currSlot.m_dci.m_mcs, m_channelChunks,
                                    currSlot.m_dci.m_harqProcess, currSlot.m_dci.m_rv, false,
-                                   currSlot.m_dci.m_symStart, currSlot.m_dci.m_numSym);
+                                   currSlot.m_dci.m_symStart, currSlot.m_dci.m_numSym,
+                                   0, currSlot.m_dci.m_layerInd);// in eNB UL, slot info layer index refers to the rx, the tx is a UE with layer 0
               //TODO should't we use the following instead? it appears that the downlink spectrum phy is used by mmwave-helper.cc and the two errors cancel-out, but this means we are puting all ul in the dl phy
 //              m_uplinkSpectrumPhyList.at (currSlot.m_dci.m_layerInd)->AddExpectedTb (currSlot.m_dci.m_rnti, currSlot.m_dci.m_ndi,
 //                                                 currSlot.m_dci.m_tbSize, currSlot.m_dci.m_mcs, m_channelChunks,

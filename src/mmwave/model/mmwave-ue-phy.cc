@@ -683,7 +683,8 @@ MmWaveUePhy::StartSlot ()
       slotPeriod = NanoSeconds (1000.0 * m_phyMacConfig->GetSymbolPeriod () * currSlot.m_dci.m_numSym);
       m_downlinkSpectrumPhy->AddExpectedTb (currSlot.m_dci.m_rnti, currSlot.m_dci.m_ndi, currSlot.m_dci.m_tbSize, currSlot.m_dci.m_mcs,
                                             m_channelChunks, currSlot.m_dci.m_harqProcess, currSlot.m_dci.m_rv, true,
-                                            currSlot.m_dci.m_symStart, currSlot.m_dci.m_numSym);
+                                            currSlot.m_dci.m_symStart, currSlot.m_dci.m_numSym,
+                                            currSlot.m_dci.m_layerInd, 0);// in UE DL, slot info layer index refers to the eNB tx, the rx is the UE with layer 0
       m_reportDlTbSize (m_imsi, currSlot.m_dci.m_tbSize);
       NS_LOG_DEBUG ("UE" << m_rnti << " imsi" << m_imsi << " RXing DL DATA frame " << m_frameNum << " subframe " << (unsigned)m_sfNum << " symbols "
                          << (unsigned)currSlot.m_dci.m_symStart << "-" << (unsigned)(currSlot.m_dci.m_symStart + currSlot.m_dci.m_numSym - 1) <<

@@ -79,13 +79,13 @@
 
 echo "TCP Codebook BF previous SISO scheduler  noHARQ"
 time ./waf --run "mmwave-hbf --sched=ns3::MmWaveFlexTtiMacScheduler --bfmod=ns3::MmWaveFFTCodebookBeamforming --harq=false --useTCP=true" 2> TCP-ABF-PREV-UNRL.log
-echo "TCP Codebook BF previous SISO scheduler  HARQ"
-time ./waf --run "mmwave-hbf --sched=ns3::MmWaveFlexTtiMacScheduler --bfmod=ns3::MmWaveFFTCodebookBeamforming --harq=true --useTCP=true" 2> TCP-ABF-PREV-HARQ.log
+# echo "TCP Codebook BF previous SISO scheduler  HARQ"
+# time ./waf --run "mmwave-hbf --sched=ns3::MmWaveFlexTtiMacScheduler --bfmod=ns3::MmWaveFFTCodebookBeamforming --harq=true --useTCP=true" 2> TCP-ABF-PREV-HARQ.log
 
 echo "TCP Full-spectrum MMSE B 4-layer padding-scheduler noHARQ"
 time ./waf --run "mmwave-hbf --sched=ns3::MmWavePaddedHbfMacScheduler --bfmod=ns3::MmWaveMMSESpectrumBeamforming --harq=false --nLayers=4 --useTCP=true" 2> TCP-SBF-PAD4-UNRL.log
-echo "TCP Full-spectrum MMSE BF 4-layer padding-scheduler HARQ"
-time ./waf --run "mmwave-hbf --sched=ns3::MmWavePaddedHbfMacScheduler --bfmod=ns3::MmWaveMMSESpectrumBeamforming --harq=true --nLayers=4 --useTCP=true" 2> TCP-SBF-PAD4-HARQ.log
+# echo "TCP Full-spectrum MMSE BF 4-layer padding-scheduler HARQ"
+# time ./waf --run "mmwave-hbf --sched=ns3::MmWavePaddedHbfMacScheduler --bfmod=ns3::MmWaveMMSESpectrumBeamforming --harq=true --nLayers=4 --useTCP=true" 2> TCP-SBF-PAD4-HARQ.log
 ################################################################################
 # MMTC tests
 

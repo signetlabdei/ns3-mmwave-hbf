@@ -304,7 +304,8 @@ MmWaveSpectrumPhy::SetPhyRxCtrlEndOkCallback (MmWavePhyRxCtrlEndOkCallback c)
 void
 MmWaveSpectrumPhy::AddExpectedTb (uint16_t rnti, uint8_t ndi, uint32_t tbSize, uint8_t mcs,
                                   std::vector<int> chunkMap, uint8_t harqId, uint8_t rv, bool downlink,
-                                  uint8_t symStart, uint8_t numSym)
+                                  uint8_t symStart, uint8_t numSym,
+                                  uint8_t txLayerInd, uint8_t rxLayerInd)
 {
   //layer = layer;
   ExpectedTbMap_t::iterator it;
@@ -315,10 +316,10 @@ MmWaveSpectrumPhy::AddExpectedTb (uint16_t rnti, uint8_t ndi, uint32_t tbSize, u
     }
   // insert new entry
   //ExpectedTbInfo_t tbInfo = {ndi, tbSize, mcs, chunkMap, harqId, rv, 0.0, downlink, false, false, 0};
-  ExpectedTbInfo_t tbInfo = {ndi, tbSize, mcs, chunkMap, harqId, rv, 0.0, downlink, false, false, 0, symStart, numSym};
+  ExpectedTbInfo_t tbInfo = {ndi, tbSize, mcs, chunkMap, harqId, rv, 0.0, downlink, false, false, 0, symStart, numSym, txLayerInd, rxLayerInd};
   m_expectedTbs.insert (std::pair<uint16_t, ExpectedTbInfo_t> (rnti,tbInfo));
 
-  NS_LOG_DEBUG("Added expected TB " << (downlink?"DL":"UL") << " startSym " << (int) symStart << " numSym " << (int) numSym << " layer " << (int) m_layerInd << " RNTI " << (int) rnti);
+  NS_LOG_DEBUG("Added expected TB " << (downlink?"DL":"UL") << " startSym " << (int) symStart << " numSym " << (int) numSym << " tx-layer " << (int) txLayerInd << " rx-layer " << (int) rxLayerInd << " RNTI " << (int) rnti);
 }
 
 void
@@ -767,6 +768,8 @@ MmWaveSpectrumPhy::EndRxData ()
               traceParams.m_frameNum = pduTag.GetSfn ().m_frameNum;
               traceParams.m_sfNum = pduTag.GetSfn ().m_sfNum;
               traceParams.m_slotNum = pduTag.GetSfn ().m_slotNum;
+              traceParams.m_txLayerInd = itTb->second.txLayerInd;
+              traceParams.m_rxLayerInd = itTb->second.rxLayerInd;
               traceParams.m_rnti = rnti;
               traceParams.m_mcs = itTb->second.mcs;
               traceParams.m_rv = itTb->second.rv;
