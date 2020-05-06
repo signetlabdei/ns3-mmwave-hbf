@@ -176,23 +176,71 @@ class MyWindow(Gtk.Window):
         return(frameInfo)
     def obtainFrameInfoFromFile(self, frameNum ):
         file=open(self.workingfilename)
-        frameInfo=[]
-        for ln in file:
-            if ln.find("Fr ")==0:
-                fr = int(ln[ ln.find("Fr ")+3:ln.find(' ',ln.find('Fr ')+3) ])
-                sf = int(ln[ ln.find("Sf ")+3:ln.find(' ',ln.find('Sf ')+3) ])
+        frameInfo=[[]]
+        if self.workingfilename.find('.log')>=0:
+            for ln in file:
+                if ln.find("Fr ")==0:
+                    fr = int(ln[ ln.find("Fr ")+3:ln.find(' ',ln.find('Fr ')+3) ])
+                    sf = int(ln[ ln.find("Sf ")+3:ln.find(' ',ln.find('Sf ')+3) ])
+                    self.maxFrames=max(self.maxFrames,fr*10+sf)
+                    if ln.find("layerIdx ")>=0:
+                        layerStr = ln[ ln.find("layerIdx ")+9: ]
+                        self.maxLayer = max(int(layerStr[ layerStr.find('of ')+3:]),self.maxLayer)
+                    else:
+                        self.maxLayer = 1
+                        layerStr= "0 of 1"
+                    if frameNum == ( fr*10+sf ):
+                        rangeStr = ln[ ln.find("sym range ")+10:ln.find('of',ln.find("sym range ")+10) ]
+                        startSymb = int(rangeStr[ 0:rangeStr.find(' ') ])
+                        endSymb = int(rangeStr[ rangeStr.find('to ')+3:-1 ])
+                        layer = int(layerStr[ 0:ln.find(' ') ])
+                        while len(frameInfo)<self.maxLayer:
+                            frameInfo.append([])
+                        if len(frameInfo[layer])==0:
+                            nextSymb=0
+                        else:
+                            nextSymb=sum([s.size for s in frameInfo[layer]])
+                        if nextSymb<startSymb:
+                            slot=SlotInfoType('PADDING',startSymb-nextSymb,0)
+                            frameInfo[layer].append(slot)
+                        type="unknown"
+                        if ln.find("DL CTRL")>=0:
+                            type="DLCTRL"
+                            ue=0
+                        elif ln.find("UL CTRL")>=0:
+                            type="ULCTRL"
+                            ue=0
+                        elif ln.find("to UE ")>=0:
+                            ue=int(ln[ ln.find("to UE ")+6:ln.find(' ',ln.find("to UE ")+6) ])
+                            if ln.find("DL")>=0:
+                                type="DLDATA"
+                            elif ln.find("UL")>=0:
+                                type="ULDATA"
+                        slot=SlotInfoType(type,endSymb-startSymb+1,ue)
+                        frameInfo[layer].append(slot)
+        else:
+            bFirstLine=True
+            frameInfo[0].append( SlotInfoType("DLCTRL",1,0) )
+            for ln in file:
+                if bFirstLine:
+                    bFirstLine=False
+                    continue
+                vals=ln.split('\t')
+                bDL=(vals[0].find('DL')>=0)
+                fr=int(vals[2])
+                sf=int(vals[3])
                 self.maxFrames=max(self.maxFrames,fr*10+sf)
-                if ln.find("layerIdx ")>=0:
-                    layerStr = ln[ ln.find("layerIdx ")+9: ]
-                    self.maxLayer = max(int(layerStr[ layerStr.find('of ')+3:]),self.maxLayer)
-                else:
-                    self.maxLayer = 1
-                    layerStr= "0 of 1"
                 if frameNum == ( fr*10+sf ):
-                    rangeStr = ln[ ln.find("sym range ")+10:ln.find('of',ln.find("sym range ")+10) ]
-                    startSymb = int(rangeStr[ 0:rangeStr.find(' ') ])
-                    endSymb = int(rangeStr[ rangeStr.find('to ')+3:-1 ])
-                    layer = int(layerStr[ 0:ln.find(' ') ])
+                    startSymb=int(vals[4])
+                    numSymb=int(vals[5])
+                    rnti=int(vals[7])
+                    size=int(vals[9])
+                    mcsact=int(vals[10])
+                    sinrdB=float(vals[12])
+                    corrupted=int(vals[13])
+                    tbler=float(vals[14])
+                    layer = int(vals[15] if bDL else vals[16][:-1])
+                    self.maxLayer = max(layer+1,self.maxLayer)
                     while len(frameInfo)<self.maxLayer:
                         frameInfo.append([])
                     if len(frameInfo[layer])==0:
@@ -202,21 +250,16 @@ class MyWindow(Gtk.Window):
                     if nextSymb<startSymb:
                         slot=SlotInfoType('PADDING',startSymb-nextSymb,0)
                         frameInfo[layer].append(slot)
-                    type="unknown"
-                    if ln.find("DL CTRL")>=0:
-                        type="DLCTRL"
-                        ue=0
-                    elif ln.find("UL CTRL")>=0:
-                        type="ULCTRL"
-                        ue=0
-                    elif ln.find("to UE ")>=0:
-                        ue=int(ln[ ln.find("to UE ")+6:ln.find(' ',ln.find("to UE ")+6) ])
-                        if ln.find("DL")>=0:
-                            type="DLDATA"
-                        elif ln.find("UL")>=0:
-                            type="ULDATA"
-                    slot=SlotInfoType(type,endSymb-startSymb+1,ue)
+                    type="DLDATA" if bDL else "ULDATA"
+                    slot=SlotInfoType(type,numSymb,rnti)
                     frameInfo[layer].append(slot)
+            if len(frameInfo[0])==0:
+                nextSymb=0
+            else:
+                nextSymb=sum([s.size for s in frameInfo[0]])
+            if nextSymb<13:
+                frameInfo[0].append( SlotInfoType('PADDING',13-nextSymb,0) )
+            frameInfo[0].append( SlotInfoType("ULCTRL",1,0) )
         if len(frameInfo)==0:
             frameInfo=None
         file.close()

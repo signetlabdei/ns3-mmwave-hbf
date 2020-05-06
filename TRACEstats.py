@@ -139,11 +139,13 @@ plt.bar(listOfLabels,[np.mean(resultsDic[x].dAvgBlerUL.values()) for x in filena
 for file in filenames:
     ## PER SIMULATION STATISTICS
     plt.figure(10)
-    lAux = sorted(sum(resultsDic[file].dlAllSINRDL.values(), []))
+    lAllSINRDl = sum(resultsDic[file].dlAllSINRDL.values(), [])
+    lAux = sorted(lAllSINRDl)
     plt.plot(lAux,np.arange(0.0,float(len(lAux)),1)/len(lAux),marker=allMarkers[markCtr],label='%s'%(file))
     plt.legend()
     plt.figure(11)
-    lAux = sorted(sum(resultsDic[file].dlAllSINRUL.values(), []))
+    lAllSINRUl = sum(resultsDic[file].dlAllSINRUL.values(), [])
+    lAux = sorted(lAllSINRUl)
     plt.plot(lAux,np.arange(0.0,float(len(lAux)),1)/len(lAux),marker=allMarkers[markCtr],label='%s'%(file))
     plt.legend()
     # ## PER USER STATISTICS
@@ -163,6 +165,14 @@ for file in filenames:
     #     plt.plot(range(0,len(resultsDic[file].dlAllMCSreqUl[usr])),resultsDic[file].dlAllMCSreqUl[usr],marker='o')
     #     plt.plot(range(0,len(resultsDic[file].dlAllMCSactUl[usr])),resultsDic[file].dlAllMCSactUl[usr],marker='x')
 
+    plt.figure(12)
+    lAllMCSDl = sum(resultsDic[file].dlAllMCSactDl.values(), [])
+    plt.plot(lAllMCSDl,lAllSINRDl,linestyle='',marker=allMarkers[markCtr],label='%s'%(file))
+    plt.legend()
+    plt.figure(13)
+    lAllMCSUl = sum(resultsDic[file].dlAllMCSactUl.values(), [])
+    plt.plot(lAllMCSUl,lAllSINRUl,linestyle='',marker=allMarkers[markCtr],label='%s'%(file))
+    plt.legend()
 
     markCtr+=1
 
@@ -188,5 +198,15 @@ plt.legend(listOfLabels)
 plt.xlabel('SINR (dB)')
 plt.ylabel('C.D.F.')
 plt.savefig('SINR_UL_plot%s.eps' %(outputFileTag), format='eps')
+plt.figure(12)
+plt.legend(listOfLabels)
+plt.xlabel('MCS')
+plt.ylabel('SINR (dB)')
+plt.savefig('MCS_DL_plot%s.eps' %(outputFileTag), format='eps')
+plt.figure(13)
+plt.legend(listOfLabels)
+plt.xlabel('MCS')
+plt.ylabel('SINR (dB)')
+plt.savefig('MCS_UL_plot%s.eps' %(outputFileTag), format='eps')
 
 # plt.show()
