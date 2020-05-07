@@ -89,24 +89,24 @@
 ################################################################################
 # MMTC tests
 
-echo "MMTC Codebook BF previous SISO scheduler  noHARQ"
-time ./waf --run "mmwave-hbf --sched=ns3::MmWaveFlexTtiMacScheduler --bfmod=ns3::MmWaveFFTCodebookBeamforming --harq=false --numUe=20 --ns3::MmWavePhyRxTrace::OutputFilename=MMTC-ABF-PREV-UNRL.trace" 2> MMTC-ABF-PREV-UNRL.log
-echo "MMTC Codebook BF previous SISO scheduler  HARQ"
-time ./waf --run "mmwave-hbf --sched=ns3::MmWaveFlexTtiMacScheduler --bfmod=ns3::MmWaveFFTCodebookBeamforming --harq=true --numUe=20 --ns3::MmWavePhyRxTrace::OutputFilename=MMTC-ABF-PREV-HARQ.trace" 2> MMTC-ABF-PREV-HARQ.log
-
-echo "MMTC Full-spectrum MMSE B 4-layer padding-scheduler noHARQ"
-time ./waf --run "mmwave-hbf --sched=ns3::MmWavePaddedHbfMacScheduler --bfmod=ns3::MmWaveMMSESpectrumBeamforming --harq=false --nLayers=4 --numUe=20 --ns3::MmWavePhyRxTrace::OutputFilename=MMTC-SBF-PAD4-UNRL.trace" 2> MMTC-SBF-PAD4-UNRL.log
-echo "MMTC Full-spectrum MMSE BF 4-layer padding-scheduler HARQ"
-time ./waf --run "mmwave-hbf --sched=ns3::MmWavePaddedHbfMacScheduler --bfmod=ns3::MmWaveMMSESpectrumBeamforming --harq=true --nLayers=4 --numUe=20 --ns3::MmWavePhyRxTrace::OutputFilename=MMTC-SBF-PAD4-HARQ.trace" 2> MMTC-SBF-PAD4-HARQ.log
+# echo "MMTC Codebook BF previous SISO scheduler  noHARQ"
+# time ./waf --run "mmwave-hbf --sched=ns3::MmWaveFlexTtiMacScheduler --bfmod=ns3::MmWaveFFTCodebookBeamforming --harq=false --numUe=20 --ns3::MmWavePhyRxTrace::OutputFilename=MMTC-ABF-PREV-UNRL.trace" 2> MMTC-ABF-PREV-UNRL.log
+# echo "MMTC Codebook BF previous SISO scheduler  HARQ"
+# time ./waf --run "mmwave-hbf --sched=ns3::MmWaveFlexTtiMacScheduler --bfmod=ns3::MmWaveFFTCodebookBeamforming --harq=true --numUe=20 --ns3::MmWavePhyRxTrace::OutputFilename=MMTC-ABF-PREV-HARQ.trace" 2> MMTC-ABF-PREV-HARQ.log
+#
+# echo "MMTC Full-spectrum MMSE B 4-layer padding-scheduler noHARQ"
+# time ./waf --run "mmwave-hbf --sched=ns3::MmWavePaddedHbfMacScheduler --bfmod=ns3::MmWaveMMSESpectrumBeamforming --harq=false --nLayers=4 --numUe=20 --ns3::MmWavePhyRxTrace::OutputFilename=MMTC-SBF-PAD4-UNRL.trace" 2> MMTC-SBF-PAD4-UNRL.log
+# echo "MMTC Full-spectrum MMSE BF 4-layer padding-scheduler HARQ"
+# time ./waf --run "mmwave-hbf --sched=ns3::MmWavePaddedHbfMacScheduler --bfmod=ns3::MmWaveMMSESpectrumBeamforming --harq=true --nLayers=4 --numUe=20 --ns3::MmWavePhyRxTrace::OutputFilename=MMTC-SBF-PAD4-HARQ.trace" 2> MMTC-SBF-PAD4-HARQ.log
 ################################################################################
 # High Throughput tests
 
-# echo "HighThroughput Codebook BF previous SISO scheduler  noHARQ"
-# time ./waf --run "mmwave-hbf --sched=ns3::MmWaveFlexTtiMacScheduler --bfmod=ns3::MmWaveFFTCodebookBeamforming --harq=false --interPacketInterval=1000 --ns3::MmWavePhyRxTrace::OutputFilename=FAST-ABF-PREV-UNRL.trace" 2> FAST-ABF-PREV-UNRL.log
-# echo "HighThroughput Codebook BF previous SISO scheduler  HARQ"
-# time ./waf --run "mmwave-hbf --sched=ns3::MmWaveFlexTtiMacScheduler --bfmod=ns3::MmWaveFFTCodebookBeamforming --harq=true --interPacketInterval=1000 --ns3::MmWavePhyRxTrace::OutputFilename=FAST-ABF-PREV-HARQ.trace" 2> FAST-ABF-PREV-HARQ.log
-#
-# echo "HighThroughput Full-spectrum MMSE B 4-layer padding-scheduler noHARQ"
-# time ./waf --run "mmwave-hbf --sched=ns3::MmWavePaddedHbfMacScheduler --bfmod=ns3::MmWaveMMSESpectrumBeamforming --harq=false --nLayers=4 --interPacketInterval=1000 --ns3::MmWavePhyRxTrace::OutputFilename=FAST-SBF-PAD4-UNRL.trace" 2> FAST-SBF-PAD4-UNRL.log
-# echo "HighThroughput Full-spectrum MMSE BF 4-layer padding-scheduler HARQ"
-# time ./waf --run "mmwave-hbf --sched=ns3::MmWavePaddedHbfMacScheduler --bfmod=ns3::MmWaveMMSESpectrumBeamforming --harq=true --nLayers=4 --interPacketInterval=1000 --ns3::MmWavePhyRxTrace::OutputFilename=FAST-SBF-PAD4-HARQ.trace" 2> FAST-SBF-PAD4-HARQ.log
+echo "HighThroughput Codebook BF previous SISO scheduler  noHARQ"
+time ./waf --run "mmwave-hbf --sched=ns3::MmWaveFlexTtiMacScheduler --bfmod=ns3::MmWaveFFTCodebookBeamforming --harq=false --interPacketInterval=1000 --ns3::MmWavePhyRxTrace::OutputFilename=FAST-ABF-PREV-UNRL.trace" 2> FAST-ABF-PREV-UNRL.log
+echo "HighThroughput Codebook BF previous SISO scheduler  HARQ"
+time ./waf --run "mmwave-hbf --sched=ns3::MmWaveFlexTtiMacScheduler --bfmod=ns3::MmWaveFFTCodebookBeamforming --harq=true --interPacketInterval=1000 --ns3::MmWavePhyRxTrace::OutputFilename=FAST-ABF-PREV-HARQ.trace" 2> FAST-ABF-PREV-HARQ.log
+
+echo "HighThroughput Full-spectrum MMSE B 4-layer padding-scheduler noHARQ"
+time ./waf --run "mmwave-hbf --sched=ns3::MmWavePaddedHbfMacScheduler --bfmod=ns3::MmWaveMMSESpectrumBeamforming --harq=false --nLayers=4 --interPacketInterval=1000 --ns3::MmWavePhyRxTrace::OutputFilename=FAST-SBF-PAD4-UNRL.trace" 2> FAST-SBF-PAD4-UNRL.log
+echo "HighThroughput Full-spectrum MMSE BF 4-layer padding-scheduler HARQ"
+time ./waf --run "mmwave-hbf --sched=ns3::MmWavePaddedHbfMacScheduler --bfmod=ns3::MmWaveMMSESpectrumBeamforming --harq=true --nLayers=4 --interPacketInterval=1000 --ns3::MmWavePhyRxTrace::OutputFilename=FAST-SBF-PAD4-HARQ.trace" 2> FAST-SBF-PAD4-HARQ.log

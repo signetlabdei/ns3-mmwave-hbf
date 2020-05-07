@@ -15,3 +15,11 @@
 #TCP comparison (UNRL vs HARQ in same figure for total bytes received only)
 # ./TRACEstats.py -t=TCP -l=ABF-SISO-U,ABF-SISO-H,SBF-MIMO-U,SBF-MIMO-H TCP-ABF-PREV-UNRL.trace TCP-ABF-PREV-HARQ.trace TCP-SBF-PAD4-UNRL.trace TCP-SBF-PAD4-HARQ.trace
 ./PKTstats.py -t=TCP -l=ABF-SISO-U,ABF-SISO-H,SBF-MIMO-U,SBF-MIMO-H TCP-ABF-PREV-UNRL.log TCP-ABF-PREV-HARQ.log TCP-SBF-PAD4-UNRL.log TCP-SBF-PAD4-HARQ.log
+
+#20 UE "IoT" comparison (UNRL vs HARQ in same figure for total bytes received only)
+# ./TRACEstats.py -t=MMTC -l=ABF-SISO-U,ABF-SISO-H,SBF-MIMO-U,SBF-MIMO-H MMTC-ABF-PREV-UNRL.trace MMTC-ABF-PREV-HARQ.trace MMTC-SBF-PAD4-UNRL.trace MMTC-SBF-PAD4-HARQ.trace
+./PKTstats.py -t=MMTC -l=ABF-SISO-U,ABF-SISO-H,SBF-MIMO-U,SBF-MIMO-H MMTC-ABF-PREV-UNRL.log MMTC-ABF-PREV-HARQ.log MMTC-SBF-PAD4-UNRL.log MMTC-SBF-PAD4-HARQ.log
+
+#7 "fast" UE with too much traffic (UNRL vs HARQ in same figure for total bytes received only)
+# ./TRACEstats.py -t=FAST -l=ABF-SISO-U,ABF-SISO-H,SBF-MIMO-U,SBF-MIMO-H FAST-ABF-PREV-UNRL.trace FAST-ABF-PREV-HARQ.trace FAST-SBF-PAD4-UNRL.trace FAST-SBF-PAD4-HARQ.trace
+./PKTstats.py -t=FAST -l=ABF-SISO-U,ABF-SISO-H,SBF-MIMO-U,SBF-MIMO-H FAST-ABF-PREV-UNRL.log FAST-ABF-PREV-HARQ.log FAST-SBF-PAD4-UNRL.log FAST-SBF-PAD4-HARQ.log
