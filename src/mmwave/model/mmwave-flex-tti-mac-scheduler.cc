@@ -1499,8 +1499,8 @@ MmWaveFlexTtiMacScheduler::DoSchedTriggerReq (const struct MmWaveMacSchedSapProv
             {
               ueChunkMap.push_back (dci.m_rnti);
             }
-          SfnSf slotSfn = ret.m_sfAllocInfo.m_sfnSf;
-          slotSfn.m_slotNum = dci.m_symStart;                // use the start symbol index of the slot because the absolute UL slot index depends on the future DL allocation
+          SfnSf slotSfn = ret.m_sfAllocInfo.m_sfnSf;//this sfnsf struct is used only to tag uplink CQI where the slotNum is not know upon reception so we use the following trick
+          slotSfn.m_slotNum = dci.m_symStart * m_phyMacConfig->GetNumEnbLayers () + 0;                // use the start symbol index of the slot because the absolute UL slot index depends on the future DL allocation
           // insert into allocation map to recall previous allocations upon receiving UL-CQI
           m_ulAllocationMap.insert ( std::pair<uint32_t, struct AllocMapElem> (slotSfn.Encode (), AllocMapElem (ueChunkMap, dci.m_numSym, dci.m_tbSize)) );
 
