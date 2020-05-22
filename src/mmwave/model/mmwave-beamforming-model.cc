@@ -540,8 +540,9 @@ MmWaveFFTCodebookBeamforming::DoDesignBeamformingVectorForDevice (Ptr<NetDevice>
   uint16_t antennaNum [2];
   antennaNum[0] = m_antenna->GetAntennaNumDim1 ();
   antennaNum[1] = m_antenna->GetAntennaNumDim2 ();
+  uint32_t totNoArrayElements = antennaNum[0]*antennaNum[1];
 
-  NS_ASSERT_MSG ( channelInfo.at(0).size() == antennaNum[0] * antennaNum[1] , "Channel matrix size mismatch in 4D FFT method");
+  NS_ASSERT_MSG ( channelInfo.at(0).size() == totNoArrayElements , "Channel matrix size mismatch in 4D FFT method");
 
   newBfParam.first = bfVector2DFFT ( bestColumn, antennaNum );
   newBfParam.second = bestColumn; // in this model, beam ID is the look up index of the codebook table
