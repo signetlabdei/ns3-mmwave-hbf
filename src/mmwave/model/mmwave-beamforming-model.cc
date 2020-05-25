@@ -464,8 +464,8 @@ MmWaveFFTCodebookBeamforming::CheckBfCacheExpiration(Ptr<NetDevice> otherDevice,
 std::pair<uint16_t,uint16_t>
 MmWaveFFTCodebookBeamforming::bfGainLookup(complex2DVector_t& equivalentChannelCoefs, std::set<uint16_t> blockedTxIdx)
 {
-  uint16_t bestColumn;
-  uint16_t bestRow;
+  uint16_t bestColumn = 0;
+  uint16_t bestRow = 0;
   double bestGain = 0;
 
   //  std::stringstream matrixline;
