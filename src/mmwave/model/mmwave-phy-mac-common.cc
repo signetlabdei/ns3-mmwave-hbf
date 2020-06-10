@@ -169,7 +169,12 @@ MmWavePhyMacCommon::GetTypeId (void)
                    "Number of layers for the MU-MIMO operation in eNB",
                    UintegerValue (1),
                    MakeUintegerAccessor (&MmWavePhyMacCommon::m_numEnbLayers),
-                   MakeUintegerChecker<uint8_t> ());
+                   MakeUintegerChecker<uint8_t> ())
+    .AddAttribute ("NumRefSCPerSym",
+                   "Number of reference subcarriers per symbol",
+                   UintegerValue (864),
+                   MakeUintegerAccessor (&MmWavePhyMacCommon::m_numRefScPerSym),
+                   MakeUintegerChecker<uint32_t> ());
 
   return tid;
 }

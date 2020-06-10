@@ -105,20 +105,20 @@ main (int argc, char *argv[])
 	//LogComponentEnable ("LteEnbRrc", LOG_LEVEL_ALL);
 	//LogComponentEnable("MmWavePointToPointEpcHelper",LOG_LEVEL_ALL);
 	//LogComponentEnable("EpcUeNas",LOG_LEVEL_ALL);
-	LogComponentEnable ("MmWaveSpectrumPhy", LOG_LEVEL_DEBUG);
+	// LogComponentEnable ("MmWaveSpectrumPhy", LOG_LEVEL_DEBUG);
 //	LogComponentEnable ("MmWaveUePhy", LOG_LEVEL_INFO);
 //	LogComponentEnable ("MmWaveEnbPhy", LOG_LEVEL_INFO);
 //	LogComponentEnable ("MmWaveBeamformingModel", LOG_LEVEL_DEBUG);
 	//LogComponentEnable ("MmWaveUeMac", LOG_LEVEL_LOGIC);
 	//LogComponentEnable ("UdpClient", LOG_LEVEL_INFO);
 	//LogComponentEnable ("PacketSink", LOG_LEVEL_INFO);
-	LogComponentEnable ("ThreeGppSpectrumPropagationLossModel", LOG_LEVEL_DEBUG);
+	// LogComponentEnable ("ThreeGppSpectrumPropagationLossModel", LOG_LEVEL_DEBUG);
 //	LogComponentEnable ("ThreeGppChannel", LOG_LEVEL_DEBUG);
 	//LogComponentEnable("PropagationLossModel",LOG_LEVEL_ALL);
 	//      LogComponentEnable ("MmwaveHbfSpectrumChannel", LOG_LEVEL_INFO);
-        LogComponentEnable ("MmWavePaddedHbfMacScheduler", LOG_LEVEL_INFO);
-        LogComponentEnable ("MmWaveAsyncHbfMacScheduler", LOG_LEVEL_INFO);
-        LogComponentEnable ("MmWaveFlexTtiMacScheduler", LOG_LEVEL_INFO);
+        // LogComponentEnable ("MmWavePaddedHbfMacScheduler", LOG_LEVEL_INFO);
+        // LogComponentEnable ("MmWaveAsyncHbfMacScheduler", LOG_LEVEL_INFO);
+        // LogComponentEnable ("MmWaveFlexTtiMacScheduler", LOG_LEVEL_INFO);
 //        LogComponentEnable ("MmWavePhy", LOG_LEVEL_INFO);
 //        LogComponentEnable ("MmWaveEnbMac", LOG_LEVEL_INFO);
 //        LogComponentEnable ("MmWaveUeMac", LOG_LEVEL_INFO);
@@ -136,10 +136,6 @@ main (int argc, char *argv[])
 	bool rlcAmEnabled = false;
 	//bool useIdealRrc = true;
 	bool fixedTti = false;
-	unsigned symPerSf = 14;
-	double sfPeriod = 1000.0; //micro second unit
-	double symPeriod = sfPeriod/symPerSf; //micro second unit
-	unsigned run = 0;
         bool tcpApp = false;
 //	bool smallScale = false;
 //	double speed = 3;
@@ -164,17 +160,13 @@ main (int argc, char *argv[])
 	cmd.AddValue ("interPacketInterval", "Inter-packet interval [us])", interPacketInterval);
 	cmd.AddValue ("harq", "Enable Hybrid ARQ", harqEnabled);
 	cmd.AddValue ("rlcAm", "Enable RLC-AM", rlcAmEnabled);
-	cmd.AddValue ("symPerSf", "OFDM symbols per subframe", symPerSf);
-	cmd.AddValue ("sfPeriod", "Subframe period = 4.16 * symPerSf", sfPeriod);
 	cmd.AddValue ("fixedTti", "Fixed TTI scheduler option", fixedTti);
-        cmd.AddValue ("run", "run for RNG (for generating different deterministic sequences for different drops)", fixedTti);
         cmd.AddValue ("sched", "The type of scheduler algorithm", schedulerType);
         cmd.AddValue ("bfmod", "The type of beamformer algorithm", beamformerType);
         cmd.AddValue ("nLayers", "The number of HBF layers per eNB", numEnbLayers);
         cmd.AddValue ("useTCP", "Use TCP BulkSendApplication instead of UDPClient", tcpApp);
 	//cmd.AddValue ("useIdealRrc", "whether to use ideal RRC layer or not", useIdealRrc);
 	cmd.Parse (argc, argv);
-	symPeriod = sfPeriod/symPerSf;
 
         NS_LOG_UNCOND("Scheduler: " << schedulerType << " Beamformer: " << beamformerType << " HARQ: " << harqEnabled);
 
@@ -187,11 +179,27 @@ main (int argc, char *argv[])
 //	Config::SetDefault ("ns3::MmWaveFlexTtiMaxWeightMacScheduler::HarqEnabled", BooleanValue (harqEnabled));
 //	Config::SetDefault ("ns3::MmWaveFlexTtiMaxWeightMacScheduler::FixedTti", BooleanValue (fixedTti));
 //	Config::SetDefault ("ns3::MmWaveFlexTtiMaxWeightMacScheduler::SymPerSlot", UintegerValue (6));
-	Config::SetDefault ("ns3::MmWavePhyMacCommon::ResourceBlockNum", UintegerValue (1));
-	Config::SetDefault ("ns3::MmWavePhyMacCommon::ChunkPerRB", UintegerValue (72));
-	Config::SetDefault ("ns3::MmWavePhyMacCommon::SymbolsPerSubframe", UintegerValue (symPerSf));
-	Config::SetDefault ("ns3::MmWavePhyMacCommon::SubframePeriod", DoubleValue (sfPeriod));
-	Config::SetDefault ("ns3::MmWavePhyMacCommon::SymbolPeriod", DoubleValue (symPeriod));
+
+  // each chunk corresponds to a NR RB, each NR RB is composed of 12 subcarriers
+  Config::SetDefault ("ns3::MmWavePhyMacCommon::SubcarriersPerChunk", UintegerValue (12));
+  
+  // for u=2, the SCS is 60 kHz 
+  Config::SetDefault ("ns3::MmWavePhyMacCommon::ChunkWidth", DoubleValue (12 * 60.0e3)); 
+  
+  // the maximum number of NR RBs is 275, which corresponds to a bw of 198 MHz 
+  Config::SetDefault ("ns3::MmWavePhyMacCommon::ChunkPerRB", UintegerValue (275)); 
+  
+  // NOTE: NYU subframe corresponds to NR slot
+  // NR has 14 OFDM symbols per slot
+	Config::SetDefault ("ns3::MmWavePhyMacCommon::SymbolsPerSubframe", UintegerValue (14));
+  
+  // reserve one resource element every 2 RB for PTRS transmission
+  Config::SetDefault ("ns3::MmWavePhyMacCommon::NumRefSCPerSym", UintegerValue (275 / 2));
+	
+  // with u=2 there are 4 slots per subframe, hence the slot durantion is 1 ms / 4
+  Config::SetDefault ("ns3::MmWavePhyMacCommon::SubframePeriod", DoubleValue (250.0)); 
+	Config::SetDefault ("ns3::MmWavePhyMacCommon::SymbolPeriod", DoubleValue (250.0 / 14));
+  
 	Config::SetDefault ("ns3::MmWavePhyMacCommon::TbDecodeLatency", UintegerValue (200.0));
 	Config::SetDefault ("ns3::MmWavePhyMacCommon::NumEnbLayers", UintegerValue (numEnbLayers));
 	//Config::SetDefault ("ns3::MmWaveBeamforming::LongTermUpdatePeriod", TimeValue (MilliSeconds (100.0)));
@@ -204,7 +212,6 @@ main (int argc, char *argv[])
 	//Config::SetDefault ("ns3::MmWaveBeamforming::SmallScaleFading", BooleanValue (smallScale));
 	//Config::SetDefault ("ns3::MmWaveBeamforming::FixSpeed", BooleanValue (true));
 	//Config::SetDefault ("ns3::MmWaveBeamforming::UeSpeed", DoubleValue (speed));
-
 	// configs for TCP
 	if(tcpApp)
 	{
@@ -224,9 +231,6 @@ main (int argc, char *argv[])
 		Config::SetDefault ("ns3::TcpSocket::SndBufSize", UintegerValue (131072*400));
 		Config::SetDefault ("ns3::TcpSocket::RcvBufSize", UintegerValue (131072*400));
 	}
-
-	RngSeedManager::SetSeed (1234);
-	RngSeedManager::SetRun (run);
 
     Config::SetDefault (schedulerType+"::HarqEnabled", BooleanValue (harqEnabled));
     Config::SetDefault (schedulerType+"::CqiTimerThreshold", UintegerValue (100));
@@ -418,4 +422,3 @@ main (int argc, char *argv[])
 	return 0;
 
 }
-
