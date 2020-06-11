@@ -9,7 +9,7 @@ script = 'mmwave-hbf'
 ns_path = '../ns3-mmwave-hbf'
 campaign_dir = "./test-campaign/"
 
-nruns = 1
+nruns = 20
 
 ###############################################################################
 
@@ -30,13 +30,14 @@ def compute_phy_metrics (rxPacketTraceFile):
 
 # Returns the average delay in ns and the amount of received data in bytes
 def compute_pdcp_metrics (pdcpTraceFile):
-    data = pd.read_csv (pdcpTraceFile, delimiter = " ", index_col=False, usecols = [0, 1, 5, 6], names = ['mode', 'time', 'size', 'delay'], engine='c', header=0)
+    data = pd.read_csv (pdcpTraceFile, delimiter = " ", index_col=False, usecols = [0, 1, 4, 5, 6], names = ['mode', 'time', 'drbid', 'size', 'delay'], engine='c', header=0)
     
     print (data)
-    rxData = data.where ((data ['mode'] == 'Rx')) ['size'].sum (axis=0)
-    avgDelay = data.where ((data ['mode'] == 'Rx')) ['delay'].mean (axis=0)
+    txData = data.where ((data ['mode'] == 'Tx') & (data ['drbid'] >= 3)) ['size'].sum (axis=0)
+    rxData = data.where ((data ['mode'] == 'Rx') & (data ['drbid'] >= 3)) ['size'].sum (axis=0)
+    avgDelay = data.where ((data ['mode'] == 'Rx') & (data ['drbid'] >= 3)) ['delay'].mean (axis=0)
 
-    return rxData, avgDelay
+    return txData, rxData, avgDelay
 
 ###############################################################################
 
@@ -105,7 +106,7 @@ tcp_sched_comparison_multi_layer = {
 udp_sched_comparison_sigle_layer = {
 'RngRun' : list (range (nruns)),
 'numEnb' : 1,
-'numUe' : [7, 20],
+'numUe' : 7,
 'simTime' : 1.2,
 'interPacketInterval' : 5000,
 'harq' : [False, True],
@@ -120,7 +121,7 @@ udp_sched_comparison_sigle_layer = {
 udp_sched_comparison_multi_layer = {
 'RngRun' : list (range (nruns)),
 'numEnb' : 1,
-'numUe' : [7, 20],
+'numUe' : 7,
 'simTime' : 1.2,
 'interPacketInterval' : 5000,
 'harq' : [False, True],
@@ -142,7 +143,7 @@ campaign.run_missing_simulations(sem.list_param_combinations(udp_sched_compariso
 campaign = sem.CampaignManager.load(campaign_dir, runner_type = "ParallelRunner", check_repo = False)
 
 # create a data frame to store the results of each simulation
-metrics = ['avgSinrUl', 'avgSinrDl', 'avgBlerUl', 'avgBlerDl', 'ulPdcpData', 'ulPdcpDelay', 'dlPdcpData', 'dlPdcpDelay']
+metrics = ['avgSinrUl', 'avgSinrDl', 'avgBlerUl', 'avgBlerDl', 'ulTxPdcpData', 'ulRxPdcpData', 'ulPdcpDelay', 'dlTxPdcpData', 'dlRxPdcpData', 'dlPdcpDelay']
 columns = list (bf_comparison_sigle_layer.keys ()) + metrics
 result_df = pd.DataFrame (columns = columns)
 
@@ -153,15 +154,15 @@ for r in campaign.db.get_results ():
 
     # compute the metrics of interest
     (avgSinrUl, avgSinrDl, avgBlerUl, avgBlerDl) = compute_phy_metrics (available_files ['RxPacketTrace.txt'])
-    (ulPdcpData, ulPdcpDelay) = compute_pdcp_metrics (available_files ['UlPdcpStats.txt'])
-    (dlPdcpData, dlPdcpDelay) = compute_pdcp_metrics (available_files ['DlPdcpStats.txt'])
+    (ulTxPdcpData, ulRxPdcpData, ulPdcpDelay) = compute_pdcp_metrics (available_files ['UlPdcpStats.txt'])
+    (dlTxPdcpData, dlRxPdcpData, dlPdcpDelay) = compute_pdcp_metrics (available_files ['DlPdcpStats.txt'])
 
     # insert a new row in the result df
     new_row = r['params']
     new_row.update ({'avgSinrUl' : avgSinrUl, 'avgSinrDl' : avgSinrDl,
                      'avgBlerUl' : avgBlerUl, 'avgBlerDl' : avgBlerDl,
-                     'ulPdcpData' : ulPdcpData, 'ulPdcpDelay' : ulPdcpDelay,
-                     'dlPdcpData' : dlPdcpData, 'dlPdcpDelay' : dlPdcpDelay
+                     'ulTxPdcpData' : ulTxPdcpData, 'ulRxPdcpData' : ulRxPdcpData, 'ulPdcpDelay' : ulPdcpDelay,
+                     'dlTxPdcpData' : dlTxPdcpData, 'dlRxPdcpData' : dlRxPdcpData, 'dlPdcpDelay' : dlPdcpDelay
                     })
     print (new_row)
 
