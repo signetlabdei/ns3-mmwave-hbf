@@ -130,8 +130,6 @@ main (int argc, char *argv[])
         double simTime = 1.2;
 	double packetSize = 1460; // packet size in byte
 	double interPacketInterval = 5000; // 500 microseconds
-	double minDistance = 40.0;           // eNB-UE distance in meters
-	double maxDistance = 40.0;           // eNB-UE distance in meters
 	bool harqEnabled = true;
 	bool rlcAmEnabled = false;
 	//bool useIdealRrc = true;
@@ -292,25 +290,18 @@ main (int argc, char *argv[])
 	enbNodes.Create (numEnb);
 	ueNodes.Create (numUe);
 
-	//Install Mobility Model
+  //Install Mobility Model
 	Ptr<ListPositionAllocator> enbPositionAlloc = CreateObject<ListPositionAllocator> ();
-	enbPositionAlloc->Add (Vector (0.0, 0.0, 0.0));
+	enbPositionAlloc->Add (Vector (0.0, 0.0, 25.0));
 	MobilityHelper enbmobility;
 	enbmobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
 	enbmobility.SetPositionAllocator (enbPositionAlloc);
 	enbmobility.Install (enbNodes);
 
 	MobilityHelper uemobility;
-	Ptr<ListPositionAllocator> uePositionAlloc = CreateObject<ListPositionAllocator> ();
-	Ptr<UniformRandomVariable> distRv = CreateObject<UniformRandomVariable> ();
-	for (unsigned i = 0; i < numUe; i++)
-	{
-	        //
-		double dist = distRv->GetValue (minDistance, maxDistance);
-		double angle = ( ((double ) i + 0.125) / (double )numUe )  * 2* 3.14159265;// in radians, add pi/2/n to break specular symmetry of antenna array
-		uePositionAlloc->Add (Vector (dist * cos (angle), dist * sin (angle), 0.0));
-		NS_LOG_UNCOND ("UE i: "<<i<<" is at position X: "<<dist * cos (angle)<<" Y: "<<dist * sin (angle));
-	}
+	Ptr<UniformDiscPositionAllocator> uePositionAlloc = CreateObject<UniformDiscPositionAllocator> ();
+  uePositionAlloc->SetRho (100.0);
+  uePositionAlloc->SetZ (1.6);
 	uemobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
 	uemobility.SetPositionAllocator (uePositionAlloc);
 	uemobility.Install (ueNodes);
