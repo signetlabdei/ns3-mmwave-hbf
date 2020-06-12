@@ -7,7 +7,7 @@ sem.parallelrunner.MAX_PARALLEL_PROCESSES = 32
 
 script = 'mmwave-hbf'
 ns_path = '../ns3-mmwave-hbf'
-campaign_dir = "./test-campaign/"
+campaign_dir = "./campaign/"
 
 nruns = 20
 
@@ -48,7 +48,7 @@ bf_comparison_sigle_layer = {
 'numEnb' : 1,
 'numUe' : 7,
 'simTime' : 1.2,
-'interPacketInterval' : [150],
+'interPacketInterval' : [150, 1500],
 'harq' : [False, True],
 'rlcAm' : True,
 'fixedTti' : False,
@@ -63,7 +63,7 @@ bf_comparison_multi_layer = {
 'numEnb' : 1,
 'numUe' : 7,
 'simTime' : 1.2,
-'interPacketInterval' : [150],
+'interPacketInterval' : [150, 1500],
 'harq' : [False, True],
 'rlcAm' : True,
 'fixedTti' : False,
@@ -108,7 +108,7 @@ udp_sched_comparison_sigle_layer = {
 'numEnb' : 1,
 'numUe' : 7,
 'simTime' : 1.2,
-'interPacketInterval' : 150,
+'interPacketInterval' : [150, 1500],
 'harq' : [False, True],
 'rlcAm' : True,
 'fixedTti' : False,
@@ -123,7 +123,7 @@ udp_sched_comparison_multi_layer = {
 'numEnb' : 1,
 'numUe' : 7,
 'simTime' : 1.2,
-'interPacketInterval' : 150,
+'interPacketInterval' : [150, 1500],
 'harq' : [False, True],
 'rlcAm' : True,
 'fixedTti' : False,
