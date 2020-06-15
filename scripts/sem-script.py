@@ -15,7 +15,8 @@ nruns = 20
 
 # Returns the average bler and sinr for UL and DL
 def compute_phy_metrics (rxPacketTraceFile):
-    data = pd.read_csv (rxPacketTraceFile, delimiter = "\t", index_col=False, usecols = [0, 7, 10, 12, 14], names = ['mode', 'rnti', 'mcs', 'sinr', 'tbler'], engine='c', header=0)
+    data = pd.read_csv (rxPacketTraceFile, delimiter = "\t", index_col=False, usecols = [0, 7, 10, 12, 14], names = ['mode', 'rnti', 'mcs', 'sinr', 'tbler'], 
+                        dtype = {'mode' : 'object', 'rnti' : 'int64', 'mcs' : 'int64', 'sinr' : 'float64', 'tbler' : 'float64'}, engine='python', header=0)
     
     sinrUlLinear = data.where ((data ['mode'] == 'UL')) ['sinr'].dropna ().apply (lambda x : pow (10.0, x/10.0))
     avgSinrUl = 10.0*math.log10 (sinrUlLinear.mean ())
@@ -30,9 +31,8 @@ def compute_phy_metrics (rxPacketTraceFile):
 
 # Returns the average delay in ns and the amount of received data in bytes
 def compute_pdcp_metrics (pdcpTraceFile):
-    data = pd.read_csv (pdcpTraceFile, delimiter = " ", index_col=False, usecols = [0, 1, 4, 5, 6], names = ['mode', 'time', 'drbid', 'size', 'delay'], engine='c', header=0)
+    data = pd.read_csv (pdcpTraceFile, delimiter = " ", index_col=False, usecols = [0, 1, 4, 5, 6], names = ['mode', 'time', 'drbid', 'size', 'delay'], engine='python', header=0)
     
-    print (data)
     txData = data.where ((data ['mode'] == 'Tx') & (data ['drbid'] >= 3)) ['size'].sum (axis=0)
     rxData = data.where ((data ['mode'] == 'Rx') & (data ['drbid'] >= 3)) ['size'].sum (axis=0)
     avgDelay = data.where ((data ['mode'] == 'Rx') & (data ['drbid'] >= 3)) ['delay'].mean (axis=0)
