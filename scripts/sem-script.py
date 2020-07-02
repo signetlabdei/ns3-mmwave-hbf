@@ -6,7 +6,7 @@ import math
 sem.parallelrunner.MAX_PARALLEL_PROCESSES = 32
 
 script = 'mmwave-hbf'
-ns_path = '../ns3-mmwave-hbf'
+ns_path = '../ns3-mmwave-hbf-2'
 campaign_dir = "./campaign/"
 
 nruns = 20
