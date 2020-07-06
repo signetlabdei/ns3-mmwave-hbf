@@ -13,7 +13,9 @@ def compute_prr (rx, tx):
     mx_prr_runs = ma.masked_invalid (prr_runs, copy=False)
     return (mx_prr_runs.mean (), get_std_err (prr_runs))
 
-results_df = pd.read_csv ('campaign/parsed_results.csv')
+results_folder = 'campaign-2/'
+figure_folder = results_folder + 'figures/'
+results_df = pd.read_csv (results_folder + 'parsed_results.csv')
 
 # plot the results
 
@@ -211,12 +213,12 @@ for rlcAm in [True, False]:
             ax_prr_ul [1].tick_params(axis='x', labelrotation=90)
             ax_prr_dl [1].tick_params(axis='x', labelrotation=90)
             
-            fig_sinr_ul.savefig ('sinr_ul_'+title+'.png', bbox_inches='tight')
-            fig_sinr_dl.savefig ('sinr_dl_'+title+'.png', bbox_inches='tight')
-            fig_bler_ul.savefig ('bler_ul_'+title+'.png', bbox_inches='tight')
-            fig_bler_dl.savefig ('bler_dl_'+title+'.png', bbox_inches='tight')
-            fig_delay_ul.savefig ('delay_ul_'+title+'.png', bbox_inches='tight')
-            fig_delay_dl.savefig ('delay_dl_'+title+'.png', bbox_inches='tight')
-            fig_prr_ul.savefig ('prr_ul_'+title+'.png', bbox_inches='tight')
-            fig_prr_dl.savefig ('prr_dl_'+title+'.png', bbox_inches='tight')
+            fig_sinr_ul.savefig (figure_folder + 'sinr_ul_'+title+'.png', bbox_inches='tight')
+            fig_sinr_dl.savefig (figure_folder + 'sinr_dl_'+title+'.png', bbox_inches='tight')
+            fig_bler_ul.savefig (figure_folder + 'bler_ul_'+title+'.png', bbox_inches='tight')
+            fig_bler_dl.savefig (figure_folder + 'bler_dl_'+title+'.png', bbox_inches='tight')
+            fig_delay_ul.savefig (figure_folder + 'delay_ul_'+title+'.png', bbox_inches='tight')
+            fig_delay_dl.savefig (figure_folder + 'delay_dl_'+title+'.png', bbox_inches='tight')
+            fig_prr_ul.savefig (figure_folder + 'prr_ul_'+title+'.png', bbox_inches='tight')
+            fig_prr_dl.savefig (figure_folder + 'prr_dl_'+title+'.png', bbox_inches='tight')
                 

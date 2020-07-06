@@ -5,7 +5,9 @@ import numpy as np
 
 script = 'mmwave-hbf'
 ns_path = '../ns3-mmwave-hbf'
-campaign_dir = "./campaign/"
+campaign_dir = "./campaign-2/"
+
+figure_folder = campaign_dir + 'figures/'
 
 nruns = 20
 n_bins = 100;
@@ -162,27 +164,27 @@ for rlcAm in rlcAmList:
                                             cumulative=True, label=bfmod+' 4 layer')
                                             
             fig_sinr_ul.legend (loc='center right')
-            fig_sinr_ul.savefig ('cdf_sinr_ul_'+title+'.png', bbox_inches='tight')
+            fig_sinr_ul.savefig (figure_folder + 'cdf_sinr_ul_'+title+'.png', bbox_inches='tight')
             plt.close (fig_sinr_ul)
             
             fig_sinr_dl.legend (loc='center right')
-            fig_sinr_dl.savefig ('cdf_sinr_dl_'+title+'.png', bbox_inches='tight')
+            fig_sinr_dl.savefig (figure_folder + 'cdf_sinr_dl_'+title+'.png', bbox_inches='tight')
             plt.close (fig_sinr_dl)
             
             fig_bler_ul.legend (loc='center right')
-            fig_bler_ul.savefig ('cdf_bler_ul_'+title+'.png', bbox_inches='tight')
+            fig_bler_ul.savefig (figure_folder + 'cdf_bler_ul_'+title+'.png', bbox_inches='tight')
             plt.close (fig_bler_ul)
             
             fig_bler_dl.legend (loc='center right')
-            fig_bler_dl.savefig ('cdf_bler_dl_'+title+'.png', bbox_inches='tight')
+            fig_bler_dl.savefig (figure_folder + 'cdf_bler_dl_'+title+'.png', bbox_inches='tight')
             plt.close (fig_bler_dl)
             
             fig_delay_ul.legend (loc='center right')
-            fig_delay_ul.savefig ('cdf_delay_ul_'+title+'.png', bbox_inches='tight')
+            fig_delay_ul.savefig (figure_folder + 'cdf_delay_ul_'+title+'.png', bbox_inches='tight')
             plt.close (fig_delay_ul)
             
             fig_delay_dl.legend (loc='center right')
-            fig_delay_dl.savefig ('cdf_delay_dl_'+title+'.png', bbox_inches='tight')
+            fig_delay_dl.savefig (figure_folder + 'cdf_delay_dl_'+title+'.png', bbox_inches='tight')
             plt.close (fig_delay_dl)
                 
                 
