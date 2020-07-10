@@ -1,0 +1,1089 @@
+import pandas as pd
+import numpy as np
+import numpy.ma as ma
+import matplotlib.pyplot as plt
+import math
+import sem
+
+def get_std_err (x):
+    std = np.nanstd (x) / math.sqrt(x.size - np.isnan(x).sum ())
+    return std
+
+def compute_prr (rx, tx):
+    prr_runs = np.divide (rx, tx)
+    mx_prr_runs = ma.masked_invalid (prr_runs, copy=False)
+    return (mx_prr_runs.mean (), get_std_err (prr_runs))
+
+
+def plot_bf_comparison (csv_path, figure_folder):
+    
+    results_df = pd.read_csv (csv_path)
+    # plot the results
+
+    # bf comparison
+    # 
+    # bf_comparison_sigle_layer = {
+    # 'RngRun' : list (range (nruns)),
+    # 'numEnb' : 1,
+    # 'numUe' : 7,
+    # 'simTime' : 1.2,
+    # 'interPacketInterval' : [150, 1500],
+    # 'harq' : [False, True],
+    # 'rlcAm' : True,
+    # 'fixedTti' : False,
+    # 'sched' : 'ns3::MmWaveFlexTtiMacScheduler',
+    # 'bfmod' : ['ns3::MmWaveDftBeamforming', 'ns3::MmWaveFFTCodebookBeamforming'],
+    # 'nLayers' : 1,
+    # 'useTCP' : False
+    # }
+
+    for rlcAm in [True, False]:
+        for interPacketInterval in [150, 1500]:
+            for harq in [False, True]:
+                title = 'rlcAm=' + str (rlcAm) + '_interPacketInterval=' + str (interPacketInterval) + "_harq=" + str (harq)
+                
+                fig_sinr_ul, ax_sinr_ul = plt.subplots(1, 2)
+                fig_sinr_ul.suptitle('SINR UL ' + title)
+                fig_sinr_dl, ax_sinr_dl = plt.subplots(1, 2)
+                fig_sinr_dl.suptitle('SINR DL ' + title)
+                fig_bler_ul, ax_bler_ul = plt.subplots(1, 2)
+                fig_bler_ul.suptitle('BLER UL ' + title)
+                fig_bler_dl, ax_bler_dl = plt.subplots(1, 2)
+                fig_bler_dl.suptitle('BLER DL ' + title)
+                fig_delay_ul, ax_delay_ul = plt.subplots(1, 2)
+                fig_delay_ul.suptitle('DELAY UL ' + title)
+                fig_delay_dl, ax_delay_dl = plt.subplots(1, 2)
+                fig_delay_dl.suptitle('DELAY DL ' + title)
+                fig_prr_ul, ax_prr_ul = plt.subplots(1, 2)
+                fig_prr_ul.suptitle('PRR UL ' + title)
+                fig_prr_dl, ax_prr_dl = plt.subplots(1, 2)
+                fig_prr_dl.suptitle('PRR DL ' + title)
+                
+                plt.setp(ax_sinr_ul, ylim=[0, 50])
+                plt.setp(ax_sinr_dl, ylim=[0, 50])
+                plt.setp(ax_bler_ul, ylim=[0, 0.5])
+                plt.setp(ax_bler_dl, ylim=[0, 0.5])
+                # plt.setp(ax_delay_ul, ylim=[0, 5])
+                # plt.setp(ax_delay_dl, ylim=[0, 5])
+                plt.setp(ax_prr_ul, ylim=[0, 1.1])
+                plt.setp(ax_prr_dl, ylim=[0, 1.1])
+                
+                
+                # single layer
+                x = list (results_df ['bfmod'].unique ())
+                y_sinr_ul = np.full ((len (x)), np.nan)
+                y_sinr_dl = np.full ((len (x)), np.nan)
+                y_bler_ul = np.full ((len (x)), np.nan)
+                y_bler_dl = np.full ((len (x)), np.nan)
+                y_delay_ul = np.full ((len (x)), np.nan)
+                y_delay_dl = np.full ((len (x)), np.nan)
+                y_prr_ul = np.full ((len (x)), np.nan)
+                y_prr_dl = np.full ((len (x)), np.nan)
+                
+                y_err_sinr_ul = np.full ((len (x)), np.nan)
+                y_err_sinr_dl = np.full ((len (x)), np.nan)
+                y_err_bler_ul = np.full ((len (x)), np.nan)
+                y_err_bler_dl = np.full ((len (x)), np.nan)
+                y_err_delay_ul = np.full ((len (x)), np.nan)
+                y_err_delay_dl = np.full ((len (x)), np.nan)
+                y_err_prr_ul = np.full ((len (x)), np.nan)
+                y_err_prr_dl = np.full ((len (x)), np.nan)
+                
+                for bfmod in ['ns3::MmWaveDftBeamforming', 'ns3::MmWaveFFTCodebookBeamforming']:
+                    data = results_df.loc [(results_df ['numEnb'] == 1) & 
+                                          (results_df ['numUe'] == 7) &
+                                          (results_df ['simTime'] == 1.2) &
+                                          (results_df ['interPacketInterval'] == interPacketInterval) &
+                                          (results_df ['harq'] == harq) &
+                                          (results_df ['rlcAm'] == rlcAm) &
+                                          (results_df ['fixedTti'] == False) &
+                                          (results_df ['sched'] == 'ns3::MmWaveFlexTtiMacScheduler') &
+                                          (results_df ['bfmod'] == bfmod) &
+                                          (results_df ['nLayers'] == 1) &
+                                          (results_df ['useTCP'] == False)]
+                            
+                    y_sinr_ul [x.index (bfmod)] = data ['avgSinrUl'].mean ()
+                    y_sinr_dl [x.index (bfmod)] = data ['avgSinrDl'].mean ()
+                    y_bler_ul [x.index (bfmod)] = data ['avgBlerUl'].mean ()
+                    y_bler_dl [x.index (bfmod)] = data ['avgBlerDl'].mean ()
+                    y_delay_ul [x.index (bfmod)] = data ['ulPdcpDelay'].mean ()
+                    y_delay_dl [x.index (bfmod)] = data ['dlPdcpDelay'].mean ()
+                            
+                    y_err_sinr_ul [x.index (bfmod)] = get_std_err (data ['avgSinrUl'])
+                    y_err_sinr_dl [x.index (bfmod)] = get_std_err (data ['avgSinrDl'])
+                    y_err_bler_ul [x.index (bfmod)] = get_std_err (data ['avgBlerUl'])
+                    y_err_bler_dl [x.index (bfmod)] = get_std_err (data ['avgBlerDl'])
+                    y_err_delay_ul [x.index (bfmod)] = get_std_err (data ['ulPdcpDelay'])
+                    y_err_delay_dl [x.index (bfmod)] = get_std_err (data ['dlPdcpDelay'])
+                    
+                    (y_prr_ul [x.index (bfmod)], y_err_prr_ul [x.index (bfmod)]) = compute_prr (data ['ulRxPdcpData'].values, data['ulTxPdcpData'].values)
+                    (y_prr_dl [x.index (bfmod)], y_err_prr_dl [x.index (bfmod)]) = compute_prr (data ['dlRxPdcpData'].values, data['dlTxPdcpData'].values)
+                
+                ax_sinr_ul [0].bar (range (len (x)), y_sinr_ul, tick_label=x, yerr=y_err_sinr_ul)
+                ax_sinr_dl [0].bar (range (len (x)), y_sinr_dl, tick_label=x, yerr=y_err_sinr_dl)
+                ax_bler_ul [0].bar (range (len (x)), y_bler_ul, tick_label=x, yerr=y_err_bler_ul)
+                ax_bler_dl [0].bar (range (len (x)), y_bler_dl, tick_label=x, yerr=y_err_bler_dl)
+                ax_delay_ul [0].bar (range (len (x)), y_delay_ul/1e6, tick_label=x, yerr=y_err_delay_ul/1e6)
+                ax_delay_dl [0].bar (range (len (x)), y_delay_dl/1e6, tick_label=x, yerr=y_err_delay_dl/1e6)
+                ax_prr_ul [0].bar (range (len (x)), y_prr_ul, tick_label=x, yerr=y_err_prr_ul)
+                ax_prr_dl [0].bar (range (len (x)), y_prr_dl, tick_label=x, yerr=y_err_prr_dl)
+                
+                ax_sinr_ul [0].tick_params(axis='x', labelrotation=90)
+                ax_sinr_dl [0].tick_params(axis='x', labelrotation=90)
+                ax_bler_ul [0].tick_params(axis='x', labelrotation=90)
+                ax_bler_dl [0].tick_params(axis='x', labelrotation=90)
+                ax_delay_ul [0].tick_params(axis='x', labelrotation=90)
+                ax_delay_dl [0].tick_params(axis='x', labelrotation=90)
+                ax_prr_ul [0].tick_params(axis='x', labelrotation=90)
+                ax_prr_dl [0].tick_params(axis='x', labelrotation=90)
+                
+                ax_sinr_ul [0].set (ylabel='SINR [dB]')
+                ax_sinr_dl [0].set (ylabel='SINR [dB]')
+                ax_bler_ul [0].set (ylabel='BLER')
+                ax_bler_dl [0].set (ylabel='BLER')
+                ax_delay_ul [0].set (ylabel='delay [ms]')
+                ax_delay_dl [0].set (ylabel='delay [ms]')
+                ax_prr_ul [0].set (ylabel='PRR')
+                ax_prr_dl [0].set (ylabel='PRR')
+                
+                # multi layer
+                x = list (results_df ['bfmod'].unique ())
+                y_sinr_ul = np.full ((len (x)), np.nan)
+                y_sinr_dl = np.full ((len (x)), np.nan)
+                y_bler_ul = np.full ((len (x)), np.nan)
+                y_bler_dl = np.full ((len (x)), np.nan)
+                y_delay_ul = np.full ((len (x)), np.nan)
+                y_delay_dl = np.full ((len (x)), np.nan)
+                y_prr_ul = np.full ((len (x)), np.nan)
+                y_prr_dl = np.full ((len (x)), np.nan)
+                
+                y_err_sinr_ul = np.full ((len (x)), np.nan)
+                y_err_sinr_dl = np.full ((len (x)), np.nan)
+                y_err_bler_ul = np.full ((len (x)), np.nan)
+                y_err_bler_dl = np.full ((len (x)), np.nan)
+                y_err_delay_ul = np.full ((len (x)), np.nan)
+                y_err_delay_dl = np.full ((len (x)), np.nan)
+                y_err_prr_ul = np.full ((len (x)), np.nan)
+                y_err_prr_dl = np.full ((len (x)), np.nan)
+                
+                for bfmod in ['ns3::MmWaveDftBeamforming', 'ns3::MmWaveFFTCodebookBeamforming', 'ns3::MmWaveMMSEBeamforming', 'ns3::MmWaveMMSESpectrumBeamforming']:
+                    data = results_df.loc [(results_df ['numEnb'] == 1) & 
+                                          (results_df ['numUe'] == 7) &
+                                          (results_df ['simTime'] == 1.2) &
+                                          (results_df ['interPacketInterval'] == interPacketInterval) &
+                                          (results_df ['harq'] == harq) &
+                                          (results_df ['rlcAm'] == rlcAm) &
+                                          (results_df ['fixedTti'] == False) &
+                                          (results_df ['sched'] == 'ns3::MmWavePaddedHbfMacScheduler') &
+                                          (results_df ['bfmod'] == bfmod) &
+                                          (results_df ['nLayers'] == 4) &
+                                          (results_df ['useTCP'] == False)]
+                                          
+                    y_sinr_ul [x.index (bfmod)] = data ['avgSinrUl'].mean ()
+                    y_sinr_dl [x.index (bfmod)] = data ['avgSinrDl'].mean ()
+                    y_bler_ul [x.index (bfmod)] = data ['avgBlerUl'].mean ()
+                    y_bler_dl [x.index (bfmod)] = data ['avgBlerDl'].mean ()
+                    y_delay_ul [x.index (bfmod)] = data ['ulPdcpDelay'].mean ()
+                    y_delay_dl [x.index (bfmod)] = data ['dlPdcpDelay'].mean ()
+                    
+                    y_err_sinr_ul [x.index (bfmod)] = get_std_err (data ['avgSinrUl'])
+                    y_err_sinr_dl [x.index (bfmod)] = get_std_err (data ['avgSinrDl'])
+                    y_err_bler_ul [x.index (bfmod)] = get_std_err (data ['avgBlerUl'])
+                    y_err_bler_dl [x.index (bfmod)] = get_std_err (data ['avgBlerDl'])
+                    y_err_delay_ul [x.index (bfmod)] = get_std_err (data ['ulPdcpDelay'])
+                    y_err_delay_dl [x.index (bfmod)] = get_std_err (data ['dlPdcpDelay'])
+                    
+                    (y_prr_ul [x.index (bfmod)], y_err_prr_ul [x.index (bfmod)]) = compute_prr (data ['ulRxPdcpData'].values, data['ulTxPdcpData'].values)
+                    (y_prr_dl [x.index (bfmod)], y_err_prr_dl [x.index (bfmod)]) = compute_prr (data ['dlRxPdcpData'].values, data['dlTxPdcpData'].values)
+                    
+                ax_sinr_ul [1].bar (range (len (x)), y_sinr_ul, tick_label=x, yerr=y_err_sinr_ul)
+                ax_sinr_dl [1].bar (range (len (x)), y_sinr_dl, tick_label=x, yerr=y_err_sinr_dl)
+                ax_bler_ul [1].bar (range (len (x)), y_bler_ul, tick_label=x, yerr=y_err_bler_ul)
+                ax_bler_dl [1].bar (range (len (x)), y_bler_dl, tick_label=x, yerr=y_err_bler_dl)
+                ax_delay_ul [1].bar (range (len (x)), y_delay_ul/1e6, tick_label=x, yerr=y_err_delay_ul/1e6)
+                ax_delay_dl [1].bar (range (len (x)), y_delay_dl/1e6, tick_label=x, yerr=y_err_delay_dl/1e6)
+                ax_prr_ul [1].bar (range (len (x)), y_prr_ul, tick_label=x, yerr=y_err_prr_ul)
+                ax_prr_dl [1].bar (range (len (x)), y_prr_dl, tick_label=x, yerr=y_err_prr_dl)
+                
+                ax_sinr_ul [1].tick_params(axis='x', labelrotation=90)
+                ax_sinr_dl [1].tick_params(axis='x', labelrotation=90)
+                ax_bler_ul [1].tick_params(axis='x', labelrotation=90)
+                ax_bler_dl [1].tick_params(axis='x', labelrotation=90)
+                ax_delay_ul [1].tick_params(axis='x', labelrotation=90)
+                ax_delay_dl [1].tick_params(axis='x', labelrotation=90)
+                ax_prr_ul [1].tick_params(axis='x', labelrotation=90)
+                ax_prr_dl [1].tick_params(axis='x', labelrotation=90)
+                
+                fig_sinr_ul.savefig (figure_folder + 'sinr_ul_'+title+'.png', bbox_inches='tight')
+                fig_sinr_dl.savefig (figure_folder + 'sinr_dl_'+title+'.png', bbox_inches='tight')
+                fig_bler_ul.savefig (figure_folder + 'bler_ul_'+title+'.png', bbox_inches='tight')
+                fig_bler_dl.savefig (figure_folder + 'bler_dl_'+title+'.png', bbox_inches='tight')
+                fig_delay_ul.savefig (figure_folder + 'delay_ul_'+title+'.png', bbox_inches='tight')
+                fig_delay_dl.savefig (figure_folder + 'delay_dl_'+title+'.png', bbox_inches='tight')
+                fig_prr_ul.savefig (figure_folder + 'prr_ul_'+title+'.png', bbox_inches='tight')
+                fig_prr_dl.savefig (figure_folder + 'prr_dl_'+title+'.png', bbox_inches='tight')
+                
+
+def get_sinr_data (campaign, params):
+    sinr_dl_data = pd.Series ()
+    sinr_ul_data = pd.Series ()
+    bler_ul_data = pd.Series ()
+    bler_dl_data = pd.Series ()
+    
+    for r in campaign.db.get_results (params):
+        available_files = campaign.db.get_result_files (r)
+        
+        data = pd.read_csv (available_files ['RxPacketTrace.txt'], delimiter = "\t", index_col=False, usecols = [0, 7, 10, 12, 14], names = ['mode', 'rnti', 'mcs', 'sinr', 'tbler'], 
+                            dtype = {'mode' : 'object', 'rnti' : 'int64', 'mcs' : 'int64', 'sinr' : 'float64', 'tbler' : 'float64'}, engine='python', header=0)
+        
+        sinr_run_ul = data.loc [data ['mode'] == 'UL'] ['sinr'].replace ([np.inf, -np.inf], np.nan).dropna (how="all")
+        sinr_ul_data = sinr_ul_data.append (sinr_run_ul, ignore_index=True)
+
+        sinr_run_dl = data.loc [data ['mode'] == 'DL'] ['sinr'].replace ([np.inf, -np.inf], np.nan).dropna (how="all")
+        sinr_dl_data = sinr_dl_data.append (sinr_run_dl, ignore_index=True)
+                
+        bler_ul_data = bler_ul_data.append (data.loc [data ['mode'] == 'UL'] ['tbler'])
+        bler_dl_data = bler_dl_data.append (data.loc [data ['mode'] == 'DL'] ['tbler'])
+    
+    return (sinr_ul_data, sinr_dl_data, bler_ul_data, bler_dl_data)
+    
+def get_delay_data (campaign, params):
+    delay_ul_data = pd.Series ()
+    delay_dl_data = pd.Series ()
+    
+    for r in campaign.db.get_results (params):
+        available_files = campaign.db.get_result_files (r)
+        
+        data_ul = pd.read_csv (available_files ['UlPdcpStats.txt'], delimiter = " ", index_col=False, usecols = [0, 1, 4, 5, 6], names = ['mode', 'time', 'drbid', 'size', 'delay'], engine='python', header=0)
+        
+        delay_run_ul = data_ul.loc [(data_ul ['mode'] == 'Rx') & (data_ul ['drbid'] >= 3)] ['delay'].replace ([np.inf, -np.inf], np.nan).dropna (how="all")
+        delay_ul_data = delay_ul_data.append (delay_run_ul, ignore_index=True)
+        
+        data_dl = pd.read_csv (available_files ['DlPdcpStats.txt'], delimiter = " ", index_col=False, usecols = [0, 1, 4, 5, 6], names = ['mode', 'time', 'drbid', 'size', 'delay'], engine='python', header=0)
+        
+        delay_run_dl = data_dl.loc [(data_dl ['mode'] == 'Rx') & (data_dl ['drbid'] >= 3)] ['delay'].replace ([np.inf, -np.inf], np.nan).dropna (how="all")
+        delay_dl_data = delay_dl_data.append (delay_run_dl, ignore_index=True)
+        
+        return (delay_ul_data, delay_dl_data)
+
+def plot_bf_cdfs (campaign_dir, nruns, n_bins, figure_folder):
+    
+    campaign = sem.CampaignManager.load(campaign_dir, runner_type = "ParallelRunner", check_repo = False)
+    
+    ipiList = [150, 1500]
+    harqList = [False, True]
+    rlcAmList = [False, True]
+
+    for rlcAm in rlcAmList:
+        for ipi in ipiList:
+            for harq in harqList:
+                
+                title = 'rlcAm=' + str(rlcAm) + '_interPacketInterval=' + str (ipi) + "_harq=" + str (harq)
+                
+                fig_sinr_ul = plt.figure (1)
+                fig_sinr_ul.suptitle('SINR UL ' + title)
+                fig_sinr_dl = plt.figure (2)
+                fig_sinr_dl.suptitle('SINR DL ' + title)
+                fig_bler_ul = plt.figure (3)
+                fig_bler_ul.suptitle('BLER UL ' + title)
+                fig_bler_dl = plt.figure (4)
+                fig_bler_dl.suptitle('BLER DL ' + title)
+                fig_delay_ul = plt.figure (5)
+                fig_delay_ul.suptitle('DELAY UL ' + title)
+                fig_delay_dl = plt.figure (6)
+                fig_delay_dl.suptitle('DELAY DL ' + title)
+
+                
+                for bfmod in ['ns3::MmWaveDftBeamforming', 'ns3::MmWaveFFTCodebookBeamforming']:    
+                    
+                    params = {
+                    'RngRun' : list (range (nruns)),
+                    'numEnb' : 1,
+                    'numUe' : 7,
+                    'simTime' : 1.2,
+                    'interPacketInterval' : ipi,
+                    'harq' : harq,
+                    'rlcAm' : rlcAm,
+                    'fixedTti' : False,
+                    'sched' : 'ns3::MmWaveFlexTtiMacScheduler',
+                    'bfmod' : bfmod,
+                    'nLayers' : 1,
+                    'useTCP' : False
+                    }
+                    
+                    (sinr_ul_data, sinr_dl_data, bler_ul_data, bler_dl_data) = get_sinr_data (campaign, params)
+                    (delay_ul_data, delay_dl_data) = get_delay_data (campaign, params)
+                    
+                    plt.figure (1)
+                    n, bins, patches = plt.hist(sinr_ul_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=bfmod+' 1 layer')
+                    plt.figure (2)
+                    n, bins, patches = plt.hist(sinr_dl_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=bfmod+' 1 layer')
+                                                
+                    plt.figure (3)
+                    n, bins, patches = plt.hist(bler_ul_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=bfmod+' 1 layer')
+                    plt.figure (4)
+                    n, bins, patches = plt.hist(bler_dl_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=bfmod+' 1 layer')
+                    
+                    plt.figure (5)
+                    n, bins, patches = plt.hist(delay_ul_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=bfmod+' 1 layer')
+                    
+                    plt.figure (6)
+                    n, bins, patches = plt.hist(delay_dl_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=bfmod+' 1 layer')
+                                                
+                for bfmod in ['ns3::MmWaveDftBeamforming', 'ns3::MmWaveFFTCodebookBeamforming', 'ns3::MmWaveMMSEBeamforming', 'ns3::MmWaveMMSESpectrumBeamforming']:    
+                    
+                    params = {
+                    'RngRun' : list (range (nruns)),
+                    'numEnb' : 1,
+                    'numUe' : 7,
+                    'simTime' : 1.2,
+                    'interPacketInterval' : ipi,
+                    'harq' : harq,
+                    'rlcAm' : rlcAm,
+                    'fixedTti' : False,
+                    'sched' : 'ns3::MmWavePaddedHbfMacScheduler',
+                    'bfmod' : bfmod,
+                    'nLayers' : 4,
+                    'useTCP' : False
+                    }
+                    
+                    (sinr_ul_data, sinr_dl_data, bler_ul_data, bler_dl_data) = get_sinr_data (campaign, params)
+                    (delay_ul_data, delay_dl_data) = get_delay_data (campaign, params)
+                    
+                    plt.figure (1)
+                    n, bins, patches = plt.hist(sinr_ul_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=bfmod+' 4 layer')
+                    plt.figure (2)
+                    n, bins, patches = plt.hist(sinr_dl_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=bfmod+' 4 layer')
+
+                    plt.figure (3)
+                    n, bins, patches = plt.hist(bler_ul_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=bfmod+' 4 layer')
+                    plt.figure (4)
+                    n, bins, patches = plt.hist(bler_dl_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=bfmod+' 4 layer')
+                    plt.figure (5)
+                    n, bins, patches = plt.hist(delay_ul_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=bfmod+' 4 layer')
+                    plt.figure (6)
+                    n, bins, patches = plt.hist(delay_dl_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=bfmod+' 4 layer')
+                                                
+                fig_sinr_ul.legend (loc='center right')
+                fig_sinr_ul.savefig (figure_folder + 'cdf_sinr_ul_'+title+'.png', bbox_inches='tight')
+                plt.close (fig_sinr_ul)
+                
+                fig_sinr_dl.legend (loc='center right')
+                fig_sinr_dl.savefig (figure_folder + 'cdf_sinr_dl_'+title+'.png', bbox_inches='tight')
+                plt.close (fig_sinr_dl)
+                
+                fig_bler_ul.legend (loc='center right')
+                fig_bler_ul.savefig (figure_folder + 'cdf_bler_ul_'+title+'.png', bbox_inches='tight')
+                plt.close (fig_bler_ul)
+                
+                fig_bler_dl.legend (loc='center right')
+                fig_bler_dl.savefig (figure_folder + 'cdf_bler_dl_'+title+'.png', bbox_inches='tight')
+                plt.close (fig_bler_dl)
+                
+                fig_delay_ul.legend (loc='center right')
+                fig_delay_ul.savefig (figure_folder + 'cdf_delay_ul_'+title+'.png', bbox_inches='tight')
+                plt.close (fig_delay_ul)
+                
+                fig_delay_dl.legend (loc='center right')
+                fig_delay_dl.savefig (figure_folder + 'cdf_delay_dl_'+title+'.png', bbox_inches='tight')
+                plt.close (fig_delay_dl)
+                
+                
+                
+def plot_sched_comparison_tcp (csv_path, figure_folder):
+    
+    results_df = pd.read_csv (csv_path)
+    # plot the results
+
+    # sched comparison
+    # 
+    # tcp_sched_comparison_sigle_layer = {
+    # 'RngRun' : list (range (nruns)),
+    # 'numEnb' : 1,
+    # 'numUe' : 7,
+    # 'simTime' : 1.2,
+    # 'interPacketInterval' : 0, # not used in tcp app
+    # 'harq' : [False, True],
+    # 'rlcAm' : [True, False],
+    # 'fixedTti' : False,
+    # 'sched' : ['ns3::MmWaveFlexTtiMacScheduler', 'ns3::MmWavePaddedHbfMacScheduler'],
+    # 'bfmod' : 'ns3::MmWaveDftBeamforming',
+    # 'nLayers' : 1,
+    # 'useTCP' : True
+    # }
+
+    for rlcAm in [True, False]:
+            for harq in [False, True]:
+                title = 'rlcAm=' + str (rlcAm) + "_harq=" + str (harq)
+                
+                fig_sinr_ul, ax_sinr_ul = plt.subplots(1, 2)
+                fig_sinr_ul.suptitle('SINR UL ' + title)
+                fig_sinr_dl, ax_sinr_dl = plt.subplots(1, 2)
+                fig_sinr_dl.suptitle('SINR DL ' + title)
+                fig_bler_ul, ax_bler_ul = plt.subplots(1, 2)
+                fig_bler_ul.suptitle('BLER UL ' + title)
+                fig_bler_dl, ax_bler_dl = plt.subplots(1, 2)
+                fig_bler_dl.suptitle('BLER DL ' + title)
+                fig_delay_ul, ax_delay_ul = plt.subplots(1, 2)
+                fig_delay_ul.suptitle('DELAY UL ' + title)
+                fig_delay_dl, ax_delay_dl = plt.subplots(1, 2)
+                fig_delay_dl.suptitle('DELAY DL ' + title)
+                fig_dataRx_ul, ax_dataRx_ul = plt.subplots(1, 2)
+                fig_dataRx_ul.suptitle('DATA RX UL ' + title)
+                fig_dataRx_dl, ax_dataRx_dl = plt.subplots(1, 2)
+                fig_dataRx_dl.suptitle('DATA RX DL ' + title)
+                
+                plt.setp(ax_sinr_ul, ylim=[0, 50])
+                plt.setp(ax_sinr_dl, ylim=[0, 50])
+                plt.setp(ax_bler_ul, ylim=[0, 0.5])
+                plt.setp(ax_bler_dl, ylim=[0, 0.5])
+                # plt.setp(ax_delay_ul, ylim=[0, 5])
+                # plt.setp(ax_delay_dl, ylim=[0, 5])
+                # plt.setp(ax_dataRx_ul, ylim=[0, 1.1])
+                # plt.setp(ax_dataRx_dl, ylim=[0, 1.1])
+                
+                
+                # single layer
+                x = list (results_df ['sched'].unique ())
+                y_sinr_ul = np.full ((len (x)), np.nan)
+                y_sinr_dl = np.full ((len (x)), np.nan)
+                y_bler_ul = np.full ((len (x)), np.nan)
+                y_bler_dl = np.full ((len (x)), np.nan)
+                y_delay_ul = np.full ((len (x)), np.nan)
+                y_delay_dl = np.full ((len (x)), np.nan)
+                y_dataRx_ul = np.full ((len (x)), np.nan)
+                y_dataRx_dl = np.full ((len (x)), np.nan)
+                
+                y_err_sinr_ul = np.full ((len (x)), np.nan)
+                y_err_sinr_dl = np.full ((len (x)), np.nan)
+                y_err_bler_ul = np.full ((len (x)), np.nan)
+                y_err_bler_dl = np.full ((len (x)), np.nan)
+                y_err_delay_ul = np.full ((len (x)), np.nan)
+                y_err_delay_dl = np.full ((len (x)), np.nan)
+                y_err_dataRx_ul = np.full ((len (x)), np.nan)
+                y_err_dataRx_dl = np.full ((len (x)), np.nan)
+                
+                for sched in ['ns3::MmWaveFlexTtiMacScheduler', 'ns3::MmWavePaddedHbfMacScheduler']:
+                    data = results_df.loc [(results_df ['numEnb'] == 1) & 
+                                          (results_df ['numUe'] == 7) &
+                                          (results_df ['simTime'] == 1.2) &
+                                          (results_df ['interPacketInterval'] == 0) &
+                                          (results_df ['harq'] == harq) &
+                                          (results_df ['rlcAm'] == rlcAm) &
+                                          (results_df ['fixedTti'] == False) &
+                                          (results_df ['sched'] == sched) &
+                                          (results_df ['bfmod'] == 'ns3::MmWaveDftBeamforming') &
+                                          (results_df ['nLayers'] == 1) &
+                                          (results_df ['useTCP'] == True)]
+                            
+                    y_sinr_ul [x.index (sched)] = data ['avgSinrUl'].mean ()
+                    y_sinr_dl [x.index (sched)] = data ['avgSinrDl'].mean ()
+                    y_bler_ul [x.index (sched)] = data ['avgBlerUl'].mean ()
+                    y_bler_dl [x.index (sched)] = data ['avgBlerDl'].mean ()
+                    y_delay_ul [x.index (sched)] = data ['ulPdcpDelay'].mean ()
+                    y_delay_dl [x.index (sched)] = data ['dlPdcpDelay'].mean ()
+                            
+                    y_err_sinr_ul [x.index (sched)] = get_std_err (data ['avgSinrUl'])
+                    y_err_sinr_dl [x.index (sched)] = get_std_err (data ['avgSinrDl'])
+                    y_err_bler_ul [x.index (sched)] = get_std_err (data ['avgBlerUl'])
+                    y_err_bler_dl [x.index (sched)] = get_std_err (data ['avgBlerDl'])
+                    y_err_delay_ul [x.index (sched)] = get_std_err (data ['ulPdcpDelay'])
+                    y_err_delay_dl [x.index (sched)] = get_std_err (data ['dlPdcpDelay'])
+                    
+                    y_dataRx_ul [x.index (sched)] = data ['ulRxPdcpData'].mean ()
+                    y_err_dataRx_ul [x.index (sched)] = get_std_err (data ['ulRxPdcpData'])
+                    y_dataRx_dl [x.index (sched)] = data ['dlRxPdcpData'].mean ()
+                    y_err_dataRx_dl [x.index (sched)] = get_std_err (data ['dlRxPdcpData'])
+                
+                ax_sinr_ul [0].bar (range (len (x)), y_sinr_ul, tick_label=x, yerr=y_err_sinr_ul)
+                ax_sinr_dl [0].bar (range (len (x)), y_sinr_dl, tick_label=x, yerr=y_err_sinr_dl)
+                ax_bler_ul [0].bar (range (len (x)), y_bler_ul, tick_label=x, yerr=y_err_bler_ul)
+                ax_bler_dl [0].bar (range (len (x)), y_bler_dl, tick_label=x, yerr=y_err_bler_dl)
+                ax_delay_ul [0].bar (range (len (x)), y_delay_ul/1e6, tick_label=x, yerr=y_err_delay_ul/1e6)
+                ax_delay_dl [0].bar (range (len (x)), y_delay_dl/1e6, tick_label=x, yerr=y_err_delay_dl/1e6)
+                ax_dataRx_ul [0].bar (range (len (x)), y_dataRx_ul, tick_label=x, yerr=y_err_dataRx_ul)
+                ax_dataRx_dl [0].bar (range (len (x)), y_dataRx_dl, tick_label=x, yerr=y_err_dataRx_dl)
+                
+                ax_sinr_ul [0].tick_params(axis='x', labelrotation=90)
+                ax_sinr_dl [0].tick_params(axis='x', labelrotation=90)
+                ax_bler_ul [0].tick_params(axis='x', labelrotation=90)
+                ax_bler_dl [0].tick_params(axis='x', labelrotation=90)
+                ax_delay_ul [0].tick_params(axis='x', labelrotation=90)
+                ax_delay_dl [0].tick_params(axis='x', labelrotation=90)
+                ax_dataRx_ul [0].tick_params(axis='x', labelrotation=90)
+                ax_dataRx_dl [0].tick_params(axis='x', labelrotation=90)
+                
+                ax_sinr_ul [0].set (ylabel='SINR [dB]')
+                ax_sinr_dl [0].set (ylabel='SINR [dB]')
+                ax_bler_ul [0].set (ylabel='BLER')
+                ax_bler_dl [0].set (ylabel='BLER')
+                ax_delay_ul [0].set (ylabel='delay [ms]')
+                ax_delay_dl [0].set (ylabel='delay [ms]')
+                ax_dataRx_ul [0].set (ylabel='PRR')
+                ax_dataRx_dl [0].set (ylabel='PRR')
+                
+                # multi layer
+                x = list (results_df ['sched'].unique ())
+                y_sinr_ul = np.full ((len (x)), np.nan)
+                y_sinr_dl = np.full ((len (x)), np.nan)
+                y_bler_ul = np.full ((len (x)), np.nan)
+                y_bler_dl = np.full ((len (x)), np.nan)
+                y_delay_ul = np.full ((len (x)), np.nan)
+                y_delay_dl = np.full ((len (x)), np.nan)
+                y_dataRx_ul = np.full ((len (x)), np.nan)
+                y_dataRx_dl = np.full ((len (x)), np.nan)
+                
+                y_err_sinr_ul = np.full ((len (x)), np.nan)
+                y_err_sinr_dl = np.full ((len (x)), np.nan)
+                y_err_bler_ul = np.full ((len (x)), np.nan)
+                y_err_bler_dl = np.full ((len (x)), np.nan)
+                y_err_delay_ul = np.full ((len (x)), np.nan)
+                y_err_delay_dl = np.full ((len (x)), np.nan)
+                y_err_dataRx_ul = np.full ((len (x)), np.nan)
+                y_err_dataRx_dl = np.full ((len (x)), np.nan)
+                
+                for sched in ['ns3::MmWaveAsyncHbfMacScheduler', 'ns3::MmWavePaddedHbfMacScheduler']:
+                    data = results_df.loc [(results_df ['numEnb'] == 1) & 
+                                          (results_df ['numUe'] == 7) &
+                                          (results_df ['simTime'] == 1.2) &
+                                          (results_df ['interPacketInterval'] == 0) &
+                                          (results_df ['harq'] == harq) &
+                                          (results_df ['rlcAm'] == rlcAm) &
+                                          (results_df ['fixedTti'] == False) &
+                                          (results_df ['sched'] == sched) &
+                                          (results_df ['bfmod'] == 'ns3::MmWaveMMSESpectrumBeamforming') &
+                                          (results_df ['nLayers'] == 4) &
+                                          (results_df ['useTCP'] == True)]
+                                          
+                    y_sinr_ul [x.index (sched)] = data ['avgSinrUl'].mean ()
+                    y_sinr_dl [x.index (sched)] = data ['avgSinrDl'].mean ()
+                    y_bler_ul [x.index (sched)] = data ['avgBlerUl'].mean ()
+                    y_bler_dl [x.index (sched)] = data ['avgBlerDl'].mean ()
+                    y_delay_ul [x.index (sched)] = data ['ulPdcpDelay'].mean ()
+                    y_delay_dl [x.index (sched)] = data ['dlPdcpDelay'].mean ()
+                    
+                    y_err_sinr_ul [x.index (sched)] = get_std_err (data ['avgSinrUl'])
+                    y_err_sinr_dl [x.index (sched)] = get_std_err (data ['avgSinrDl'])
+                    y_err_bler_ul [x.index (sched)] = get_std_err (data ['avgBlerUl'])
+                    y_err_bler_dl [x.index (sched)] = get_std_err (data ['avgBlerDl'])
+                    y_err_delay_ul [x.index (sched)] = get_std_err (data ['ulPdcpDelay'])
+                    y_err_delay_dl [x.index (sched)] = get_std_err (data ['dlPdcpDelay'])
+                    
+                    y_dataRx_ul [x.index (sched)] = data ['ulRxPdcpData'].mean ()
+                    y_err_dataRx_ul [x.index (sched)] = get_std_err (data ['ulRxPdcpData'])
+                    y_dataRx_dl [x.index (sched)] = data ['dlRxPdcpData'].mean ()
+                    y_err_dataRx_dl [x.index (sched)] = get_std_err (data ['dlRxPdcpData'])
+                                        
+                ax_sinr_ul [1].bar (range (len (x)), y_sinr_ul, tick_label=x, yerr=y_err_sinr_ul)
+                ax_sinr_dl [1].bar (range (len (x)), y_sinr_dl, tick_label=x, yerr=y_err_sinr_dl)
+                ax_bler_ul [1].bar (range (len (x)), y_bler_ul, tick_label=x, yerr=y_err_bler_ul)
+                ax_bler_dl [1].bar (range (len (x)), y_bler_dl, tick_label=x, yerr=y_err_bler_dl)
+                ax_delay_ul [1].bar (range (len (x)), y_delay_ul/1e6, tick_label=x, yerr=y_err_delay_ul/1e6)
+                ax_delay_dl [1].bar (range (len (x)), y_delay_dl/1e6, tick_label=x, yerr=y_err_delay_dl/1e6)
+                ax_dataRx_ul [1].bar (range (len (x)), y_dataRx_ul, tick_label=x, yerr=y_err_dataRx_ul)
+                ax_dataRx_dl [1].bar (range (len (x)), y_dataRx_dl, tick_label=x, yerr=y_err_dataRx_dl)
+                
+                ax_sinr_ul [1].tick_params(axis='x', labelrotation=90)
+                ax_sinr_dl [1].tick_params(axis='x', labelrotation=90)
+                ax_bler_ul [1].tick_params(axis='x', labelrotation=90)
+                ax_bler_dl [1].tick_params(axis='x', labelrotation=90)
+                ax_delay_ul [1].tick_params(axis='x', labelrotation=90)
+                ax_delay_dl [1].tick_params(axis='x', labelrotation=90)
+                ax_dataRx_ul [1].tick_params(axis='x', labelrotation=90)
+                ax_dataRx_dl [1].tick_params(axis='x', labelrotation=90)
+                
+                fig_sinr_ul.savefig (figure_folder + 'sinr_ul_'+title+'.png', bbox_inches='tight')
+                fig_sinr_dl.savefig (figure_folder + 'sinr_dl_'+title+'.png', bbox_inches='tight')
+                fig_bler_ul.savefig (figure_folder + 'bler_ul_'+title+'.png', bbox_inches='tight')
+                fig_bler_dl.savefig (figure_folder + 'bler_dl_'+title+'.png', bbox_inches='tight')
+                fig_delay_ul.savefig (figure_folder + 'delay_ul_'+title+'.png', bbox_inches='tight')
+                fig_delay_dl.savefig (figure_folder + 'delay_dl_'+title+'.png', bbox_inches='tight')
+                fig_dataRx_ul.savefig (figure_folder + 'dataRx_ul_'+title+'.png', bbox_inches='tight')
+                fig_dataRx_dl.savefig (figure_folder + 'dataRx_dl_'+title+'.png', bbox_inches='tight')
+                
+def plot_sched_comparison_udp (csv_path, figure_folder):
+    
+    results_df = pd.read_csv (csv_path)
+    # plot the results
+
+    # sched comparison
+    # udp_sched_comparison_sigle_layer = {
+    # 'RngRun' : list (range (nruns)),
+    # 'numEnb' : 1,
+    # 'numUe' : 7,
+    # 'simTime' : 1.2,
+    # 'interPacketInterval' : [150, 1500],
+    # 'harq' : [False, True],
+    # 'rlcAm' : [True, False],
+    # 'fixedTti' : False,
+    # 'sched' : ['ns3::MmWaveFlexTtiMacScheduler', 'ns3::MmWavePaddedHbfMacScheduler'],
+    # 'bfmod' : 'ns3::MmWaveDftBeamforming',
+    # 'nLayers' : 1,
+    # 'useTCP' : False
+    # }
+
+    for rlcAm in [True, False]:
+        for interPacketInterval in [150, 1500]:
+            for harq in [False, True]:
+                title = 'rlcAm=' + str (rlcAm) + "_interPacketInterval=" + str (interPacketInterval) + "_harq=" + str (harq)
+                
+                fig_sinr_ul, ax_sinr_ul = plt.subplots(1, 2)
+                fig_sinr_ul.suptitle('SINR UL ' + title)
+                fig_sinr_dl, ax_sinr_dl = plt.subplots(1, 2)
+                fig_sinr_dl.suptitle('SINR DL ' + title)
+                fig_bler_ul, ax_bler_ul = plt.subplots(1, 2)
+                fig_bler_ul.suptitle('BLER UL ' + title)
+                fig_bler_dl, ax_bler_dl = plt.subplots(1, 2)
+                fig_bler_dl.suptitle('BLER DL ' + title)
+                fig_delay_ul, ax_delay_ul = plt.subplots(1, 2)
+                fig_delay_ul.suptitle('DELAY UL ' + title)
+                fig_delay_dl, ax_delay_dl = plt.subplots(1, 2)
+                fig_delay_dl.suptitle('DELAY DL ' + title)
+                fig_dataRx_ul, ax_dataRx_ul = plt.subplots(1, 2)
+                fig_dataRx_ul.suptitle('DATA RX UL ' + title)
+                fig_dataRx_dl, ax_dataRx_dl = plt.subplots(1, 2)
+                fig_dataRx_dl.suptitle('DATA RX DL ' + title)
+                
+                plt.setp(ax_sinr_ul, ylim=[0, 50])
+                plt.setp(ax_sinr_dl, ylim=[0, 50])
+                plt.setp(ax_bler_ul, ylim=[0, 0.5])
+                plt.setp(ax_bler_dl, ylim=[0, 0.5])
+                # plt.setp(ax_delay_ul, ylim=[0, 5])
+                # plt.setp(ax_delay_dl, ylim=[0, 5])
+                # plt.setp(ax_dataRx_ul, ylim=[0, 1.1])
+                # plt.setp(ax_dataRx_dl, ylim=[0, 1.1])
+                
+                
+                # single layer
+                x = list (results_df ['sched'].unique ())
+                y_sinr_ul = np.full ((len (x)), np.nan)
+                y_sinr_dl = np.full ((len (x)), np.nan)
+                y_bler_ul = np.full ((len (x)), np.nan)
+                y_bler_dl = np.full ((len (x)), np.nan)
+                y_delay_ul = np.full ((len (x)), np.nan)
+                y_delay_dl = np.full ((len (x)), np.nan)
+                y_dataRx_ul = np.full ((len (x)), np.nan)
+                y_dataRx_dl = np.full ((len (x)), np.nan)
+                
+                y_err_sinr_ul = np.full ((len (x)), np.nan)
+                y_err_sinr_dl = np.full ((len (x)), np.nan)
+                y_err_bler_ul = np.full ((len (x)), np.nan)
+                y_err_bler_dl = np.full ((len (x)), np.nan)
+                y_err_delay_ul = np.full ((len (x)), np.nan)
+                y_err_delay_dl = np.full ((len (x)), np.nan)
+                y_err_dataRx_ul = np.full ((len (x)), np.nan)
+                y_err_dataRx_dl = np.full ((len (x)), np.nan)
+                
+                for sched in ['ns3::MmWaveFlexTtiMacScheduler', 'ns3::MmWavePaddedHbfMacScheduler']:
+                    data = results_df.loc [(results_df ['numEnb'] == 1) & 
+                                          (results_df ['numUe'] == 7) &
+                                          (results_df ['simTime'] == 1.2) &
+                                          (results_df ['interPacketInterval'] == interPacketInterval) &
+                                          (results_df ['harq'] == harq) &
+                                          (results_df ['rlcAm'] == rlcAm) &
+                                          (results_df ['fixedTti'] == False) &
+                                          (results_df ['sched'] == sched) &
+                                          (results_df ['bfmod'] == 'ns3::MmWaveDftBeamforming') &
+                                          (results_df ['nLayers'] == 1) &
+                                          (results_df ['useTCP'] == False)]
+                            
+                    y_sinr_ul [x.index (sched)] = data ['avgSinrUl'].mean ()
+                    y_sinr_dl [x.index (sched)] = data ['avgSinrDl'].mean ()
+                    y_bler_ul [x.index (sched)] = data ['avgBlerUl'].mean ()
+                    y_bler_dl [x.index (sched)] = data ['avgBlerDl'].mean ()
+                    y_delay_ul [x.index (sched)] = data ['ulPdcpDelay'].mean ()
+                    y_delay_dl [x.index (sched)] = data ['dlPdcpDelay'].mean ()
+                            
+                    y_err_sinr_ul [x.index (sched)] = get_std_err (data ['avgSinrUl'])
+                    y_err_sinr_dl [x.index (sched)] = get_std_err (data ['avgSinrDl'])
+                    y_err_bler_ul [x.index (sched)] = get_std_err (data ['avgBlerUl'])
+                    y_err_bler_dl [x.index (sched)] = get_std_err (data ['avgBlerDl'])
+                    y_err_delay_ul [x.index (sched)] = get_std_err (data ['ulPdcpDelay'])
+                    y_err_delay_dl [x.index (sched)] = get_std_err (data ['dlPdcpDelay'])
+                    
+                    y_dataRx_ul [x.index (sched)] = data ['ulRxPdcpData'].mean ()
+                    y_err_dataRx_ul [x.index (sched)] = get_std_err (data ['ulRxPdcpData'])
+                    y_dataRx_dl [x.index (sched)] = data ['dlRxPdcpData'].mean ()
+                    y_err_dataRx_dl [x.index (sched)] = get_std_err (data ['dlRxPdcpData'])
+                
+                ax_sinr_ul [0].bar (range (len (x)), y_sinr_ul, tick_label=x, yerr=y_err_sinr_ul)
+                ax_sinr_dl [0].bar (range (len (x)), y_sinr_dl, tick_label=x, yerr=y_err_sinr_dl)
+                ax_bler_ul [0].bar (range (len (x)), y_bler_ul, tick_label=x, yerr=y_err_bler_ul)
+                ax_bler_dl [0].bar (range (len (x)), y_bler_dl, tick_label=x, yerr=y_err_bler_dl)
+                ax_delay_ul [0].bar (range (len (x)), y_delay_ul/1e6, tick_label=x, yerr=y_err_delay_ul/1e6)
+                ax_delay_dl [0].bar (range (len (x)), y_delay_dl/1e6, tick_label=x, yerr=y_err_delay_dl/1e6)
+                ax_dataRx_ul [0].bar (range (len (x)), y_dataRx_ul, tick_label=x, yerr=y_err_dataRx_ul)
+                ax_dataRx_dl [0].bar (range (len (x)), y_dataRx_dl, tick_label=x, yerr=y_err_dataRx_dl)
+                
+                ax_sinr_ul [0].tick_params(axis='x', labelrotation=90)
+                ax_sinr_dl [0].tick_params(axis='x', labelrotation=90)
+                ax_bler_ul [0].tick_params(axis='x', labelrotation=90)
+                ax_bler_dl [0].tick_params(axis='x', labelrotation=90)
+                ax_delay_ul [0].tick_params(axis='x', labelrotation=90)
+                ax_delay_dl [0].tick_params(axis='x', labelrotation=90)
+                ax_dataRx_ul [0].tick_params(axis='x', labelrotation=90)
+                ax_dataRx_dl [0].tick_params(axis='x', labelrotation=90)
+                
+                ax_sinr_ul [0].set (ylabel='SINR [dB]')
+                ax_sinr_dl [0].set (ylabel='SINR [dB]')
+                ax_bler_ul [0].set (ylabel='BLER')
+                ax_bler_dl [0].set (ylabel='BLER')
+                ax_delay_ul [0].set (ylabel='delay [ms]')
+                ax_delay_dl [0].set (ylabel='delay [ms]')
+                ax_dataRx_ul [0].set (ylabel='Rx data [bytes]')
+                ax_dataRx_dl [0].set (ylabel='Rx data [bytes]')
+                
+                # multi layer
+                x = list (results_df ['sched'].unique ())
+                y_sinr_ul = np.full ((len (x)), np.nan)
+                y_sinr_dl = np.full ((len (x)), np.nan)
+                y_bler_ul = np.full ((len (x)), np.nan)
+                y_bler_dl = np.full ((len (x)), np.nan)
+                y_delay_ul = np.full ((len (x)), np.nan)
+                y_delay_dl = np.full ((len (x)), np.nan)
+                y_dataRx_ul = np.full ((len (x)), np.nan)
+                y_dataRx_dl = np.full ((len (x)), np.nan)
+                
+                y_err_sinr_ul = np.full ((len (x)), np.nan)
+                y_err_sinr_dl = np.full ((len (x)), np.nan)
+                y_err_bler_ul = np.full ((len (x)), np.nan)
+                y_err_bler_dl = np.full ((len (x)), np.nan)
+                y_err_delay_ul = np.full ((len (x)), np.nan)
+                y_err_delay_dl = np.full ((len (x)), np.nan)
+                y_err_dataRx_ul = np.full ((len (x)), np.nan)
+                y_err_dataRx_dl = np.full ((len (x)), np.nan)
+                
+                for sched in ['ns3::MmWaveAsyncHbfMacScheduler', 'ns3::MmWavePaddedHbfMacScheduler']:
+                    data = results_df.loc [(results_df ['numEnb'] == 1) & 
+                                          (results_df ['numUe'] == 7) &
+                                          (results_df ['simTime'] == 1.2) &
+                                          (results_df ['interPacketInterval'] == interPacketInterval) &
+                                          (results_df ['harq'] == harq) &
+                                          (results_df ['rlcAm'] == rlcAm) &
+                                          (results_df ['fixedTti'] == False) &
+                                          (results_df ['sched'] == sched) &
+                                          (results_df ['bfmod'] == 'ns3::MmWaveMMSESpectrumBeamforming') &
+                                          (results_df ['nLayers'] == 4) &
+                                          (results_df ['useTCP'] == False)]
+                                          
+                    y_sinr_ul [x.index (sched)] = data ['avgSinrUl'].mean ()
+                    y_sinr_dl [x.index (sched)] = data ['avgSinrDl'].mean ()
+                    y_bler_ul [x.index (sched)] = data ['avgBlerUl'].mean ()
+                    y_bler_dl [x.index (sched)] = data ['avgBlerDl'].mean ()
+                    y_delay_ul [x.index (sched)] = data ['ulPdcpDelay'].mean ()
+                    y_delay_dl [x.index (sched)] = data ['dlPdcpDelay'].mean ()
+                    
+                    y_err_sinr_ul [x.index (sched)] = get_std_err (data ['avgSinrUl'])
+                    y_err_sinr_dl [x.index (sched)] = get_std_err (data ['avgSinrDl'])
+                    y_err_bler_ul [x.index (sched)] = get_std_err (data ['avgBlerUl'])
+                    y_err_bler_dl [x.index (sched)] = get_std_err (data ['avgBlerDl'])
+                    y_err_delay_ul [x.index (sched)] = get_std_err (data ['ulPdcpDelay'])
+                    y_err_delay_dl [x.index (sched)] = get_std_err (data ['dlPdcpDelay'])
+                    
+                    y_dataRx_ul [x.index (sched)] = data ['ulRxPdcpData'].mean ()
+                    y_err_dataRx_ul [x.index (sched)] = get_std_err (data ['ulRxPdcpData'])
+                    y_dataRx_dl [x.index (sched)] = data ['dlRxPdcpData'].mean ()
+                    y_err_dataRx_dl [x.index (sched)] = get_std_err (data ['dlRxPdcpData'])
+                                        
+                ax_sinr_ul [1].bar (range (len (x)), y_sinr_ul, tick_label=x, yerr=y_err_sinr_ul)
+                ax_sinr_dl [1].bar (range (len (x)), y_sinr_dl, tick_label=x, yerr=y_err_sinr_dl)
+                ax_bler_ul [1].bar (range (len (x)), y_bler_ul, tick_label=x, yerr=y_err_bler_ul)
+                ax_bler_dl [1].bar (range (len (x)), y_bler_dl, tick_label=x, yerr=y_err_bler_dl)
+                ax_delay_ul [1].bar (range (len (x)), y_delay_ul/1e6, tick_label=x, yerr=y_err_delay_ul/1e6)
+                ax_delay_dl [1].bar (range (len (x)), y_delay_dl/1e6, tick_label=x, yerr=y_err_delay_dl/1e6)
+                ax_dataRx_ul [1].bar (range (len (x)), y_dataRx_ul, tick_label=x, yerr=y_err_dataRx_ul)
+                ax_dataRx_dl [1].bar (range (len (x)), y_dataRx_dl, tick_label=x, yerr=y_err_dataRx_dl)
+                
+                ax_sinr_ul [1].tick_params(axis='x', labelrotation=90)
+                ax_sinr_dl [1].tick_params(axis='x', labelrotation=90)
+                ax_bler_ul [1].tick_params(axis='x', labelrotation=90)
+                ax_bler_dl [1].tick_params(axis='x', labelrotation=90)
+                ax_delay_ul [1].tick_params(axis='x', labelrotation=90)
+                ax_delay_dl [1].tick_params(axis='x', labelrotation=90)
+                ax_dataRx_ul [1].tick_params(axis='x', labelrotation=90)
+                ax_dataRx_dl [1].tick_params(axis='x', labelrotation=90)
+                
+                fig_sinr_ul.savefig (figure_folder + 'sinr_ul_'+title+'.png', bbox_inches='tight')
+                fig_sinr_dl.savefig (figure_folder + 'sinr_dl_'+title+'.png', bbox_inches='tight')
+                fig_bler_ul.savefig (figure_folder + 'bler_ul_'+title+'.png', bbox_inches='tight')
+                fig_bler_dl.savefig (figure_folder + 'bler_dl_'+title+'.png', bbox_inches='tight')
+                fig_delay_ul.savefig (figure_folder + 'delay_ul_'+title+'.png', bbox_inches='tight')
+                fig_delay_dl.savefig (figure_folder + 'delay_dl_'+title+'.png', bbox_inches='tight')
+                fig_dataRx_ul.savefig (figure_folder + 'dataRx_ul_'+title+'.png', bbox_inches='tight')
+                fig_dataRx_dl.savefig (figure_folder + 'dataRx_dl_'+title+'.png', bbox_inches='tight')
+
+def plot_sched_cdfs_tcp (campaign_dir, nruns, n_bins, figure_folder):
+    
+    campaign = sem.CampaignManager.load(campaign_dir, runner_type = "ParallelRunner", check_repo = False)
+    
+    harqList = [False, True]
+    rlcAmList = [False, True]
+
+    for rlcAm in rlcAmList:
+            for harq in harqList:
+                
+                title = 'rlcAm=' + str(rlcAm) + "_harq=" + str (harq)
+                
+                fig_sinr_ul = plt.figure (1)
+                fig_sinr_ul.suptitle('SINR UL ' + title)
+                fig_sinr_dl = plt.figure (2)
+                fig_sinr_dl.suptitle('SINR DL ' + title)
+                fig_bler_ul = plt.figure (3)
+                fig_bler_ul.suptitle('BLER UL ' + title)
+                fig_bler_dl = plt.figure (4)
+                fig_bler_dl.suptitle('BLER DL ' + title)
+                fig_delay_ul = plt.figure (5)
+                fig_delay_ul.suptitle('DELAY UL ' + title)
+                fig_delay_dl = plt.figure (6)
+                fig_delay_dl.suptitle('DELAY DL ' + title)
+                
+                for sched in ['ns3::MmWaveFlexTtiMacScheduler', 'ns3::MmWavePaddedHbfMacScheduler']:    
+                    
+                    params = {
+                    'RngRun' : list (range (nruns)),
+                    'numEnb' : 1,
+                    'numUe' : 7,
+                    'simTime' : 1.2,
+                    'interPacketInterval' : 0,
+                    'harq' : harq,
+                    'rlcAm' : rlcAm,
+                    'fixedTti' : False,
+                    'sched' : sched,
+                    'bfmod' : 'ns3::MmWaveDftBeamforming',
+                    'nLayers' : 1,
+                    'useTCP' : True
+                    }
+                    
+                    (sinr_ul_data, sinr_dl_data, bler_ul_data, bler_dl_data) = get_sinr_data (campaign, params)
+                    (delay_ul_data, delay_dl_data) = get_delay_data (campaign, params)
+                    
+                    plt.figure (1)
+                    n, bins, patches = plt.hist(sinr_ul_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=sched+' 1 layer')
+                    plt.figure (2)
+                    n, bins, patches = plt.hist(sinr_dl_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=sched+' 1 layer')
+                                                
+                    plt.figure (3)
+                    n, bins, patches = plt.hist(bler_ul_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=sched+' 1 layer')
+                    plt.figure (4)
+                    n, bins, patches = plt.hist(bler_dl_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=sched+' 1 layer')
+                    
+                    plt.figure (5)
+                    n, bins, patches = plt.hist(delay_ul_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=sched+' 1 layer')
+                    
+                    plt.figure (6)
+                    n, bins, patches = plt.hist(delay_dl_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=sched+' 1 layer')
+                                                
+                for sched in ['ns3::MmWaveAsyncHbfMacScheduler', 'ns3::MmWavePaddedHbfMacScheduler']:    
+                    
+                    params = {
+                    'RngRun' : list (range (nruns)),
+                    'numEnb' : 1,
+                    'numUe' : 7,
+                    'simTime' : 1.2,
+                    'interPacketInterval' : 0,
+                    'harq' : harq,
+                    'rlcAm' : rlcAm,
+                    'fixedTti' : False,
+                    'sched' : sched,
+                    'bfmod' : 'ns3::MmWaveMMSESpectrumBeamforming',
+                    'nLayers' : 4,
+                    'useTCP' : True
+                    }
+                    
+                    (sinr_ul_data, sinr_dl_data, bler_ul_data, bler_dl_data) = get_sinr_data (campaign, params)
+                    (delay_ul_data, delay_dl_data) = get_delay_data (campaign, params)
+                    
+                    plt.figure (1)
+                    n, bins, patches = plt.hist(sinr_ul_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=sched+' 4 layer')
+                    plt.figure (2)
+                    n, bins, patches = plt.hist(sinr_dl_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=sched+' 4 layer')
+
+                    plt.figure (3)
+                    n, bins, patches = plt.hist(bler_ul_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=sched+' 4 layer')
+                    plt.figure (4)
+                    n, bins, patches = plt.hist(bler_dl_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=sched+' 4 layer')
+                    plt.figure (5)
+                    n, bins, patches = plt.hist(delay_ul_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=sched+' 4 layer')
+                    plt.figure (6)
+                    n, bins, patches = plt.hist(delay_dl_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=sched+' 4 layer')
+                                                
+                fig_sinr_ul.legend (loc='center right')
+                fig_sinr_ul.savefig (figure_folder + 'cdf_sinr_ul_'+title+'.png', bbox_inches='tight')
+                plt.close (fig_sinr_ul)
+                
+                fig_sinr_dl.legend (loc='center right')
+                fig_sinr_dl.savefig (figure_folder + 'cdf_sinr_dl_'+title+'.png', bbox_inches='tight')
+                plt.close (fig_sinr_dl)
+                
+                fig_bler_ul.legend (loc='center right')
+                fig_bler_ul.savefig (figure_folder + 'cdf_bler_ul_'+title+'.png', bbox_inches='tight')
+                plt.close (fig_bler_ul)
+                
+                fig_bler_dl.legend (loc='center right')
+                fig_bler_dl.savefig (figure_folder + 'cdf_bler_dl_'+title+'.png', bbox_inches='tight')
+                plt.close (fig_bler_dl)
+                
+                fig_delay_ul.legend (loc='center right')
+                fig_delay_ul.savefig (figure_folder + 'cdf_delay_ul_'+title+'.png', bbox_inches='tight')
+                plt.close (fig_delay_ul)
+                
+                fig_delay_dl.legend (loc='center right')
+                fig_delay_dl.savefig (figure_folder + 'cdf_delay_dl_'+title+'.png', bbox_inches='tight')
+                plt.close (fig_delay_dl) 
+                
+def plot_sched_cdfs_udp (campaign_dir, nruns, n_bins, figure_folder):
+    
+    campaign = sem.CampaignManager.load(campaign_dir, runner_type = "ParallelRunner", check_repo = False)
+    
+    harqList = [False, True]
+    ipiList = [150, 1500]
+    rlcAmList = [False, True]
+
+    for rlcAm in rlcAmList:
+        for ipi in ipiList:
+            for harq in harqList:
+                
+                title = 'rlcAm=' + str(rlcAm) + '_interPacketInterval=' + str (ipi) + "_harq=" + str (harq)
+                
+                fig_sinr_ul = plt.figure (1)
+                fig_sinr_ul.suptitle('SINR UL ' + title)
+                fig_sinr_dl = plt.figure (2)
+                fig_sinr_dl.suptitle('SINR DL ' + title)
+                fig_bler_ul = plt.figure (3)
+                fig_bler_ul.suptitle('BLER UL ' + title)
+                fig_bler_dl = plt.figure (4)
+                fig_bler_dl.suptitle('BLER DL ' + title)
+                fig_delay_ul = plt.figure (5)
+                fig_delay_ul.suptitle('DELAY UL ' + title)
+                fig_delay_dl = plt.figure (6)
+                fig_delay_dl.suptitle('DELAY DL ' + title)
+                
+                for sched in ['ns3::MmWaveFlexTtiMacScheduler', 'ns3::MmWavePaddedHbfMacScheduler']:    
+                    
+                    params = {
+                    'RngRun' : list (range (nruns)),
+                    'numEnb' : 1,
+                    'numUe' : 7,
+                    'simTime' : 1.2,
+                    'interPacketInterval' : ipi,
+                    'harq' : harq,
+                    'rlcAm' : rlcAm,
+                    'fixedTti' : False,
+                    'sched' : sched,
+                    'bfmod' : 'ns3::MmWaveDftBeamforming',
+                    'nLayers' : 1,
+                    'useTCP' : False
+                    }
+                    
+                    (sinr_ul_data, sinr_dl_data, bler_ul_data, bler_dl_data) = get_sinr_data (campaign, params)
+                    (delay_ul_data, delay_dl_data) = get_delay_data (campaign, params)
+                    
+                    plt.figure (1)
+                    n, bins, patches = plt.hist(sinr_ul_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=sched+' 1 layer')
+                    plt.figure (2)
+                    n, bins, patches = plt.hist(sinr_dl_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=sched+' 1 layer')
+                                                
+                    plt.figure (3)
+                    n, bins, patches = plt.hist(bler_ul_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=sched+' 1 layer')
+                    plt.figure (4)
+                    n, bins, patches = plt.hist(bler_dl_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=sched+' 1 layer')
+                    
+                    plt.figure (5)
+                    n, bins, patches = plt.hist(delay_ul_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=sched+' 1 layer')
+                    
+                    plt.figure (6)
+                    n, bins, patches = plt.hist(delay_dl_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=sched+' 1 layer')
+                                                
+                for sched in ['ns3::MmWaveAsyncHbfMacScheduler', 'ns3::MmWavePaddedHbfMacScheduler']:    
+                    
+                    params = {
+                    'RngRun' : list (range (nruns)),
+                    'numEnb' : 1,
+                    'numUe' : 7,
+                    'simTime' : 1.2,
+                    'interPacketInterval' : ipi,
+                    'harq' : harq,
+                    'rlcAm' : rlcAm,
+                    'fixedTti' : False,
+                    'sched' : sched,
+                    'bfmod' : 'ns3::MmWaveMMSESpectrumBeamforming',
+                    'nLayers' : 4,
+                    'useTCP' : False
+                    }
+                    
+                    (sinr_ul_data, sinr_dl_data, bler_ul_data, bler_dl_data) = get_sinr_data (campaign, params)
+                    (delay_ul_data, delay_dl_data) = get_delay_data (campaign, params)
+                    
+                    plt.figure (1)
+                    n, bins, patches = plt.hist(sinr_ul_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=sched+' 4 layer')
+                    plt.figure (2)
+                    n, bins, patches = plt.hist(sinr_dl_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=sched+' 4 layer')
+
+                    plt.figure (3)
+                    n, bins, patches = plt.hist(bler_ul_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=sched+' 4 layer')
+                    plt.figure (4)
+                    n, bins, patches = plt.hist(bler_dl_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=sched+' 4 layer')
+                    plt.figure (5)
+                    n, bins, patches = plt.hist(delay_ul_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=sched+' 4 layer')
+                    plt.figure (6)
+                    n, bins, patches = plt.hist(delay_dl_data, n_bins, density=True, histtype='step',
+                                                cumulative=True, label=sched+' 4 layer')
+                                                
+                fig_sinr_ul.legend (loc='center right')
+                fig_sinr_ul.savefig (figure_folder + 'cdf_sinr_ul_'+title+'.png', bbox_inches='tight')
+                plt.close (fig_sinr_ul)
+                
+                fig_sinr_dl.legend (loc='center right')
+                fig_sinr_dl.savefig (figure_folder + 'cdf_sinr_dl_'+title+'.png', bbox_inches='tight')
+                plt.close (fig_sinr_dl)
+                
+                fig_bler_ul.legend (loc='center right')
+                fig_bler_ul.savefig (figure_folder + 'cdf_bler_ul_'+title+'.png', bbox_inches='tight')
+                plt.close (fig_bler_ul)
+                
+                fig_bler_dl.legend (loc='center right')
+                fig_bler_dl.savefig (figure_folder + 'cdf_bler_dl_'+title+'.png', bbox_inches='tight')
+                plt.close (fig_bler_dl)
+                
+                fig_delay_ul.legend (loc='center right')
+                fig_delay_ul.savefig (figure_folder + 'cdf_delay_ul_'+title+'.png', bbox_inches='tight')
+                plt.close (fig_delay_ul)
+                
+                fig_delay_dl.legend (loc='center right')
+                fig_delay_dl.savefig (figure_folder + 'cdf_delay_dl_'+title+'.png', bbox_inches='tight')
+                plt.close (fig_delay_dl)           
