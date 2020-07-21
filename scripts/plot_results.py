@@ -4,6 +4,7 @@ import numpy.ma as ma
 import matplotlib.pyplot as plt
 import math
 import sem
+import tikzplotlib
 
 def get_std_err (x):
     std = np.nanstd (x) / math.sqrt(x.size - np.isnan(x).sum ())
@@ -314,25 +315,25 @@ def plot_bf_cdfs (campaign_dir, nruns, n_bins, figure_folder):
                     (sinr_ul_data, sinr_dl_data, bler_ul_data, bler_dl_data) = get_sinr_data (campaign, params)
                     (delay_ul_data, delay_dl_data) = get_delay_data (campaign, params)
                     
-                    plt.figure (1)
+                    plt.figure (fig_sinr_ul.number)
                     n, bins, patches = plt.hist(sinr_ul_data, n_bins, density=True, histtype='step',
                                                 cumulative=True, label=bfmod+' 1 layer')
-                    plt.figure (2)
+                    plt.figure (fig_sinr_dl.number)
                     n, bins, patches = plt.hist(sinr_dl_data, n_bins, density=True, histtype='step',
                                                 cumulative=True, label=bfmod+' 1 layer')
                                                 
-                    plt.figure (3)
+                    plt.figure (fig_bler_ul.number)
                     n, bins, patches = plt.hist(bler_ul_data, n_bins, density=True, histtype='step',
                                                 cumulative=True, label=bfmod+' 1 layer')
-                    plt.figure (4)
+                    plt.figure (fig_bler_dl.number)
                     n, bins, patches = plt.hist(bler_dl_data, n_bins, density=True, histtype='step',
                                                 cumulative=True, label=bfmod+' 1 layer')
                     
-                    plt.figure (5)
+                    plt.figure (fig_delay_ul.number)
                     n, bins, patches = plt.hist(delay_ul_data, n_bins, density=True, histtype='step',
                                                 cumulative=True, label=bfmod+' 1 layer')
                     
-                    plt.figure (6)
+                    plt.figure (fig_delay_dl.number)
                     n, bins, patches = plt.hist(delay_dl_data, n_bins, density=True, histtype='step',
                                                 cumulative=True, label=bfmod+' 1 layer')
                                                 
@@ -356,48 +357,60 @@ def plot_bf_cdfs (campaign_dir, nruns, n_bins, figure_folder):
                     (sinr_ul_data, sinr_dl_data, bler_ul_data, bler_dl_data) = get_sinr_data (campaign, params)
                     (delay_ul_data, delay_dl_data) = get_delay_data (campaign, params)
                     
-                    plt.figure (1)
+                    plt.figure (fig_sinr_ul.number)
                     n, bins, patches = plt.hist(sinr_ul_data, n_bins, density=True, histtype='step',
                                                 cumulative=True, label=bfmod+' 4 layer')
-                    plt.figure (2)
+                    plt.figure (fig_sinr_dl.number)
                     n, bins, patches = plt.hist(sinr_dl_data, n_bins, density=True, histtype='step',
                                                 cumulative=True, label=bfmod+' 4 layer')
 
-                    plt.figure (3)
+                    plt.figure (fig_bler_ul.number)
                     n, bins, patches = plt.hist(bler_ul_data, n_bins, density=True, histtype='step',
                                                 cumulative=True, label=bfmod+' 4 layer')
-                    plt.figure (4)
+                    plt.figure (fig_bler_dl.number)
                     n, bins, patches = plt.hist(bler_dl_data, n_bins, density=True, histtype='step',
                                                 cumulative=True, label=bfmod+' 4 layer')
-                    plt.figure (5)
+                    plt.figure (fig_delay_ul.number)
                     n, bins, patches = plt.hist(delay_ul_data, n_bins, density=True, histtype='step',
                                                 cumulative=True, label=bfmod+' 4 layer')
-                    plt.figure (6)
+                    plt.figure (fig_delay_dl.number)
                     n, bins, patches = plt.hist(delay_dl_data, n_bins, density=True, histtype='step',
                                                 cumulative=True, label=bfmod+' 4 layer')
                                                 
                 fig_sinr_ul.legend (loc='center right')
                 fig_sinr_ul.savefig (figure_folder + 'cdf_sinr_ul_'+title+'.png', bbox_inches='tight')
+                plt.figure (fig_sinr_ul.number)
+                tikzplotlib.save (figure_folder + 'cdf_sinr_ul_'+title+'.tex')
                 plt.close (fig_sinr_ul)
                 
                 fig_sinr_dl.legend (loc='center right')
                 fig_sinr_dl.savefig (figure_folder + 'cdf_sinr_dl_'+title+'.png', bbox_inches='tight')
+                plt.figure (fig_sinr_dl.number)
+                tikzplotlib.save (figure_folder + 'cdf_sinr_dl_'+title+'.tex')
                 plt.close (fig_sinr_dl)
                 
                 fig_bler_ul.legend (loc='center right')
                 fig_bler_ul.savefig (figure_folder + 'cdf_bler_ul_'+title+'.png', bbox_inches='tight')
+                plt.figure (fig_bler_ul.number)
+                tikzplotlib.save (figure_folder + 'cdf_bler_ul_'+title+'.tex')
                 plt.close (fig_bler_ul)
                 
                 fig_bler_dl.legend (loc='center right')
                 fig_bler_dl.savefig (figure_folder + 'cdf_bler_dl_'+title+'.png', bbox_inches='tight')
+                plt.figure (fig_bler_dl.number)
+                tikzplotlib.save (figure_folder + 'cdf_bler_dl_'+title+'.tex')
                 plt.close (fig_bler_dl)
                 
                 fig_delay_ul.legend (loc='center right')
                 fig_delay_ul.savefig (figure_folder + 'cdf_delay_ul_'+title+'.png', bbox_inches='tight')
+                plt.figure (fig_delay_ul.number)
+                tikzplotlib.save (figure_folder + 'cdf_delay_ul_'+title+'.tex')
                 plt.close (fig_delay_ul)
                 
                 fig_delay_dl.legend (loc='center right')
                 fig_delay_dl.savefig (figure_folder + 'cdf_delay_dl_'+title+'.png', bbox_inches='tight')
+                plt.figure (fig_delay_dl.number)
+                tikzplotlib.save (figure_folder + 'cdf_delay_dl_'+title+'.tex')
                 plt.close (fig_delay_dl)
                 
                 
