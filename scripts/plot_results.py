@@ -267,6 +267,20 @@ def get_delay_data (campaign, params):
         
         return (delay_ul_data, delay_dl_data)
 
+def compute_ecdf (samples):
+    # create x axis
+    nbins = 100
+    x = np.linspace (start=min (samples), stop=max (samples), num=nbins)
+
+    # compute ecdf
+    y = np.zeros (len (x))
+
+    for i in range (0, len (x)):
+        tmp = samples [samples <= x [i]]
+        y [i] = len (tmp) / len (samples)
+    return (x,y)
+
+
 def plot_bf_cdfs (campaign_dir, nruns, n_bins, figure_folder):
     
     campaign = sem.CampaignManager.load(campaign_dir, runner_type = "ParallelRunner", check_repo = False)
@@ -316,26 +330,28 @@ def plot_bf_cdfs (campaign_dir, nruns, n_bins, figure_folder):
                     (delay_ul_data, delay_dl_data) = get_delay_data (campaign, params)
                     
                     plt.figure (fig_sinr_ul.number)
-                    n, bins, patches = plt.hist(sinr_ul_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=bfmod+' 1 layer')
+                    (x, y) = compute_ecdf (sinr_ul_data)
+                    plt.plot (x, y, label=bfmod+' 1 layer')
+                    
                     plt.figure (fig_sinr_dl.number)
-                    n, bins, patches = plt.hist(sinr_dl_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=bfmod+' 1 layer')
+                    (x, y) = compute_ecdf (sinr_dl_data)
+                    plt.plot (x, y, label=bfmod+' 1 layer')
                                                 
                     plt.figure (fig_bler_ul.number)
-                    n, bins, patches = plt.hist(bler_ul_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=bfmod+' 1 layer')
+                    (x, y) = compute_ecdf (bler_ul_data)
+                    plt.plot (x, y, label=bfmod+' 1 layer')
+                    
                     plt.figure (fig_bler_dl.number)
-                    n, bins, patches = plt.hist(bler_dl_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=bfmod+' 1 layer')
+                    (x, y) = compute_ecdf (bler_dl_data)
+                    plt.plot (x, y, label=bfmod+' 1 layer')
                     
                     plt.figure (fig_delay_ul.number)
-                    n, bins, patches = plt.hist(delay_ul_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=bfmod+' 1 layer')
+                    (x, y) = compute_ecdf (delay_ul_data)
+                    plt.plot (x, y, label=bfmod+' 1 layer')
                     
                     plt.figure (fig_delay_dl.number)
-                    n, bins, patches = plt.hist(delay_dl_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=bfmod+' 1 layer')
+                    (x, y) = compute_ecdf (delay_dl_data)
+                    plt.plot (x, y, label=bfmod+' 1 layer')
                                                 
                 for bfmod in ['ns3::MmWaveDftBeamforming', 'ns3::MmWaveFFTCodebookBeamforming', 'ns3::MmWaveMMSEBeamforming', 'ns3::MmWaveMMSESpectrumBeamforming']:    
                     
@@ -358,24 +374,28 @@ def plot_bf_cdfs (campaign_dir, nruns, n_bins, figure_folder):
                     (delay_ul_data, delay_dl_data) = get_delay_data (campaign, params)
                     
                     plt.figure (fig_sinr_ul.number)
-                    n, bins, patches = plt.hist(sinr_ul_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=bfmod+' 4 layer')
+                    (x, y) = compute_ecdf (sinr_ul_data)
+                    plt.plot (x, y, label=bfmod+' 4 layer')
+                    
                     plt.figure (fig_sinr_dl.number)
-                    n, bins, patches = plt.hist(sinr_dl_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=bfmod+' 4 layer')
-
+                    (x, y) = compute_ecdf (sinr_dl_data)
+                    plt.plot (x, y, label=bfmod+' 4 layer')
+                    
                     plt.figure (fig_bler_ul.number)
-                    n, bins, patches = plt.hist(bler_ul_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=bfmod+' 4 layer')
+                    (x, y) = compute_ecdf (bler_ul_data)
+                    plt.plot (x, y, label=bfmod+' 4 layer')
+                    
                     plt.figure (fig_bler_dl.number)
-                    n, bins, patches = plt.hist(bler_dl_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=bfmod+' 4 layer')
+                    (x, y) = compute_ecdf (bler_dl_data)
+                    plt.plot (x, y, label=bfmod+' 4 layer')
+                    
                     plt.figure (fig_delay_ul.number)
-                    n, bins, patches = plt.hist(delay_ul_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=bfmod+' 4 layer')
+                    (x, y) = compute_ecdf (delay_ul_data)
+                    plt.plot (x, y, label=bfmod+' 4 layer')
+                    
                     plt.figure (fig_delay_dl.number)
-                    n, bins, patches = plt.hist(delay_dl_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=bfmod+' 4 layer')
+                    (x, y) = compute_ecdf (delay_dl_data)
+                    plt.plot (x, y, label=bfmod+' 4 layer')
                                                 
                 fig_sinr_ul.legend (loc='center right')
                 fig_sinr_ul.savefig (figure_folder + 'cdf_sinr_ul_'+title+'.png', bbox_inches='tight')
@@ -829,13 +849,37 @@ def plot_sched_comparison_udp (csv_path, figure_folder):
                 ax_dataRx_dl [1].tick_params(axis='x', labelrotation=90)
                 
                 fig_sinr_ul.savefig (figure_folder + 'sinr_ul_'+title+'.png', bbox_inches='tight')
+                plt.figure (fig_sinr_ul.number)
+                tikzplotlib.save (figure_folder + 'sinr_ul_'+title+'.tex')
+                
                 fig_sinr_dl.savefig (figure_folder + 'sinr_dl_'+title+'.png', bbox_inches='tight')
+                plt.figure (fig_sinr_dl.number)
+                tikzplotlib.save (figure_folder + 'sinr_dl_'+title+'.tex')
+                
                 fig_bler_ul.savefig (figure_folder + 'bler_ul_'+title+'.png', bbox_inches='tight')
+                plt.figure (fig_bler_ul.number)
+                tikzplotlib.save (figure_folder + 'bler_ul_'+title+'.tex')
+                
                 fig_bler_dl.savefig (figure_folder + 'bler_dl_'+title+'.png', bbox_inches='tight')
+                plt.figure (fig_bler_dl.number)
+                tikzplotlib.save (figure_folder + 'bler_dl_'+title+'.tex')
+                
                 fig_delay_ul.savefig (figure_folder + 'delay_ul_'+title+'.png', bbox_inches='tight')
+                plt.figure (fig_delay_ul.number)
+                tikzplotlib.save (figure_folder + 'delay_ul_'+title+'.tex')
+                
                 fig_delay_dl.savefig (figure_folder + 'delay_dl_'+title+'.png', bbox_inches='tight')
+                plt.figure (fig_delay_dl.number)
+                tikzplotlib.save (figure_folder + 'delay_dl_'+title+'.tex')
+                
                 fig_dataRx_ul.savefig (figure_folder + 'dataRx_ul_'+title+'.png', bbox_inches='tight')
+                plt.figure (fig_dataRx_ul.number)
+                tikzplotlib.save (figure_folder + 'dataRx_ul_'+title+'.tex')
+                
                 fig_dataRx_dl.savefig (figure_folder + 'dataRx_dl_'+title+'.png', bbox_inches='tight')
+                plt.figure (fig_dataRx_dl.number)
+                tikzplotlib.save (figure_folder + 'dataRx_dl_'+title+'.tex')
+                
 
 def plot_sched_cdfs_tcp (campaign_dir, nruns, n_bins, figure_folder):
     
