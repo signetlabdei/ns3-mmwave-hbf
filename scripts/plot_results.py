@@ -1286,3 +1286,105 @@ def plot_sched_scatter_udp (csv_path, figure_folder, appTime):
         fig_dl.savefig (figure_folder + 'scatter_dl_'+title+'.png', bbox_inches='tight')
         tikzplotlib.save (figure_folder + 'scatter_dl_'+title+'.tex')
         plt.close (fig_dl)
+                
+def plot_sched_scatter_tcp (csv_path, figure_folder, appTime):
+    
+    results_df = pd.read_csv (csv_path)
+    # plot the results
+
+    # sched comparison
+    # udp_sched_comparison_sigle_layer = {
+    # 'RngRun' : list (range (nruns)),
+    # 'numEnb' : 1,
+    # 'numUe' : 7,
+    # 'simTime' : 1.2,
+    # 'interPacketInterval' : [150, 1500],
+    # 'harq' : [False, True],
+    # 'rlcAm' : [True, False],
+    # 'fixedTti' : False,
+    # 'sched' : ['ns3::MmWaveFlexTtiMacScheduler', 'ns3::MmWavePaddedHbfMacScheduler'],
+    # 'bfmod' : 'ns3::MmWaveDftBeamforming',
+    # 'nLayers' : 1,
+    # 'useTCP' : False
+    # }
+
+    fig_ul = plt.figure (1)
+    fig_dl = plt.figure (2)
+    
+    for rlcAm in [True, False]:
+        for harq in [False, True]:
+            
+            if (rlcAm ^ harq): 
+                continue
+            
+            for sched in ['ns3::MmWaveFlexTtiMacScheduler', 'ns3::MmWavePaddedHbfMacScheduler']:
+                data = results_df.loc [(results_df ['numEnb'] == 1) & 
+                                      (results_df ['numUe'] == 7) &
+                                      (results_df ['simTime'] == 1.2) &
+                                      (results_df ['interPacketInterval'] == 0) &
+                                      (results_df ['harq'] == harq) &
+                                      (results_df ['rlcAm'] == rlcAm) &
+                                      (results_df ['fixedTti'] == False) &
+                                      (results_df ['sched'] == sched) &
+                                      (results_df ['bfmod'] == 'ns3::MmWaveDftBeamforming') &
+                                      (results_df ['nLayers'] == 1) &
+                                      (results_df ['useTCP'] == True)]
+
+                y_delay_ul = data ['ulPdcpDelay'].mean ()
+                y_delay_dl = data ['dlPdcpDelay'].mean ()
+                    
+                y_dataRx_ul = data ['ulRxPdcpData'].mean ()
+                y_dataRx_dl = data ['dlRxPdcpData'].mean ()
+                
+                y_thr_ul = y_dataRx_ul * 8 / appTime
+                y_thr_dl = y_dataRx_dl * 8 / appTime
+                
+                plt.figure (fig_ul.number)
+                plt.plot (y_delay_ul/1e6, y_thr_ul/1e6, marker=1, label = sched + ' 1 layer rlcAm=' + str (rlcAm) + ' harq=' + str (harq))
+                plt.figure (fig_dl.number)
+                plt.plot (y_delay_dl/1e6, y_thr_dl/1e6, marker=1, label = sched + ' 1 layer rlcAm=' + str (rlcAm) + ' harq=' + str (harq))
+            
+            
+            for sched in ['ns3::MmWaveAsyncHbfMacScheduler', 'ns3::MmWavePaddedHbfMacScheduler']:
+                data = results_df.loc [(results_df ['numEnb'] == 1) & 
+                                      (results_df ['numUe'] == 7) &
+                                      (results_df ['simTime'] == 1.2) &
+                                      (results_df ['interPacketInterval'] == 0) &
+                                      (results_df ['harq'] == harq) &
+                                      (results_df ['rlcAm'] == rlcAm) &
+                                      (results_df ['fixedTti'] == False) &
+                                      (results_df ['sched'] == sched) &
+                                      (results_df ['bfmod'] == 'ns3::MmWaveMMSESpectrumBeamforming') &
+                                      (results_df ['nLayers'] == 4) &
+                                      (results_df ['useTCP'] == True)]
+
+                y_delay_ul = data ['ulPdcpDelay'].mean ()
+                y_delay_dl = data ['dlPdcpDelay'].mean ()
+                    
+                y_dataRx_ul = data ['ulRxPdcpData'].mean ()
+                y_dataRx_dl = data ['dlRxPdcpData'].mean ()
+                
+                y_thr_ul = y_dataRx_ul * 8 / appTime
+                y_thr_dl = y_dataRx_dl * 8 / appTime
+                
+                plt.figure (fig_ul.number)
+                plt.plot (y_delay_ul/1e6, y_thr_ul/1e6, marker=1, label = sched + ' 4 layers rlcAm=' + str (rlcAm) + ' harq=' + str (harq))
+                plt.figure (fig_dl.number)
+                plt.plot (y_delay_dl/1e6, y_thr_dl/1e6, marker=1, label = sched + ' 4 layers rlcAm=' + str (rlcAm) + ' harq=' + str (harq))
+                
+                
+        plt.figure (fig_ul.number)
+        plt.xlabel ('Delay [ms]')
+        plt.ylabel ('Throughput [Mbps]')
+        fig_ul.legend ()    
+        fig_ul.savefig (figure_folder + 'tcp_scatter_ul.png', bbox_inches='tight')
+        tikzplotlib.save (figure_folder + 'tcp_scatter_ul.tex')
+        plt.close (fig_ul)
+        
+        plt.figure (fig_dl.number)
+        plt.xlabel ('Delay [ms]')
+        plt.ylabel ('Throughput [Mbps]')
+        fig_dl.legend ()
+        fig_dl.savefig (figure_folder + 'tcp_scatter_dl.png', bbox_inches='tight')
+        tikzplotlib.save (figure_folder + 'tcp_scatter_dl.tex')
+        plt.close (fig_dl)
