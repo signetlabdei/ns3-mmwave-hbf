@@ -880,7 +880,6 @@ def plot_sched_comparison_udp (csv_path, figure_folder):
                 plt.figure (fig_dataRx_dl.number)
                 tikzplotlib.save (figure_folder + 'dataRx_dl_'+title+'.tex')
                 
-
 def plot_sched_cdfs_tcp (campaign_dir, nruns, n_bins, figure_folder):
     
     campaign = sem.CampaignManager.load(campaign_dir, runner_type = "ParallelRunner", check_repo = False)
@@ -926,27 +925,29 @@ def plot_sched_cdfs_tcp (campaign_dir, nruns, n_bins, figure_folder):
                     (sinr_ul_data, sinr_dl_data, bler_ul_data, bler_dl_data) = get_sinr_data (campaign, params)
                     (delay_ul_data, delay_dl_data) = get_delay_data (campaign, params)
                     
-                    plt.figure (1)
-                    n, bins, patches = plt.hist(sinr_ul_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=sched+' 1 layer')
-                    plt.figure (2)
-                    n, bins, patches = plt.hist(sinr_dl_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=sched+' 1 layer')
+                    plt.figure (fig_sinr_ul.number)
+                    (x, y) = compute_ecdf (sinr_ul_data)
+                    plt.plot (x, y, label=sched+' 1 layer')
+                    
+                    plt.figure (fig_sinr_dl.number)
+                    (x, y) = compute_ecdf (sinr_dl_data)
+                    plt.plot (x, y, label=sched+' 1 layer')
                                                 
-                    plt.figure (3)
-                    n, bins, patches = plt.hist(bler_ul_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=sched+' 1 layer')
-                    plt.figure (4)
-                    n, bins, patches = plt.hist(bler_dl_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=sched+' 1 layer')
+                    plt.figure (fig_bler_ul.number)
+                    (x, y) = compute_ecdf (bler_ul_data)
+                    plt.plot (x, y, label=sched+' 1 layer')
                     
-                    plt.figure (5)
-                    n, bins, patches = plt.hist(delay_ul_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=sched+' 1 layer')
+                    plt.figure (fig_bler_dl.number)
+                    (x, y) = compute_ecdf (bler_dl_data)
+                    plt.plot (x, y, label=sched+' 1 layer')
                     
-                    plt.figure (6)
-                    n, bins, patches = plt.hist(delay_dl_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=sched+' 1 layer')
+                    plt.figure (fig_delay_ul.number)
+                    (x, y) = compute_ecdf (delay_ul_data)
+                    plt.plot (x/1e6, y, label=sched+' 1 layer')
+                    
+                    plt.figure (fig_delay_dl.number)
+                    (x, y) = compute_ecdf (delay_dl_data)
+                    plt.plot (x/1e6, y, label=sched+' 1 layer')
                                                 
                 for sched in ['ns3::MmWaveAsyncHbfMacScheduler', 'ns3::MmWavePaddedHbfMacScheduler']:    
                     
@@ -968,48 +969,64 @@ def plot_sched_cdfs_tcp (campaign_dir, nruns, n_bins, figure_folder):
                     (sinr_ul_data, sinr_dl_data, bler_ul_data, bler_dl_data) = get_sinr_data (campaign, params)
                     (delay_ul_data, delay_dl_data) = get_delay_data (campaign, params)
                     
-                    plt.figure (1)
-                    n, bins, patches = plt.hist(sinr_ul_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=sched+' 4 layer')
-                    plt.figure (2)
-                    n, bins, patches = plt.hist(sinr_dl_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=sched+' 4 layer')
+                    plt.figure (fig_sinr_ul.number)
+                    (x, y) = compute_ecdf (sinr_ul_data)
+                    plt.plot (x, y, label=sched+' 4 layer')
+                    
+                    plt.figure (fig_sinr_dl.number)
+                    (x, y) = compute_ecdf (sinr_dl_data)
+                    plt.plot (x, y, label=sched+' 4 layer')
 
-                    plt.figure (3)
-                    n, bins, patches = plt.hist(bler_ul_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=sched+' 4 layer')
-                    plt.figure (4)
-                    n, bins, patches = plt.hist(bler_dl_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=sched+' 4 layer')
-                    plt.figure (5)
-                    n, bins, patches = plt.hist(delay_ul_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=sched+' 4 layer')
-                    plt.figure (6)
-                    n, bins, patches = plt.hist(delay_dl_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=sched+' 4 layer')
+                    plt.figure (fig_bler_ul.number)
+                    (x, y) = compute_ecdf (bler_ul_data)
+                    plt.plot (x, y, label=sched+' 4 layer')
+                    
+                    plt.figure (fig_bler_dl.number)
+                    (x, y) = compute_ecdf (bler_dl_data)
+                    plt.plot (x, y, label=sched+' 4 layer')
+                    
+                    plt.figure (fig_delay_ul.number)
+                    (x, y) = compute_ecdf (delay_ul_data)
+                    plt.plot (x/1e6, y, label=sched+' 4 layer')
+                    
+                    plt.figure (fig_delay_dl.number)
+                    (x, y) = compute_ecdf (delay_dl_data)
+                    plt.plot (x/1e6, y, label=sched+' 4 layer')
                                                 
                 fig_sinr_ul.legend (loc='center right')
                 fig_sinr_ul.savefig (figure_folder + 'cdf_sinr_ul_'+title+'.png', bbox_inches='tight')
+                plt.figure (fig_sinr_ul.number)
+                tikzplotlib.save (figure_folder + 'cdf_sinr_ul_'+title+'.tex')
                 plt.close (fig_sinr_ul)
                 
                 fig_sinr_dl.legend (loc='center right')
                 fig_sinr_dl.savefig (figure_folder + 'cdf_sinr_dl_'+title+'.png', bbox_inches='tight')
+                plt.figure (fig_sinr_dl.number)
+                tikzplotlib.save (figure_folder + 'cdf_sinr_dl_'+title+'.tex')
                 plt.close (fig_sinr_dl)
                 
                 fig_bler_ul.legend (loc='center right')
                 fig_bler_ul.savefig (figure_folder + 'cdf_bler_ul_'+title+'.png', bbox_inches='tight')
+                plt.figure (fig_bler_ul.number)
+                tikzplotlib.save (figure_folder + 'cdf_bler_ul_'+title+'.tex')
                 plt.close (fig_bler_ul)
                 
                 fig_bler_dl.legend (loc='center right')
                 fig_bler_dl.savefig (figure_folder + 'cdf_bler_dl_'+title+'.png', bbox_inches='tight')
+                plt.figure (fig_bler_dl.number)
+                tikzplotlib.save (figure_folder + 'cdf_bler_dl_'+title+'.tex')
                 plt.close (fig_bler_dl)
                 
                 fig_delay_ul.legend (loc='center right')
                 fig_delay_ul.savefig (figure_folder + 'cdf_delay_ul_'+title+'.png', bbox_inches='tight')
+                plt.figure (fig_delay_ul.number)
+                tikzplotlib.save (figure_folder + 'cdf_delay_ul_'+title+'.tex')
                 plt.close (fig_delay_ul)
                 
                 fig_delay_dl.legend (loc='center right')
                 fig_delay_dl.savefig (figure_folder + 'cdf_delay_dl_'+title+'.png', bbox_inches='tight')
+                plt.figure (fig_delay_dl.number)
+                tikzplotlib.save (figure_folder + 'cdf_delay_dl_'+title+'.tex')
                 plt.close (fig_delay_dl) 
                 
 def plot_sched_cdfs_udp (campaign_dir, nruns, n_bins, figure_folder):
@@ -1059,27 +1076,29 @@ def plot_sched_cdfs_udp (campaign_dir, nruns, n_bins, figure_folder):
                     (sinr_ul_data, sinr_dl_data, bler_ul_data, bler_dl_data) = get_sinr_data (campaign, params)
                     (delay_ul_data, delay_dl_data) = get_delay_data (campaign, params)
                     
-                    plt.figure (1)
-                    n, bins, patches = plt.hist(sinr_ul_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=sched+' 1 layer')
-                    plt.figure (2)
-                    n, bins, patches = plt.hist(sinr_dl_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=sched+' 1 layer')
+                    plt.figure (fig_sinr_ul.number)
+                    (x, y) = compute_ecdf (sinr_ul_data)
+                    plt.plot (x, y, label=sched+' 1 layer')
+                    
+                    plt.figure (fig_sinr_dl.number)
+                    (x, y) = compute_ecdf (sinr_dl_data)
+                    plt.plot (x, y, label=sched+' 1 layer')
                                                 
-                    plt.figure (3)
-                    n, bins, patches = plt.hist(bler_ul_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=sched+' 1 layer')
-                    plt.figure (4)
-                    n, bins, patches = plt.hist(bler_dl_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=sched+' 1 layer')
+                    plt.figure (fig_bler_ul.number)
+                    (x, y) = compute_ecdf (bler_ul_data)
+                    plt.plot (x, y, label=sched+' 1 layer')
                     
-                    plt.figure (5)
-                    n, bins, patches = plt.hist(delay_ul_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=sched+' 1 layer')
+                    plt.figure (fig_bler_dl.number)
+                    (x, y) = compute_ecdf (bler_dl_data)
+                    plt.plot (x, y, label=sched+' 1 layer')
                     
-                    plt.figure (6)
-                    n, bins, patches = plt.hist(delay_dl_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=sched+' 1 layer')
+                    plt.figure (fig_delay_ul.number)
+                    (x, y) = compute_ecdf (delay_ul_data)
+                    plt.plot (x/1e6, y, label=sched+' 1 layer')
+                    
+                    plt.figure (fig_delay_dl.number)
+                    (x, y) = compute_ecdf (delay_dl_data)
+                    plt.plot (x/1e6, y, label=sched+' 1 layer')
                                                 
                 for sched in ['ns3::MmWaveAsyncHbfMacScheduler', 'ns3::MmWavePaddedHbfMacScheduler']:    
                     
@@ -1101,46 +1120,169 @@ def plot_sched_cdfs_udp (campaign_dir, nruns, n_bins, figure_folder):
                     (sinr_ul_data, sinr_dl_data, bler_ul_data, bler_dl_data) = get_sinr_data (campaign, params)
                     (delay_ul_data, delay_dl_data) = get_delay_data (campaign, params)
                     
-                    plt.figure (1)
-                    n, bins, patches = plt.hist(sinr_ul_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=sched+' 4 layer')
-                    plt.figure (2)
-                    n, bins, patches = plt.hist(sinr_dl_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=sched+' 4 layer')
-
-                    plt.figure (3)
-                    n, bins, patches = plt.hist(bler_ul_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=sched+' 4 layer')
-                    plt.figure (4)
-                    n, bins, patches = plt.hist(bler_dl_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=sched+' 4 layer')
-                    plt.figure (5)
-                    n, bins, patches = plt.hist(delay_ul_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=sched+' 4 layer')
-                    plt.figure (6)
-                    n, bins, patches = plt.hist(delay_dl_data, n_bins, density=True, histtype='step',
-                                                cumulative=True, label=sched+' 4 layer')
+                    plt.figure (fig_sinr_ul.number)
+                    (x, y) = compute_ecdf (sinr_ul_data)
+                    plt.plot (x, y, label=sched+' 4 layer')
+                    
+                    plt.figure (fig_sinr_dl.number)
+                    (x, y) = compute_ecdf (sinr_dl_data)
+                    plt.plot (x, y, label=sched+' 4 layer')
+                                                
+                    plt.figure (fig_bler_ul.number)
+                    (x, y) = compute_ecdf (bler_ul_data)
+                    plt.plot (x, y, label=sched+' 4 layer')
+                    
+                    plt.figure (fig_bler_dl.number)
+                    (x, y) = compute_ecdf (bler_dl_data)
+                    plt.plot (x, y, label=sched+' 4 layer')
+                    
+                    plt.figure (fig_delay_ul.number)
+                    (x, y) = compute_ecdf (delay_ul_data)
+                    plt.plot (x/1e6, y, label=sched+' 4 layer')
+                    
+                    plt.figure (fig_delay_dl.number)
+                    (x, y) = compute_ecdf (delay_dl_data)
+                    plt.plot (x/1e6, y, label=sched+' 4 layer')
                                                 
                 fig_sinr_ul.legend (loc='center right')
                 fig_sinr_ul.savefig (figure_folder + 'cdf_sinr_ul_'+title+'.png', bbox_inches='tight')
+                plt.figure (fig_sinr_ul.number)
+                tikzplotlib.save (figure_folder + 'cdf_sinr_ul_'+title+'.tex')
                 plt.close (fig_sinr_ul)
                 
                 fig_sinr_dl.legend (loc='center right')
                 fig_sinr_dl.savefig (figure_folder + 'cdf_sinr_dl_'+title+'.png', bbox_inches='tight')
+                plt.figure (fig_sinr_dl.number)
+                tikzplotlib.save (figure_folder + 'cdf_sinr_dl_'+title+'.tex')
                 plt.close (fig_sinr_dl)
                 
                 fig_bler_ul.legend (loc='center right')
                 fig_bler_ul.savefig (figure_folder + 'cdf_bler_ul_'+title+'.png', bbox_inches='tight')
+                plt.figure (fig_bler_ul.number)
+                tikzplotlib.save (figure_folder + 'cdf_bler_ul_'+title+'.tex')
                 plt.close (fig_bler_ul)
                 
                 fig_bler_dl.legend (loc='center right')
                 fig_bler_dl.savefig (figure_folder + 'cdf_bler_dl_'+title+'.png', bbox_inches='tight')
+                plt.figure (fig_bler_dl.number)
+                tikzplotlib.save (figure_folder + 'cdf_bler_dl_'+title+'.tex')
                 plt.close (fig_bler_dl)
                 
                 fig_delay_ul.legend (loc='center right')
                 fig_delay_ul.savefig (figure_folder + 'cdf_delay_ul_'+title+'.png', bbox_inches='tight')
+                plt.figure (fig_delay_ul.number)
+                tikzplotlib.save (figure_folder + 'cdf_delay_ul_'+title+'.tex')
                 plt.close (fig_delay_ul)
                 
                 fig_delay_dl.legend (loc='center right')
                 fig_delay_dl.savefig (figure_folder + 'cdf_delay_dl_'+title+'.png', bbox_inches='tight')
+                plt.figure (fig_delay_dl.number)
+                tikzplotlib.save (figure_folder + 'cdf_delay_dl_'+title+'.tex')
                 plt.close (fig_delay_dl)           
+
+def plot_sched_scatter_udp (csv_path, figure_folder, appTime):
+    
+    results_df = pd.read_csv (csv_path)
+    # plot the results
+
+    # sched comparison
+    # udp_sched_comparison_sigle_layer = {
+    # 'RngRun' : list (range (nruns)),
+    # 'numEnb' : 1,
+    # 'numUe' : 7,
+    # 'simTime' : 1.2,
+    # 'interPacketInterval' : [150, 1500],
+    # 'harq' : [False, True],
+    # 'rlcAm' : [True, False],
+    # 'fixedTti' : False,
+    # 'sched' : ['ns3::MmWaveFlexTtiMacScheduler', 'ns3::MmWavePaddedHbfMacScheduler'],
+    # 'bfmod' : 'ns3::MmWaveDftBeamforming',
+    # 'nLayers' : 1,
+    # 'useTCP' : False
+    # }
+
+    for interPacketInterval in [150, 1500]:
+        
+        title='IPI=' + str (interPacketInterval)
+
+        fig_ul = plt.figure (1)
+        fig_dl = plt.figure (2)
+        
+        for rlcAm in [True, False]:
+            for harq in [False, True]:
+                
+                if (rlcAm ^ harq): 
+                    continue
+                
+                for sched in ['ns3::MmWaveFlexTtiMacScheduler', 'ns3::MmWavePaddedHbfMacScheduler']:
+                    data = results_df.loc [(results_df ['numEnb'] == 1) & 
+                                          (results_df ['numUe'] == 7) &
+                                          (results_df ['simTime'] == 1.2) &
+                                          (results_df ['interPacketInterval'] == interPacketInterval) &
+                                          (results_df ['harq'] == harq) &
+                                          (results_df ['rlcAm'] == rlcAm) &
+                                          (results_df ['fixedTti'] == False) &
+                                          (results_df ['sched'] == sched) &
+                                          (results_df ['bfmod'] == 'ns3::MmWaveDftBeamforming') &
+                                          (results_df ['nLayers'] == 1) &
+                                          (results_df ['useTCP'] == False)]
+                    
+                    y_delay_ul = data ['ulPdcpDelay'].mean ()
+                    y_delay_dl = data ['dlPdcpDelay'].mean ()
+                        
+                    y_dataRx_ul = data ['ulRxPdcpData'].mean ()
+                    y_dataRx_dl = data ['dlRxPdcpData'].mean ()
+                    
+                    y_thr_ul = y_dataRx_ul * 8 / appTime
+                    y_thr_dl = y_dataRx_dl * 8 / appTime
+                    
+                    plt.figure (fig_ul.number)
+                    plt.plot (y_delay_ul/1e6, y_thr_ul/1e6, marker=1, label = sched + ' 1 layer rlcAm=' + str (rlcAm) + ' harq=' + str (harq))
+                    plt.figure (fig_dl.number)
+                    plt.plot (y_delay_dl/1e6, y_thr_dl/1e6, marker=1, label = sched + ' 1 layer rlcAm=' + str (rlcAm) + ' harq=' + str (harq))
+                
+                
+                for sched in ['ns3::MmWaveAsyncHbfMacScheduler', 'ns3::MmWavePaddedHbfMacScheduler']:
+                    data = results_df.loc [(results_df ['numEnb'] == 1) & 
+                                          (results_df ['numUe'] == 7) &
+                                          (results_df ['simTime'] == 1.2) &
+                                          (results_df ['interPacketInterval'] == interPacketInterval) &
+                                          (results_df ['harq'] == harq) &
+                                          (results_df ['rlcAm'] == rlcAm) &
+                                          (results_df ['fixedTti'] == False) &
+                                          (results_df ['sched'] == sched) &
+                                          (results_df ['bfmod'] == 'ns3::MmWaveMMSESpectrumBeamforming') &
+                                          (results_df ['nLayers'] == 4) &
+                                          (results_df ['useTCP'] == False)]
+
+                    y_delay_ul = data ['ulPdcpDelay'].mean ()
+                    y_delay_dl = data ['dlPdcpDelay'].mean ()
+                        
+                    y_dataRx_ul = data ['ulRxPdcpData'].mean ()
+                    y_dataRx_dl = data ['dlRxPdcpData'].mean ()
+                    
+                    y_thr_ul = y_dataRx_ul * 8 / appTime
+                    y_thr_dl = y_dataRx_dl * 8 / appTime
+                    
+                    
+                    plt.figure (fig_ul.number)
+                    plt.plot (y_delay_ul/1e6, y_thr_ul/1e6, marker=1, label = sched + ' 4 layers rlcAm=' + str (rlcAm) + ' harq=' + str (harq))
+                    plt.figure (fig_dl.number)
+                    plt.plot (y_delay_dl/1e6, y_thr_dl/1e6, marker=1, label = sched + ' 4 layers rlcAm=' + str (rlcAm) + ' harq=' + str (harq))
+                
+                
+        plt.figure (fig_ul.number)
+        plt.xlabel ('Delay [ms]')
+        plt.ylabel ('Throughput [Mbps]')
+        fig_ul.legend ()    
+        fig_ul.savefig (figure_folder + 'scatter_ul_'+title+'.png', bbox_inches='tight')
+        tikzplotlib.save (figure_folder + 'scatter_ul_'+title+'.tex')
+        plt.close (fig_ul)
+        
+        plt.figure (fig_dl.number)
+        plt.xlabel ('Delay [ms]')
+        plt.ylabel ('Throughput [Mbps]')
+        fig_dl.legend ()
+        fig_dl.savefig (figure_folder + 'scatter_dl_'+title+'.png', bbox_inches='tight')
+        tikzplotlib.save (figure_folder + 'scatter_dl_'+title+'.tex')
+        plt.close (fig_dl)
